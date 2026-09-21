@@ -1,0 +1,18 @@
+# Gmail connector evidence contract
+
+Checked 2026-09-22 against public primary sources. No accounts were connected and no messages were read. “Verified” below means documented capability or inspected source, not an end-to-end test.
+
+| Requirement | Composio Gmail | Pipedream Gmail |
+|---|---|---|
+| Complete RAW message | Documented. `GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID` accepts `format="raw"`, described as the entire RFC 2822 message encoded with base64url. [Gmail tool schemas](https://docs.composio.dev/toolkits/gmail.md) | Not exposed by the inspected `gmail-find-email` action, version 0.3.1. Its formats are `metadata` and `full`, and implementation selects only those formats. Other tools remain unverified. [Action source](https://github.com/PipedreamHQ/pipedream/blob/master/components/gmail/actions/find-email/find-email.mjs) |
+| Include Spam | Documented. `GMAIL_FETCH_EMAILS` accepts `include_spam_trash=true`. It also supports IDs-only results and pagination before fetching individual RAW messages. [Gmail tool schemas](https://docs.composio.dev/toolkits/gmail.md) | Verified in source. `gmail-find-email` passes `includeSpamTrash` to message listing. Default is false. [Action source](https://github.com/PipedreamHQ/pipedream/blob/master/components/gmail/actions/find-email/find-email.mjs) |
+| Managed OAuth | Gmail explicitly supports Composio-managed OAuth. [Gmail toolkit](https://docs.composio.dev/toolkits/gmail) | The Gmail page documents connected accounts, remote MCP actions, and an API proxy that attaches the user's credentials. Gmail-specific consent setup was not inspected in this check. [Gmail integration](https://pipedream.com/apps/gmail) |
+| Read-only OAuth grant | Managed auth supports overriding default scopes through `credentials.scopes`. This is a documented configuration path, but a Gmail connection granting only `https://www.googleapis.com/auth/gmail.readonly` was not tested. [Scope controls](https://docs.composio.dev/docs/authentication/controlling-scopes) | Unknown. The action's `readOnlyHint: true` describes the action, not the OAuth grant. [Action source](https://github.com/PipedreamHQ/pipedream/blob/master/components/gmail/actions/find-email/find-email.mjs) |
+
+Composio's current Gmail schema version is `20260915_00`. Its RAW description uses RFC 2822 terminology. The output schema exposes a generic `data` string, so the exact nested response shape, byte preservation, and transport truncation remain unverified. A parsed `full` MIME payload does not establish preservation of the original message bytes. [Gmail tool schemas](https://docs.composio.dev/toolkits/gmail.md)
+
+Composio scope overrides must be attached to the session through the auth config. Existing connections retain their previously granted scopes until the user reconnects. Restricting available tools does not establish a read-only OAuth grant. [Scope controls](https://docs.composio.dev/docs/authentication/controlling-scopes)
+
+Pipedream's inspected action can shorten bodies, compact records, or drop messages to fit its response budget. It therefore does not provide a complete-original-email contract. The Gmail API proxy may offer another route, but RAW response behavior through that proxy and a read-only managed grant remain unverified. [Action source](https://github.com/PipedreamHQ/pipedream/blob/master/components/gmail/actions/find-email/find-email.mjs), [Gmail API proxy description](https://pipedream.com/apps/gmail#api-proxy)
+
+The remaining acceptance checks for Composio are the actual Gmail consent scopes and a complete, untruncated RAW response with preserved bytes. For Pipedream, a supported RAW tool or proxy route must first be established. Neither provider is proven end to end by this documentation check.
