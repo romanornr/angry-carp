@@ -40,7 +40,7 @@ An evidence-backed workflow and architecture specification for manually operated
 
 ## Decisions so far
 
-- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the local prompt loads only triage instructions and returns Assessment, Evidence, Checks and gaps, and Next action. The [standards reference](../standards-and-reporting.md) records RFCs, ICANN guidance, and provider sources outside the model prompt. External lookup tools remain unimplemented.
+- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the local prompt loads only triage instructions and returns Assessment, Evidence, Checks and gaps, and Next action. The [standards reference](../standards-and-reporting.md) records RFCs, ICANN guidance, and provider sources outside the model prompt. The local agent now has a narrow [RDAP tool](../../agent/README.md#domain-registration-lookups); website browsing and other lookup tools remain unimplemented.
 
 - [Decide ordinary-mail retention](issues/12-decide-ordinary-mail-retention.md): acquisition does not authorize retaining ordinary-email content.
 

@@ -48,6 +48,20 @@ The triage command reads a prepared email text file and loads only the triage in
 
 The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 
+## Code reviews
+
+[.coderabbit.yaml](.coderabbit.yaml) configures local CodeRabbit CLI reviews and pull-request reviews. It uses the `chill` profile, disables poems and in-progress fortunes, and enables automatic PR reviews while skipping drafts. CodeRabbit automatically reads [agent/AGENTS.md](agent/AGENTS.md) for the agent's coding conventions. Local skills referenced there are not bundled with this repository.
+
+From the repository root, review local changes, including new files:
+
+```sh
+coderabbit review --uncommitted --include-untracked
+```
+
+Add `--agent` when requesting structured feedback through a coding agent. To review a branch against `main`, use `coderabbit review --base main`. These commands match the installed CLI 0.7.6. Reviews send code to CodeRabbit; private evidence and credentials must remain untracked. The config also excludes their known paths from review, but path filters are not a credential-access boundary.
+
+Validate configuration changes with `coderabbit config validate`. For PR reviews, the CodeRabbit GitHub app must be enabled for this repository and the config must be pushed with the branch. No GitHub Actions workflow is required. See the [CLI reference](https://docs.coderabbit.ai/cli/reference), [repository configuration](https://docs.coderabbit.ai/getting-started/yaml-configuration), and [automatic guideline discovery](https://docs.coderabbit.ai/knowledge-base/code-guidelines).
+
 ## Project documentation
 
 - [Documentation guide](docs/README.md): usage, assessment output, storage, standards, and design decisions.

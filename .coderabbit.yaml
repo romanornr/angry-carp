@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+language: en-US
+
+reviews:
+  profile: chill
+  poem: false
+  in_progress_fortune: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!evidence/**"
+    - "!private/**"
+    - "!**/auth.json"
+    - "!**/credentials.json"
+    - "!**/.env"
+    - "!**/.env.*"
+    - "!**/*.eml"
+    - "!**/*.mbox"
+    - "!**/*.msg"
+    - "!**/*.db"
+    - "!**/*.db-*"
+    - "!**/*.sqlite"
+    - "!**/*.sqlite-*"
+    - "!**/*.sqlite3"
+    - "!**/*.sqlite3-*"
+  path_instructions:
+    - path: "agent/src/**/*.ts"
+      instructions: >-
+        Prioritize incorrect behavior, credential leakage, unsafe network
+        destinations, and misleading evidence attribution. Prefer fixes that
+        reduce complexity; avoid speculative abstractions or feature expansion.
+    - path: "**/*.md"
+      instructions: >-
+        Keep case-specific facts out of reusable agent instructions. Distinguish
+        implemented capabilities from plans, and supplied observations from
+        checks actually performed. Preserve the distinction between historical
+        research and current operating instructions.

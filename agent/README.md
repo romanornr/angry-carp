@@ -24,11 +24,11 @@ Logout removes the `openai-codex` entry from the local credential store. The fil
 
 ## Credential storage and access
 
-The operator selected `agent/auth.json` inside this repository. The sign-in and logout CLI resolves it relative to its own source file, so the terminal's working directory does not change that location. The triage agent resolves it relative to the process working directory; the documented npm command sets that directory to `agent/`. The existing `auth.json` Git ignore rule covers this file. Do not commit it or copy credentials from an existing Codex installation.
+The operator selected `agent/auth.json` inside this repository. Both the sign-in/logout CLI and triage agent resolve it relative to their source files, so the terminal's working directory does not change that location. The existing `auth.json` Git ignore rule covers this file. Do not commit it or copy credentials from an existing Codex installation.
 
 Pi owns the OAuth credential format, file locking, token refresh, and persistence. It writes the file with owner-only permissions, `0600`. The file is plaintext, not encrypted. Processes running as the same operating-system user, and privileged processes, can read it. Git ignore rules and file placement do not isolate it from those processes.
 
-The trusted runtime may read, store, refresh, and use tokens. Tokens must stay out of model prompts, tool results, logs, and exposed errors. The first email assessment will accept prepared email text and give the model no filesystem, shell, browser, or mailbox tools. Runtime access to credentials does not grant that access to the model.
+The trusted runtime may read, store, refresh, and use tokens. Tokens must stay out of model prompts, tool results, logs, and exposed errors. The assessment accepts prepared email text and gives the model no filesystem, shell, browser, or mailbox tools. The RDAP tool receives a domain, uses public HTTPS requests without OAuth headers, and has no credential-reading operation. Runtime access to credentials does not grant that access to the model. Tools run in the trusted runtime process, not in a separate operating-system sandbox.
 
 Flue's configured conversation database is `agent/data/flue.db`, separate from the credential store. It contains conversation data from completed assessments, but does not import original email files or maintain structured case records. Editing a prepared evidence file does not update past conversations.
 
@@ -41,7 +41,9 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/auth.ts` | Keeps Pi's `ModelRuntime` private and exposes login, logout, and the authenticated provider. Replaces exposed authentication errors with fixed messages. |
 | `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
 | `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
-| `src/agents/phishing-triage.ts` | Registers the authenticated provider, loads the shared instructions, and scopes `PhishingTriage` to assessment of supplied email evidence. |
+| `src/agents/phishing-triage.ts` | Registers the authenticated provider and RDAP tool, and loads the shared triage instructions. |
+| `src/rdap.ts` | Discovers the authoritative RDAP endpoint through IANA and returns selected registration evidence. Uses Web APIs and has no authentication or filesystem imports. |
+| `src/tools/lookup-rdap.ts` | Exposes the domain lookup as a Flue tool. |
 
 Both `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` are pinned to `0.83.0`. This integration reuses Pi's provider and credential storage. It does not wrap the Codex CLI as a Flue model adapter. The provider's `apiKey` resolver accepts the resolved OAuth authentication; that name does not imply separate API billing.
 
@@ -63,7 +65,7 @@ After signing in, run this command from the repository root with the absolute pa
 npm --silent --prefix agent run triage -- /absolute/path/prepared-email.txt
 ```
 
-The npm command runs from `agent/`. The module resolves `auth.json` there and reads `../phishing-triage.md`. It does not load the reporting guide. Use an absolute input path, or a path relative to `agent/`:
+The npm command runs from `agent/`, which controls relative input paths and the database location. The agent resolves `agent/auth.json` and the root `phishing-triage.md` relative to its source file. It does not load the reporting guide. Use an absolute input path, or a path relative to `agent/`:
 
 ```sh
 npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
@@ -86,7 +88,7 @@ The instructions request four short sections:
 | Checks and gaps | What came from your supplied evidence, what the agent checked during this run, and which unresolved facts matter. |
 | Next action | A concrete step suited to your situation, including whether report preparation has a specific blocker. |
 
-The current agent makes no independent web or registration lookups. If you provide an official-source excerpt, its analysis is based on that supplied note. A claim that the agent rechecked the page or attempted RDAP would be incorrect. An unsuccessful lookup is different from one that was never attempted.
+The agent can request domain registration lookups through `lookup_rdap`. It cannot search the web or read official websites. An official-source excerpt remains your supplied evidence. The assessment must distinguish supplied notes from RDAP checks actually completed during this run, including unsuccessful or unattempted checks.
 
 High concern can coexist with missing reporting details or unknown installer behavior. Low concern from limited evidence does not certify safety. Assessments can change when new evidence arrives; a verdict does not authorize sending a report.
 
@@ -96,9 +98,31 @@ The output format is an instruction to the model, not a validated response schem
 
 See [standards and reporting guidance](../docs/standards-and-reporting.md) for the RFCs and provider sources, and [ADR 0007](../docs/adr/0007-separate-assessment-from-reporting.md) for the reason assessment and reporting are separate. These documents are not loaded into the agent prompt.
 
+## Domain registration lookups
+
+The same triage command now makes `lookup_rdap` available to the model. The model chooses when a registration date or registrar would resolve a material gap. The instructions limit it to three relevant public domains from the supplied evidence, once each. This selection and count limit are prompt instructions, not runtime enforcement. The runtime accepts syntactically valid ASCII or punycode domains, rejects URLs and IP literals, and controls the request destinations.
+
+Each lookup fetches the [IANA bootstrap directory](https://data.iana.org/rdap/dns.json), selects an HTTPS service using the longest matching domain suffix, and requests its `/domain/{domain}` record. It sends only the queried domain to that service. It does not request the candidate website. No cookies or authentication headers are supplied. Responses are limited to 512 KiB each, with a 15-second deadline for the complete lookup. Redirects, referral links, and WHOIS fallback are not followed.
+
+The result contains the query domain, source URL, retrieval time, status, relevant registration events, registrar name and IANA ID, and abuse email addresses nested under that registrar. Registrant details and unrelated contacts are omitted. Missing contacts remain missing; the tool does not substitute the registrant's email. A not-found result means that the queried endpoint returned HTTP 404, not that a domain is available or safe. HTTP errors, unavailable services, invalid input, and failed requests are distinct outcomes.
+
+Submit the registered domain, not a subdomain or URL. The tool does not infer a registrable domain using a public-suffix list. It queries the supplied name exactly, lowercased. It uses the first eligible HTTPS endpoint; another endpoint or a registrar referral may provide information this increment cannot retrieve. Current registration data does not prove historical ownership, website hosting, or phishing.
+
+Native `fetch` keeps this operation independent of Node filesystem access and OAuth. Valibot, already used by Flue, is now a direct dependency for tool inputs and external JSON validation. An examined alternative, [rdapper](https://github.com/jakejarvis/rdapper/blob/main/src/rdap/normalize.ts), extracts normalized contacts only from top-level entities; preserving nested registrar abuse attribution would still need custom extraction. No general web client, shell tool, or RDAP package is added.
+
+Flue stores the tool results with the assessment conversation in `agent/data/flue.db`. They are not automatically appended to your prepared email file or a structured case record. The terminal still prints only the final assessment after its progress line.
+
+To run the offline RDAP checks from the repository root:
+
+```sh
+node --test agent/src/rdap.test.ts
+```
+
+The six offline tests cover attributed contacts, privacy, domain validation, service discovery, failure outcomes, blocked redirects, response limits, and safe error output. A live lookup of `example.com` succeeded through IANA and Verisign on 2026-09-22. Flue tool-schema conversion and a browser-target bundle passed without Node imports. These checks did not make a model call or inspect a candidate website.
+
 ## Future deployment
 
-For Cloudflare later, replace the local browser-login entry point and file storage with suitable runtime and storage components. Keep those concerns separate from model access. Workers compatibility has not been verified; no cloud infrastructure is implemented.
+For Cloudflare later, replace the local browser-login entry point and file storage with suitable runtime and storage components. The RDAP module uses `fetch`, `URL`, streams, and `AbortSignal`, independently of those local concerns. Workers supports [fetch within a request handler](https://developers.cloudflare.com/workers/runtime-apis/fetch/) and [stream iteration](https://developers.cloudflare.com/workers/runtime-apis/streams/readablestream/). Invoke the lookup during a request rather than at module initialization. Actual Workers deployment has not been tested; no cloud infrastructure is implemented.
 
 ## Earlier Codex CLI experiment
 

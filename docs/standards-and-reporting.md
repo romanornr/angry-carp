@@ -18,7 +18,7 @@ The four assessment sections and High/Medium/Low concern levels are project choi
 
 The existing [Wayfinder reporting decision](planning/issues/06-define-report-evidence-and-approval.md) keeps one canonical reporting guide and adapts report wording to the recipient. The assessment headings do not impose a new provider-email template. Channel-specific requirements, such as the [previously inspected Vercel form](research/provider-reporting-requirements.md#vercel), remain distinct from ordinary email-intake requirements and need rechecking before submission.
 
-ARF and IODEF exports are not implemented. No RDAP or WHOIS tool is connected to the local agent. An operator-supplied lookup remains supplied evidence, and reading standards does not count as checking a case's domains.
+ARF and IODEF exports are not implemented. The local agent has an [RDAP tool](../agent/README.md#domain-registration-lookups) using RFC 9224 service discovery, RFC 9082 domain queries, and selected RFC 9083 response fields. It supports a bounded subset, with no redirects, referrals, or WHOIS fallback. Registrar abuse contacts retain their entity relationship, consistent with the [ICANN gTLD RDAP profile](https://www.icann.org/gtld-rdap-profile). An operator-supplied lookup remains supplied evidence, and reading standards does not count as checking a case's domains.
 
 Provider reports state supported abuse directly, identify the resource and evidence, and request action within the provider's role. Material qualifications remain where omitting them would mislead. Our [reporting instructions](../provider-abuse-reporting.md) govern drafting and disclosure review. No standard cited here authorizes a disclosure or submission, and none guarantees provider action.
 

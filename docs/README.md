@@ -1,6 +1,6 @@
 # Angry Carp documentation
 
-Angry Carp currently provides a local command for assessing prepared email evidence and separate instructions for preparing provider reports. The local agent does not acquire mail, perform external lookups, manage cases, or send reports.
+Angry Carp currently provides a local command for assessing prepared email evidence, a domain registration lookup tool, and separate instructions for preparing provider reports. The local agent does not acquire mail, browse websites, manage cases, or send reports.
 
 ## Start here
 
@@ -11,6 +11,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 ## Understand an assessment
 
 - [Read the four assessment sections](../agent/README.md#read-the-assessment): conclusion, evidence, checks and gaps, and next action.
+- [Domain registration lookups](../agent/README.md#domain-registration-lookups): RDAP operation, returned evidence, privacy, and current limits.
 - [Domain glossary](../CONTEXT.md): evidence, observations, inference, concern, confidence, reporting readiness, and approval.
 - [Standards and reporting guidance](standards-and-reporting.md): relevant RFCs, ICANN guidance, provider instructions, and the limits of their application.
 

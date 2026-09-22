@@ -1,21 +1,22 @@
 'use agent';
 
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { setProvider, useModel } from '@flue/runtime';
+import { fileURLToPath } from 'node:url';
+import { setProvider, useModel, useTool } from '@flue/runtime';
 import { openAuth } from '../auth.ts';
+import { lookupRdapTool } from '../tools/lookup-rdap.ts';
 
-// The npm command runs from agent/.
-const triage = await readFile('../phishing-triage.md', 'utf8');
+const triage = await readFile(new URL('../../../phishing-triage.md', import.meta.url), 'utf8');
 
 const auth = await openAuth({
-  authPath: resolve('auth.json'),
+  authPath: fileURLToPath(new URL('../../auth.json', import.meta.url)),
 });
 
 setProvider(auth.provider);
 
 export function PhishingTriage() {
   useModel('openai-codex/gpt-5.6-sol');
+  useTool(lookupRdapTool);
 
   return triage;
 }
