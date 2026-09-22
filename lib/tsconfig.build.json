@@ -8,6 +8,7 @@
 		"outDir": "dist"
 	},
 	"exclude": [
-		"src/**/*.test.ts"
+		"src/**/*.test.ts",
+		"src/reporting/write-channels.ts"
 	]
 }

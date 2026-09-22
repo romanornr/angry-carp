@@ -43,6 +43,12 @@ The High, Medium, or Low classification of a suspected phishing concern based on
 **Confidence**:
 How strongly the evidence supports a specific conclusion. Confidence in impersonation can differ from confidence about a linked file's behavior.
 
+**Service role**:
+The function a provider performs for a reported resource, such as registration, email delivery, DNS, or hosting. Evidence for one role does not establish another.
+
+**Reporting channel**:
+A provider's published route for receiving a report in a stated service role, with any conditions on its use. Knowing a channel does not establish the provider's involvement or authorize sending.
+
 **Reporting readiness**:
 Whether the evidence, provider attribution, verified channel, and disclosure review are sufficient to prepare a report for a particular recipient. It is separate from concern level and report approval.
 

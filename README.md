@@ -46,7 +46,7 @@ There is no verified one-click Grok Bot template or installation procedure in th
 
 The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout have succeeded. The `PhishingTriage` module registers the authenticated provider and loads the shared instructions; a first live assessment has completed. See [local authentication and implementation status](agent/README.md) for commands, credential storage, and remaining work.
 
-The triage command reads a prepared email text file and loads the triage instructions and a compact reporting-channel reference, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
+The triage command reads a prepared email text file and loads the triage instructions, with relevant reporting channels available through an offline lookup, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
 
 See [brand references](docs/brand-references.md), [domain lookalikes](docs/domain-lookalikes.md), and [shared passages](docs/text-reuse.md) for input requirements and algorithm limits. These tools supply observations, not independent phishing verdicts. The agent cannot retrieve official brand pages or search earlier email automatically. Supply official-source findings and any comparison body explicitly; reference domains can come from operator notes or the local directory.
 

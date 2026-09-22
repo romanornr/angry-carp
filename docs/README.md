@@ -17,6 +17,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 - [Brand references](brand-references.md): local 2FA Directory candidates, source metadata, and matching limits.
 - [Update reference data](updating-reference-data.md): verified snapshot replacement, rollback, and update policy.
 - [Reused email passages](text-reuse.md): local Winnowing comparisons, input preparation, source positions, and limits.
+- [Reporting-channel catalogue](reporting-catalogue.md): offline selection, service roles, conditional routes, and [maintenance](updating-reporting-channels.md).
 - [Reporting recipients](../agent/README.md#reporting-recipients): attribution, channels, and recipient-specific readiness.
 - [Domain glossary](../CONTEXT.md): evidence, observations, inference, concern, confidence, reporting readiness, and approval.
 - [Standards and reporting guidance](standards-and-reporting.md): relevant RFCs, ICANN guidance, provider instructions, and the limits of their application.
@@ -26,7 +27,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 ## Agent instructions
 
 - [Phishing triage](../phishing-triage.md) is portable assessment guidance, usable without Flue or the TypeScript tools. The local assessment agent loads the same file.
-- [Reporting channels](../reporting-channels.md) is the compact channel reference loaded alongside the assessment instructions.
+- [Reporting channels](../reporting-channels.md) is the generated, portable channel reference. Flue retrieves matching records through its offline reporting tool.
 - [Provider abuse reporting](../provider-abuse-reporting.md) is for separately directed report preparation and review. It is not loaded into the local assessment prompt.
 
 ## Design decisions
@@ -41,6 +42,7 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 - [0006: Use SQLite for local case storage](adr/0006-use-sqlite-for-local-case-storage.md)
 - [0007: Separate assessment from reporting](adr/0007-separate-assessment-from-reporting.md)
 - [0008: Extract reusable checks](adr/0008-extract-reusable-checks.md)
+- [0009: Maintain reporting channels as data](adr/0009-maintain-reporting-channels-as-data.md)
 
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
 

@@ -20,7 +20,7 @@ Registration dates support a timeline, and attributed registrar abuse contacts h
 
 ## Reporting readiness
 
-Identify recipients by the resources they control, using the supplied channel reference or attributed RDAP contacts. Prioritize sending providers, hosting/proxy/DNS services, and registrars; omit routine brand notification. For each justified recipient, give the role, attribution evidence, channel, and actual blocker in Next action.
+Identify recipients by the resources they control, using an available channel reference or attributed RDAP contacts. Prioritize sending providers, hosting/proxy/DNS services, and registrars; omit routine brand notification. For each justified recipient, give the role, attribution evidence, channel, and actual blocker in Next action.
 
 Assess readiness separately from concern. Missing attribution, a channel, or disclosure review may hold one report without holding others or lowering concern. A reporting channel does not strengthen the evidence of deception. Supported abuse warrants report preparation without proof of every infrastructure detail or payload behavior. This task assesses readiness; drafting and sending require separate operator direction and approval.
 

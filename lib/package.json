@@ -30,6 +30,10 @@
 		"./text-reuse": {
 			"types": "./dist/text-reuse/winnowing.d.ts",
 			"default": "./dist/text-reuse/winnowing.js"
+		},
+		"./reporting": {
+			"types": "./dist/reporting/channels.d.ts",
+			"default": "./dist/reporting/channels.js"
 		}
 	},
 	"files": [

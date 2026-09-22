@@ -1,14 +1,70 @@
 # Reporting channels
 
-Checked 2026-09-22 UTC. Use a row when case evidence connects the provider to the resource in that role. These are reviewed channel references, not fresh checks of the case or permission to send. An older check date is a recheck note, not a blanket reporting hold.
+<!-- Generated from lib/src/reporting/channels.ts. Run npm run reporting:generate; edit the catalogue, not this file. -->
 
-| Provider and role | Channel | Evidence to prepare | Published instructions |
-| --- | --- | --- | --- |
-| Amazon SES, email delivery | `email-abuse@amazon.com` | Delivery headers, message identifiers and receipt time, deceptive content. | [AWS](https://repost.aws/knowledge-center/report-aws-abuse) |
-| Resend, sending platform | `support@resend.com` | Headers linking the message to the platform, message identifiers, deceptive content. | [Resend violation reporting](https://resend.com/legal/terms-of-service) |
-| Cloudflare, proxy/DNS or Workers/Pages hosting | [Phishing & Malware form](https://abuse.cloudflare.com/). | Exact URL, evidence of deception, and the supported service relationship. Identify email evidence and unvisited pages accurately. | [Submission routes](https://developers.cloudflare.com/fundamentals/reference/report-abuse/submit-report/), [service roles](https://www.cloudflare.com/trust-hub/abuse-approach/) |
-| Cloudflare, registrar | Registrar category in the form; `registrar-abuse@cloudflare.com` when RDAP identifies Cloudflare as registrar. | Domain registration attribution and domain-abuse evidence. | [Registrar reporting](https://www.cloudflare.com/trust-hub/reporting-abuse/) |
-| Trustname, registrar | `abuse@trustname.com` when returned as the registrar abuse contact by RDAP; its helpdesk form is an alternative and may be requested in a reply. | Domain, exact abusive URL, email or other abuse evidence. If using the form, follow its category support-code instructions. | [Trustname instructions](https://trustname.com/article/202000025104) |
-| Hostinger, registrar or hosting provider | `abuse@hostinger.com` or its abuse form. | Exact resource, evidence, relevant time, reporter contact. Request action within the role established by the case. | [Hostinger policy](https://www.hostinger.com/legal/abuse-policy) |
+Use a reference when case evidence connects the provider to the resource in the stated role. These are reviewed channel references, not fresh checks of a case or permission to send. Conditions must be checked against case evidence. An older check date is a recheck note, not a blanket reporting hold.
 
-Prepare only the evidence needed by that recipient; complete-email forwarding is not the default. For other registrars, use the registrar's RDAP abuse contact. For other services, identify the official-channel gap instead of inventing a contact.
+## Amazon SES: email-delivery
+
+Checked 2026-09-22 UTC.
+
+- Email: `email-abuse@amazon.com`. Case evidence connects the message to Amazon SES email delivery.
+
+Evidence to prepare: Delivery headers, message identifiers and receipt time, deceptive content.
+
+Published instructions: [AWS reporting instructions](https://repost.aws/knowledge-center/report-aws-abuse).
+
+## Resend: sending-platform
+
+Checked 2026-09-22 UTC.
+
+- Email: `support@resend.com`. Case headers link the message to Resend. Its terms designate this support mailbox for violation reports.
+
+Evidence to prepare: Headers linking the message to the platform, message identifiers, deceptive content.
+
+Published instructions: [Resend violation reporting](https://resend.com/legal/terms-of-service).
+
+## Cloudflare: reverse-proxy, dns, hosting
+
+Checked 2026-09-22 UTC.
+
+- [Form](https://abuse.cloudflare.com/). Select Phishing & Malware when evidence connects the resource to Cloudflare. State the supported role; DNS or reverse-proxy evidence alone does not establish Workers/Pages hosting.
+
+Evidence to prepare: Exact URL, evidence of deception, and the supported service relationship. Identify email evidence and unvisited pages accurately.
+
+Published instructions: [Submission routes](https://developers.cloudflare.com/fundamentals/reference/report-abuse/submit-report/), [Service roles](https://www.cloudflare.com/trust-hub/abuse-approach/).
+
+## Cloudflare: registrar
+
+Checked 2026-09-22 UTC.
+
+- [Form](https://abuse.cloudflare.com/). Select Registrar when case RDAP identifies Cloudflare as the registrar.
+- Email: `registrar-abuse@cloudflare.com`. Use only when case RDAP identifies Cloudflare as the registrar.
+
+Evidence to prepare: Domain registration attribution and domain-abuse evidence.
+
+Published instructions: [Registrar reporting](https://www.cloudflare.com/trust-hub/reporting-abuse/).
+
+## Trustname: registrar
+
+Checked 2026-09-22 UTC.
+
+- Email: `abuse@trustname.com`. Use when this address is returned as the registrar abuse contact by case RDAP.
+- [Web instructions](https://trustname.com/article/202000025104). The helpdesk form is an alternative and may be requested in a reply. Follow its category support-code instructions. This link is the instructions page, not the form endpoint.
+
+Evidence to prepare: Domain, exact abusive URL, email or other abuse evidence.
+
+Published instructions: [Trustname instructions](https://trustname.com/article/202000025104).
+
+## Hostinger: registrar, hosting
+
+Checked 2026-09-22 UTC.
+
+- Email: `abuse@hostinger.com`. Request action within the registrar or hosting role established by case evidence.
+- [Web instructions](https://www.hostinger.com/legal/abuse-policy). Use the Report Abuse page linked by this policy as an alternative. Request action within the established role. This is separate from vulnerability disclosure.
+
+Evidence to prepare: Exact resource, evidence, relevant time, reporter contact.
+
+Published instructions: [Hostinger policy](https://www.hostinger.com/legal/abuse-policy).
+
+Prepare only the evidence needed by that recipient; complete-email forwarding is not the default. For other registrars, use the registrar abuse contact from case RDAP, retaining its registrar relationship and source. For other services, identify the official-channel gap instead of inventing a contact.

@@ -1,6 +1,6 @@
 # Local agent integration
 
-The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout work. `PhishingTriage` registers the authenticated provider and loads `phishing-triage.md` and the compact `reporting-channels.md` reference. The first live assessment through Flue completed successfully. The terminal entry point accepts a prepared-text file and prints the assessment once.
+The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout work. `PhishingTriage` registers the authenticated provider and loads `phishing-triage.md`. Reporting channels are selected on demand through an offline tool. The first live assessment through Flue completed successfully. The terminal entry point accepts a prepared-text file and prints the assessment once.
 
 ## Sign in and disconnect
 
@@ -41,7 +41,7 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/auth.ts` | Keeps Pi's `ModelRuntime` private and exposes login, logout, and the authenticated provider. Replaces exposed authentication errors with fixed messages. |
 | `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
 | `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
-| `src/agents/phishing-triage.ts` | Registers the authenticated provider, lookups, and local comparison tools, and loads triage instructions and reporting channels. |
+| `src/agents/phishing-triage.ts` | Registers the authenticated provider, lookups, and local comparison tools, and loads triage instructions; reporting channels are available through a separate lookup tool. |
 | `../lib/src/lookups/rdap.ts` | Discovers the RDAP endpoint through IANA and returns selected registration evidence. |
 | `../lib/src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
 | `../lib/src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
@@ -55,7 +55,7 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `../lib/src/brands/check-directory.ts` | Checks an installed or staged snapshot without authentication or a model call. |
 | `../lib/src/brands/load-directory.ts` | Loads the public snapshot during trusted Node setup, shared by the agent and maintenance command. |
 
-The DNS and RDAP cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `src/tools/lookups.ts` owns their Flue bindings. All five capabilities come from [the shared package](../lib/README.md). Flue calls its exports directly, with no intermediate HTTP service.
+The DNS and RDAP cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `src/tools/lookups.ts` owns their Flue bindings. The reusable checks and reporting catalogue come from [the shared package](../lib/README.md). Flue calls its exports directly, with no intermediate HTTP service.
 
 Both `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` are pinned to `0.83.0`. This integration reuses Pi's provider and credential storage. It does not wrap the Codex CLI as a Flue model adapter. The provider's `apiKey` resolver accepts the resolved OAuth authentication; that name does not imply separate API billing.
 
@@ -77,7 +77,7 @@ After signing in, run this command from the repository root with the absolute pa
 npm --silent --prefix agent run triage -- /absolute/path/prepared-email.txt
 ```
 
-The npm command runs from `agent/`, which controls relative input paths and the database location. The agent resolves `agent/auth.json` and both root instruction files relative to its source file. It does not load the full reporting guide. Use an absolute input path, or a path relative to `agent/`:
+The npm command runs from `agent/`, which controls relative input paths and the database location. The agent resolves `agent/auth.json` and the root `phishing-triage.md` relative to its source file. Reporting channels come from the library lookup. It does not load the full reporting guide. Use an absolute input path, or a path relative to `agent/`:
 
 ```sh
 npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
@@ -150,7 +150,7 @@ For two explicitly supplied bodies, [`find_shared_passages`](../docs/text-reuse.
 
 ## Reporting recipients
 
-The agent loads the compact [reporting-channel reference](../reporting-channels.md) to connect supported provider roles to published intake channels. Its review date describes the reference, not a live check during the assessment. The full reporting guide and research remain outside the prompt.
+The agent calls `lookup_reporting_channels` with up to 10 provider-and-service-role pairs after evidence supports the relationship. The offline catalogue returns only relevant routes, retaining conditions, sources and review dates. It does not evaluate those conditions or verify attribution. Misses preserve the channel gap and the case RDAP route for registrars. The [generated reference](../reporting-channels.md) remains downloadable; the full catalogue, reporting guide and research stay outside the initial prompt. See [lookup behavior](../docs/reporting-catalogue.md) and [updates](../docs/updating-reporting-channels.md).
 
 Readiness is recipient-specific. A missing origin host does not block a supported registrar or sending-provider report. The assessment identifies the role, attribution evidence, channel, and actual blocker for each justified recipient. It does not draft or submit reports.
 
@@ -165,7 +165,7 @@ npm test
 npm run check:types
 ```
 
-The root command builds the shared package and runs both workspace suites. The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all five Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
+The root command builds the shared package and runs both workspace suites. The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all six Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
 
 ## Future deployment
 

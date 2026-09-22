@@ -1,6 +1,6 @@
 # Reusable checks
 
-`@angry-carp/checks` provides the same five capabilities used by the Flue agent, with no Flue or Pi dependency. Call the functions directly; they do not require a model, subscription, or HTTP service. Results are observations, not phishing verdicts.
+`@angry-carp/checks` provides the reusable checks and reporting-channel lookup used by the Flue agent, with no Flue or Pi dependency. Call the functions directly; they do not require a model, subscription, or HTTP service. Checks return observations; the channel lookup returns reviewed references. Neither assigns a phishing verdict.
 
 ## Use a module
 
@@ -13,6 +13,7 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/lookalikes` | `compareDomains(input)`; `domainComparisonSchema` | None; uses Node IDNA |
 | `@angry-carp/checks/dns` | `lookupDns(query)`; `dnsQuerySchema` | Public DNS resolver |
 | `@angry-carp/checks/rdap` | `lookupRdap(domain)`; `domainSchema` | IANA bootstrap and registry RDAP |
+| `@angry-carp/checks/reporting` | `findReportingChannels(query)`; `reportingQuerySchema`, `reportingBatchSchema` | None |
 | `@angry-carp/checks/text-reuse` | `findSharedPassages(input)`; `passageComparisonSchema` | None |
 
 Parse external input with the corresponding schema before calling a function. The schemas deliberately differ: a DNS selector name, a registered domain, and a Unicode comparison input are not interchangeable. This example runs locally after installation:
@@ -51,4 +52,4 @@ The library does not read agent credentials or conversation storage. DNS and RDA
 
 The directory and text-reuse cores use standard JavaScript and Valibot. Domain comparison also uses `node:url`, the pinned Unicode data package, and `tldts`. Workers execution has not been verified; keep local file loading separate when choosing another host.
 
-See [brand lookup](../docs/brand-references.md), [domain lookalikes](../docs/domain-lookalikes.md), [Winnowing](../docs/text-reuse.md), and [ADR 0008](../docs/adr/0008-extract-reusable-checks.md) for semantics and design choices.
+See [reporting channels](../docs/reporting-catalogue.md), [brand lookup](../docs/brand-references.md), [domain lookalikes](../docs/domain-lookalikes.md), [Winnowing](../docs/text-reuse.md), and [ADR 0008](../docs/adr/0008-extract-reusable-checks.md) for semantics and design choices.

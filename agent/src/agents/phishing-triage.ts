@@ -9,9 +9,9 @@ import { compareDomainsTool } from '../tools/lookalikes.ts';
 import { findSharedPassagesTool } from '../tools/text-reuse.ts';
 import { loadBrandDirectory } from '@angry-carp/checks/brands/local';
 import { createBrandLookupTool } from '../tools/brands.ts';
+import { lookupReportingChannelsTool } from '../tools/reporting.ts';
 
 const triage = await readFile(new URL('../../../phishing-triage.md', import.meta.url), 'utf8');
-const channels = await readFile(new URL('../../../reporting-channels.md', import.meta.url), 'utf8');
 const directory = await loadBrandDirectory();
 const lookupBrandTool = createBrandLookupTool(directory);
 
@@ -28,6 +28,7 @@ export function PhishingTriage() {
   useTool(compareDomainsTool);
   useTool(findSharedPassagesTool);
   useTool(lookupBrandTool);
+  useTool(lookupReportingChannelsTool);
 
-  return `${triage}\n\n${channels}`;
+  return triage;
 }

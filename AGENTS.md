@@ -6,6 +6,8 @@ Keep `phishing-triage.md` usable as a standalone download by people and agents w
 
 When changing workflow distribution or runtime boundaries, follow [ADR 0004](docs/adr/0004-distribute-workflow-independently.md).
 
+When updating reporting routes, follow [the channel update procedure](docs/updating-reporting-channels.md). It covers source edits, review dates, generation, and drift checks.
+
 ## Code ownership
 
 `lib/` owns reusable checks and their schemas. `agent/` owns Flue bindings, authentication, and conversation storage. Import the library through its package exports; migrate callers and delete obsolete paths in the same change. Package separation does not restrict filesystem access or create a credential sandbox.
