@@ -40,12 +40,13 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | --- | --- |
 | `src/auth.ts` | Keeps Pi's `ModelRuntime` private and exposes login, logout, and the authenticated provider. Replaces exposed authentication errors with fixed messages. |
 | `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
-| `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
+| `src/triage-cli.ts` | Reads prepared text, runs Flue, prints the assessment, and releases Pi sessions after Flue disposal. |
 | `src/agents/phishing-triage.ts` | Registers the authenticated provider, lookups, and local comparison tools, and loads triage instructions; reporting channels are available through a separate lookup tool. |
 | `../lib/src/lookups/rdap.ts` | Discovers the RDAP endpoint through IANA and returns selected registration evidence. |
+| `../lib/src/lookups/ip-rdap.ts` | Uses IANA's longest address-prefix match and returns the containing registered network. |
 | `../lib/src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
 | `../lib/src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
-| `src/tools/lookups.ts` | Validates model inputs and exposes both lookups as Flue tools. |
+| `src/tools/lookups.ts` | Validates model inputs and exposes DNS, domain RDAP and IP RDAP as Flue tools. |
 | `../lib/src/lookalikes/compare-domains.ts` | Compares supplied domain names locally using Unicode and public-suffix data. |
 | `src/tools/lookalikes.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
 | `../lib/src/text-reuse/winnowing.ts` | Finds shared passages in two supplied bodies using local Winnowing. |
@@ -58,6 +59,8 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 The DNS and RDAP cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `src/tools/lookups.ts` owns their Flue bindings. The reusable checks and reporting catalogue come from [the shared package](../lib/README.md). Flue calls its exports directly, with no intermediate HTTP service.
 
 Both `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` are pinned to `0.83.0`. This integration reuses Pi's provider and credential storage. It does not wrap the Codex CLI as a Flue model adapter. The provider's `apiKey` resolver accepts the resolved OAuth authentication; that name does not imply separate API billing.
+
+The standalone triage command owns process shutdown. Flue's `await using` disposes its runtime first; the command then calls Pi's existing `cleanupSessionResources()` on success or failure. Pi 0.83.0 can retain a cached WebSocket with a five-minute timer that Flue does not release. The zero-argument cleanup clears all Pi sessions, so it belongs to this process-owning command, not to a shared provider's close method. It does not log out or delete credentials. A cleanup failure retains any printed assessment and reports a separate fixed error with exit status 1.
 
 `allowModelNetwork: false` disables catalog downloads during runtime creation. It does not disable OAuth traffic or every later catalog refresh.
 
@@ -102,7 +105,7 @@ The instructions request four short sections:
 | Checks and gaps | What came from your supplied evidence, what the agent checked during this run, and which unresolved facts matter. |
 | Next action | A concrete step suited to your situation, including whether report preparation has a specific blocker. |
 
-The agent can request domain registration through `lookup_rdap` and public DNS records through `lookup_dns`. It cannot search the web or read official websites. An official-source excerpt remains your supplied evidence. The assessment must distinguish supplied notes from lookup checks actually completed during this run, including unsuccessful or unattempted checks.
+The agent can request domain registration through `lookup_rdap`, IP network registration through `lookup_ip_rdap`, and public DNS records through `lookup_dns`. It cannot search the web or read official websites. An official-source excerpt remains your supplied evidence. The assessment must distinguish supplied notes from lookup checks actually completed during this run, including unsuccessful or unattempted checks.
 
 High concern can coexist with missing reporting details or unknown installer behavior. Low concern from limited evidence does not certify safety. Assessments can change when new evidence arrives; a verdict does not authorize sending a report.
 
@@ -126,6 +129,14 @@ Native `fetch` keeps this operation independent of Node filesystem access and OA
 
 Flue stores the tool results with the assessment conversation in `agent/data/flue.db`. They are not automatically appended to your prepared email file or a structured case record. The terminal still prints only the final assessment after its progress line.
 
+## IP registration lookups
+
+`lookup_ip_rdap` accepts a bare IPv4 or IPv6 address from supplied evidence or DNS answers. It rejects URLs, ports, CIDRs and IPv6 zone IDs, and canonicalizes IPv6 spelling. The tool description limits selection to three distinct relevant addresses once each; this count is a model instruction, not a runtime limit.
+
+The library fetches IANA's [IPv4](https://data.iana.org/rdap/ipv4.json) or [IPv6](https://data.iana.org/rdap/ipv6.json) directory, selects the longest binary prefix under [RFC 9224 section 5](https://www.rfc-editor.org/rfc/rfc9224.html#section-5), and requests `/ip/{address}` from the first eligible HTTPS registry endpoint. It verifies that the returned network has the same address family and contains the query. The queried address is never a request destination. The shared client applies the domain lookup's 15-second deadline, 512 KiB response limit, credential omission and redirect refusal. There is no endpoint failover, referral following or application cache.
+
+Results include the canonical query, source URL, retrieval time, network range and IP version. Optional network handle, name, type and country are limited to 200 characters each; absent values are `null`. Contacts, notices and links are omitted. A network record describes registration, not origin hosting, current routing or Workers/Pages use. Nameserver evidence and address-network evidence remain separate even when both name the same company. A missing record or failed request establishes neither safety nor non-registration.
+
 ## DNS lookups
 
 `lookup_dns` accepts a public name and one of A, AAAA, NS, MX, TXT, or CNAME. Underscore labels support DKIM selectors and DMARC. The instructions limit queries to 12 relevant name/type pairs per assessment, once each. Relevance, public-name selection, and query counts are prompt rules; the runtime validates syntax and record type and fixes the destination.
@@ -136,9 +147,9 @@ Results preserve each answer's name, record type name (or `TYPE<number>` for an 
 
 Responses have a 15-second deadline and a 512 KiB byte limit. Parsed answers are limited to 20 records and 4,096 characters per record's data. Oversized answer sets return `response_too_large` instead of silently dropping records or treating valid DNS data as malformed. Redirects are blocked, and the response question must match the request. No cookies or authorization headers are supplied.
 
-DNS can support attribution but does not establish the origin host or historical configuration. Nameservers identify a DNS service; address ownership needs separate sourced evidence. IP RDAP is not implemented. Inbound MX records alone do not identify a sending platform.
+DNS can support attribution but does not establish the origin host or historical configuration. Nameservers identify a DNS service; the separate IP RDAP tool supplies network-registration evidence. Inbound MX records alone do not identify a sending platform.
 
-Both lookup cores are read-only and keep no local state. Repeating a lookup makes a new request and may return changed records. There is no application cache or automatic retry. A rerun of the triage command creates a new conversation; it does not resume a previous assessment.
+The lookup cores are read-only and keep no local state. Repeating a lookup makes a new request and may return changed records. There is no application cache or automatic retry. A rerun of the triage command creates a new conversation; it does not resume a previous assessment.
 
 ## Local comparisons
 
@@ -154,6 +165,8 @@ The agent calls `lookup_reporting_channels` with up to 10 provider-and-service-r
 
 Readiness is recipient-specific. A missing origin host does not block a supported registrar or sending-provider report. The assessment identifies the role, attribution evidence, channel, and actual blocker for each justified recipient. It does not draft or submit reports.
 
+A source-backed plausible recipient can receive a channel lookup while its involvement remains unconfirmed. Label the lead and explain its evidence rather than promoting it to confirmed attribution. For example, a vendor-named DKIM selector with shared SES records can justify asking that vendor to investigate, but those records do not prove key custody or handling of the message. This is reporting guidance, not a deterministic provider detector. General reliability of model lead retention has not been evaluated.
+
 Cloudflare's Phishing & Malware form is the default route. Its [report API](https://developers.cloudflare.com/api/resources/abuse_reports/methods/create/) requires account entitlement and a scoped Abuse Reports Edit token. Neither form automation nor API submission is implemented. The registrar email is appropriate only when Cloudflare is the registrar. Routine brand notifications are excluded from this workflow.
 
 ## Verify the agent tools
@@ -165,7 +178,7 @@ npm test
 npm run check:types
 ```
 
-The root command builds the shared package and runs both workspace suites. The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all six Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
+The root command builds the shared package and runs both workspace suites. The offline suite exercises lookup and comparison cores, the installed brand snapshot, and registration of all seven Flue tools. Binding tests catch runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. A child-process lifecycle test runs the actual command and agent with synthetic authentication, an in-memory database, disabled fetch and an in-memory WebSocket. It checks natural exit after successful output, an output error and a sibling cleanup error. No test reads stored credentials or contacts a model.
 
 ## Future deployment
 

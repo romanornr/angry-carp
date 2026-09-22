@@ -2,6 +2,7 @@ import { defineTool } from '@flue/runtime';
 import * as v from 'valibot';
 import { domainSchema, lookupRdap } from '@angry-carp/checks/rdap';
 import { dnsQuerySchema, lookupDns } from '@angry-carp/checks/dns';
+import { ipAddressSchema, lookupIpRdap } from '@angry-carp/checks/ip-rdap';
 
 export const lookupRdapTool = defineTool({
   name: 'lookup_rdap',
@@ -22,5 +23,18 @@ export const lookupDnsTool = defineTool({
   input: dnsQuerySchema,
   async run({ data }) {
     return { output: await lookupDns(data) };
+  },
+});
+
+export const lookupIpRdapTool = defineTool({
+  name: 'lookup_ip_rdap',
+  description:
+    'Query IP network registration through IANA and registry RDAP, never the queried address. ' +
+    'Use a bare IPv4 or IPv6 address from supplied evidence or DNS answers when its registered network resolves an attribution gap. ' +
+    'At most 3 distinct addresses once each. Return sources and times; network registration does not identify the origin host, ' +
+    'prove current routing, or establish Workers/Pages hosting. URLs, ports, CIDRs and zone IDs are not accepted.',
+  input: v.object({ address: ipAddressSchema }),
+  async run({ data }) {
+    return { output: await lookupIpRdap(data.address) };
   },
 });

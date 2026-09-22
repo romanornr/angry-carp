@@ -10,4 +10,6 @@ Replace the full reference in Flue's initial prompt with a bounded, batched offl
 
 A lookup selects published routes for an explicitly named provider and service role. It does not attribute that role, evaluate case conditions, or authorize disclosure. Registrar abuse contacts from case RDAP remain separate evidence. Misses preserve reporting gaps instead of synthesizing addresses. [Standards](../research/reporting-channel-catalogue.md) inform these boundaries but do not prescribe this catalogue schema.
 
+Clarification, 2026-09-22: an evidence-backed plausible recipient is eligible for lookup even when involvement remains unconfirmed. The assessment retains that qualification. The catalogue's result does not promote a lead to a verified relationship or satisfy its channel conditions. This clarifies selection guidance without adding a provider detector or changing the record schema.
+
 This changes the channel-loading choice in [ADR 0007](0007-separate-assessment-from-reporting.md), retaining its separation of assessment, readiness and approved reporting. The portable triage instructions refer to an available channel reference without naming a host-specific tool. [Usage](../reporting-catalogue.md) and [updates](../updating-reporting-channels.md) document the maintained interface.

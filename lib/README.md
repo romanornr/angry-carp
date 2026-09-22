@@ -13,6 +13,7 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/lookalikes` | `compareDomains(input)`; `domainComparisonSchema` | None; uses Node IDNA |
 | `@angry-carp/checks/dns` | `lookupDns(query)`; `dnsQuerySchema` | Public DNS resolver |
 | `@angry-carp/checks/rdap` | `lookupRdap(domain)`; `domainSchema` | IANA bootstrap and registry RDAP |
+| `@angry-carp/checks/ip-rdap` | `lookupIpRdap(address)`; `ipAddressSchema` | IANA address bootstrap and registry RDAP |
 | `@angry-carp/checks/reporting` | `findReportingChannels(query)`; `reportingQuerySchema`, `reportingBatchSchema` | None |
 | `@angry-carp/checks/text-reuse` | `findSharedPassages(input)`; `passageComparisonSchema` | None |
 

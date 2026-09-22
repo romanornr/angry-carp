@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { setProvider, useModel, useTool } from '@flue/runtime';
 import { openAuth } from '../auth.ts';
-import { lookupDnsTool, lookupRdapTool } from '../tools/lookups.ts';
+import { lookupDnsTool, lookupRdapTool, lookupIpRdapTool } from '../tools/lookups.ts';
 import { compareDomainsTool } from '../tools/lookalikes.ts';
 import { findSharedPassagesTool } from '../tools/text-reuse.ts';
 import { loadBrandDirectory } from '@angry-carp/checks/brands/local';
@@ -25,6 +25,7 @@ export function PhishingTriage() {
   useModel('openai-codex/gpt-5.6-sol');
   useTool(lookupRdapTool);
   useTool(lookupDnsTool);
+  useTool(lookupIpRdapTool);
   useTool(compareDomainsTool);
   useTool(findSharedPassagesTool);
   useTool(lookupBrandTool);

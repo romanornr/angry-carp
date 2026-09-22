@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { init } from '@flue/runtime';
 import { start } from '@flue/runtime/node';
+import { cleanupSessionResources } from '@earendil-works/pi-ai';
 import db from './db.ts';
 
 async function main(): Promise<void> {
@@ -36,9 +37,13 @@ async function main(): Promise<void> {
   process.stdout.write(`${reply.text}\n`);
 }
 
+// main's async disposal finishes first. This standalone command owns every Pi session in the process.
 main().catch(() => {
   process.stderr.write(
     'Assessment failed. Check the input file and authentication.\n',
   );
+  process.exitCode = 1;
+}).finally(cleanupSessionResources).catch(() => {
+  process.stderr.write('Provider session cleanup failed.\n');
   process.exitCode = 1;
 });

@@ -1,6 +1,6 @@
 # Angry Carp documentation
 
-Angry Carp currently provides a local command for assessing prepared email evidence, domain registration and DNS lookup tools, local domain-name comparisons, shared-passage comparisons using Winnowing, and separate instructions for preparing provider reports. The local agent does not acquire mail, browse websites, manage cases, or send reports.
+Angry Carp currently provides a local command for assessing prepared email evidence, domain and IP registration lookups, DNS lookups, local domain-name comparisons, shared-passage comparisons using Winnowing, and separate instructions for preparing provider reports. The local agent does not acquire mail, browse websites, manage cases, or send reports.
 
 ## Start here
 
@@ -12,6 +12,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 
 - [Read the four assessment sections](../agent/README.md#read-the-assessment): conclusion, evidence, checks and gaps, and next action.
 - [Domain registration lookups](../agent/README.md#domain-registration-lookups): RDAP operation, returned evidence, privacy, and current limits.
+- [IP registration lookups](../agent/README.md#ip-registration-lookups): IPv4 and IPv6 discovery, network evidence and hosting limits.
 - [DNS lookups](../agent/README.md#dns-lookups): resolver, privacy, returned records, and limits.
 - [Domain lookalikes](domain-lookalikes.md): local comparisons, explicit reference domains, Unicode behavior, and limits.
 - [Brand references](brand-references.md): local 2FA Directory candidates, source metadata, and matching limits.

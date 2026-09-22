@@ -6,7 +6,7 @@ import { brandQuerySchema, buildBrandDirectory } from '@angry-carp/checks/brands
 import { loadBrandDirectory } from '@angry-carp/checks/brands/local';
 import { createBrandLookupTool } from './tools/brands.ts';
 import { compareDomainsTool } from './tools/lookalikes.ts';
-import { lookupDnsTool, lookupRdapTool } from './tools/lookups.ts';
+import { lookupDnsTool, lookupRdapTool, lookupIpRdapTool } from './tools/lookups.ts';
 import { findSharedPassagesTool } from './tools/text-reuse.ts';
 import { lookupReportingChannelsTool } from './tools/reporting.ts';
 
@@ -16,7 +16,7 @@ test('the public local-loader export resolves its snapshot without loading the a
   assert.deepEqual(result.matches.map((entry) => entry.name), ['NordLocker', 'NordPass', 'NordVPN']);
 });
 
-test('all six tools register with Flue; brand calls validate and run without authentication', async () => {
+test('all tools register with Flue; brand calls validate and run without authentication', async () => {
   const json = JSON.stringify([['Vault', { domain: 'vault.example' }]]);
   const directory = await buildBrandDirectory(json, {
     name: '2FA Directory', dataUrl: 'https://api.2fa.directory/v3/all.json',
@@ -27,8 +27,8 @@ test('all six tools register with Flue; brand calls validate and run without aut
     attribution: 'Data sourced from 2FA Directory by 2factorauth',
   });
   const brand = createBrandLookupTool(directory);
-  assert.deepEqual([lookupRdapTool, lookupDnsTool, compareDomainsTool, findSharedPassagesTool, brand, lookupReportingChannelsTool]
-    .map((tool) => tool.name), ['lookup_rdap', 'lookup_dns', 'compare_domains', 'find_shared_passages', 'lookup_brand', 'lookup_reporting_channels']);
+  assert.deepEqual([lookupRdapTool, lookupDnsTool, lookupIpRdapTool, compareDomainsTool, findSharedPassagesTool, brand, lookupReportingChannelsTool]
+    .map((tool) => tool.name), ['lookup_rdap', 'lookup_dns', 'lookup_ip_rdap', 'compare_domains', 'find_shared_passages', 'lookup_brand', 'lookup_reporting_channels']);
 
   const noLog = () => assert.fail('Offline lookup must not log query data.');
   const context = { toolCallId: 'offline-brand', log: { info: noLog, warn: noLog, error: noLog } };
@@ -40,6 +40,27 @@ test('all six tools register with Flue; brand calls validate and run without aut
   await assert.rejects(async () => brand.run({ ...context, data: { kind: 'hostname', value: '../auth.json' } }), {
     message: 'Supply a nonempty service name or a bare ASCII/punycode hostname.',
   });
+});
+
+test('IP RDAP adapter validates an address and returns network evidence without model or auth access', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url: string) => {
+    if (url === 'https://data.iana.org/rdap/ipv6.json') {
+      return Response.json({ services: [[['2001:db8::/32'], ['https://registry.example/']]] });
+    }
+    assert.equal(url, 'https://registry.example/ip/2001:db8::1');
+    return Response.json({ objectClassName: 'ip network', ipVersion: 'v6',
+      startAddress: '2001:db8::', endAddress: '2001:db8::ffff', name: 'EXAMPLE-NET' });
+  });
+  const noLog = () => assert.fail('IP lookup must not log.');
+  const result = await lookupIpRdapTool.run({
+    toolCallId: 'offline-ip', log: { info: noLog, warn: noLog, error: noLog },
+    data: v.parse(lookupIpRdapTool.input, { address: '2001:0DB8::1' }),
+  });
+  assert.partialDeepStrictEqual(result, { output: {
+    queriedAddress: '2001:db8::1', kind: 'found', sourceUrl: 'https://registry.example/ip/2001:db8::1',
+    network: { startAddress: '2001:db8::', endAddress: '2001:db8::ffff', ipVersion: 'v6', name: 'EXAMPLE-NET' },
+  } });
+  assert.equal(v.safeParse(lookupIpRdapTool.input, { address: 'https://candidate.example/' }).success, false);
 });
 
 

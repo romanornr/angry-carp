@@ -48,9 +48,15 @@ export const reportingChannels: readonly ChannelRecord[] = [
   {
     provider: 'resend', name: 'Resend', serviceRoles: ['sending-platform'],
     channels: [{ kind: 'email', address: 'support@resend.com',
-      condition: 'Case headers link the message to Resend. Its terms designate this support mailbox for violation reports.' }],
-    evidence: ['Headers linking the message to the platform, message identifiers, deceptive content.'],
-    sources: [{ label: 'Resend violation reporting', url: 'https://resend.com/legal/terms-of-service' }],
+      condition: 'Its terms designate this support mailbox for violation reports. Our workflow permits preparing an investigation request on an evidence-backed possible connection. Lead with the supported abuse finding and ask Resend to check message identifiers and act on any associated abusive account. State the attribution limitation in the supporting evidence; proof of platform involvement is not required to prepare this request.' }],
+    evidence: [
+      'Receiver headers, message identifiers and deceptive content, with the observations supporting the connection.',
+      'A resend DKIM selector used in supplied receiver authentication results, together with DNS matching the documented Resend setup, is a reporting lead. The selector is sender-chosen and SES MX/SPF records are shared; these do not prove Resend handled the message or held the signing key.',
+    ],
+    sources: [
+      { label: 'Resend violation reporting', url: 'https://resend.com/legal/terms-of-service' },
+      { label: 'Resend DNS configuration', url: 'https://resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying' },
+    ],
     checkedAt: '2026-09-22',
   },
   {

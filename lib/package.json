@@ -27,6 +27,10 @@
 			"types": "./dist/lookups/rdap.d.ts",
 			"default": "./dist/lookups/rdap.js"
 		},
+		"./ip-rdap": {
+			"types": "./dist/lookups/ip-rdap.d.ts",
+			"default": "./dist/lookups/ip-rdap.js"
+		},
 		"./text-reuse": {
 			"types": "./dist/text-reuse/winnowing.d.ts",
 			"default": "./dist/text-reuse/winnowing.js"

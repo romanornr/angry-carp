@@ -18,11 +18,11 @@ Published instructions: [AWS reporting instructions](https://repost.aws/knowledg
 
 Checked 2026-09-22 UTC.
 
-- Email: `support@resend.com`. Case headers link the message to Resend. Its terms designate this support mailbox for violation reports.
+- Email: `support@resend.com`. Its terms designate this support mailbox for violation reports. Our workflow permits preparing an investigation request on an evidence-backed possible connection. Lead with the supported abuse finding and ask Resend to check message identifiers and act on any associated abusive account. State the attribution limitation in the supporting evidence; proof of platform involvement is not required to prepare this request.
 
-Evidence to prepare: Headers linking the message to the platform, message identifiers, deceptive content.
+Evidence to prepare: Receiver headers, message identifiers and deceptive content, with the observations supporting the connection. A resend DKIM selector used in supplied receiver authentication results, together with DNS matching the documented Resend setup, is a reporting lead. The selector is sender-chosen and SES MX/SPF records are shared; these do not prove Resend handled the message or held the signing key.
 
-Published instructions: [Resend violation reporting](https://resend.com/legal/terms-of-service).
+Published instructions: [Resend violation reporting](https://resend.com/legal/terms-of-service), [Resend DNS configuration](https://resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying).
 
 ## Cloudflare: reverse-proxy, dns, hosting
 
