@@ -19,7 +19,13 @@ The literature supports comparing explainable observations, conventional classif
 
 The [synthesis and proposed evaluation](../../../docs/research/phishing-detection-design.md) links the [Unicode evaluation](../../../docs/research/unicode-confusable-evaluation.md), [email papers](../../../docs/research/email-phishing-detection-papers.md), and [URL and visual papers](../../../docs/research/url-and-visual-phishing-detection.md). The experiment's source and versioned output are linked from the Unicode note. C++ was used to exercise the installed ICU library, not selected for the product.
 
-Recommended next work is an agreed evaluation protocol. Detector choice, thresholds, disclosure to model providers, and Flue versus fixed workflow remain unresolved. No private mail, malicious datasets, candidate websites, scans, or operational reports were used.
+At the time of this research, recommended next work was an agreed evaluation protocol. Detector choice, thresholds, disclosure to model providers, and Flue versus fixed workflow were unresolved. This initial research used no private mail, malicious datasets, candidate websites, scans, or operational reports.
+
+## Implementation update, 2026-09-22
+
+The operator subsequently selected Flue and approved TypeScript tools for [domain lookalikes](../../domain-lookalikes.md) and [shared passages using Winnowing](../../text-reuse.md), alongside RDAP and DNS. These tools return observations for the assessment. They do not independently classify phishing. Offline regression tests cover their behavior; a comparative accuracy evaluation against model-only assessment has not been performed.
+
+[Campaign-linking research](../../research/email-similarity-and-campaign-linking.md) informed the passage comparator. Eclat, MinHash, CUSUM, model training, and automatic corpus matching remain unimplemented. [Offline brand lookup](../../research/offline-brand-lookup.md) and [DNS catalogues and threat lists](../../research/dns-reference-and-threat-lists.md) identify possible data sources. No dataset or catalogue tool has been adopted. This leaves benchmark design and any data-source integration open without reopening the chosen local runner.
 
 ## Operator response
 

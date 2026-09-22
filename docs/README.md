@@ -1,6 +1,6 @@
 # Angry Carp documentation
 
-Angry Carp currently provides a local command for assessing prepared email evidence, domain registration and DNS lookup tools, local domain-name comparisons, and separate instructions for preparing provider reports. The local agent does not acquire mail, browse websites, manage cases, or send reports.
+Angry Carp currently provides a local command for assessing prepared email evidence, domain registration and DNS lookup tools, local domain-name comparisons, shared-passage comparisons using Winnowing, and separate instructions for preparing provider reports. The local agent does not acquire mail, browse websites, manage cases, or send reports.
 
 ## Start here
 
@@ -21,7 +21,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 
 ## Agent instructions
 
-- [Phishing triage](../phishing-triage.md) is the instruction file loaded by the local assessment agent.
+- [Phishing triage](../phishing-triage.md) is portable assessment guidance, usable without Flue or the TypeScript tools. The local assessment agent loads the same file.
 - [Reporting channels](../reporting-channels.md) is the compact channel reference loaded alongside the assessment instructions.
 - [Provider abuse reporting](../provider-abuse-reporting.md) is for separately directed report preparation and review. It is not loaded into the local assessment prompt.
 
@@ -38,6 +38,8 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 - [0007: Separate assessment from reporting](adr/0007-separate-assessment-from-reporting.md)
 
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
+
+Brand directories, service catalogues, and threat feeds remain research candidates. No snapshot, importer, refresh process, or corresponding lookup tool is installed. Current domain comparisons require an explicitly supplied reference domain.
 
 - [Email similarity and campaign linking](research/email-similarity-and-campaign-linking.md): Eclat, Winnowing, MinHash, and CUSUM for repeated phishing or unwanted mail, with proposed comparisons and their limits.
 - [Offline brand lookup](research/offline-brand-lookup.md): reusable reference data, matching algorithms, source quality, and a proposed Flue lookup that keeps the catalogue outside the prompt.

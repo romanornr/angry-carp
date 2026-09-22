@@ -19,6 +19,8 @@ The operator selected Flue with Pi's existing ChatGPT browser OAuth flow. A sepa
 
 The local integration now assesses prepared email text using the assessment instructions. `agent/src/agents/phishing-triage.ts` now registers the authenticated Pi provider and loads `phishing-triage.md` and the compact `reporting-channels.md` reference. A first live Flue assessment completed. The `triage` npm script now accepts a prepared-text file through `agent/src/triage-cli.ts` and prints the final answer once without echoing the input. Start without filesystem, shell, browser, or mailbox tools for the model. The operator rejected further synthetic-agent trials, scratchpads, and authentication test stages. Show concrete code before implementing each agreed increment.
 
+The implemented TypeScript tools now provide RDAP, DNS, domain-lookalike comparisons, and Winnowing passage comparisons. See the [documentation guide](../../README.md) for their contracts and limits. Reference catalogues and threat feeds remain proposals. Flue's conversation database is an assessment record, not the planned case store or a learning mechanism.
+
 This decision does not authorize mailbox access or sending, or settle case-state ownership details. Workers deployment remains deferred. This ticket remains open for the outstanding case-operation and enforcement decisions.
 
 ## Earlier discussion

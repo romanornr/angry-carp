@@ -41,7 +41,7 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/auth.ts` | Keeps Pi's `ModelRuntime` private and exposes login, logout, and the authenticated provider. Replaces exposed authentication errors with fixed messages. |
 | `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
 | `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
-| `src/agents/phishing-triage.ts` | Registers the authenticated provider and lookup tools, and loads triage instructions and reporting channels. |
+| `src/agents/phishing-triage.ts` | Registers the authenticated provider, lookups, and local comparison tools, and loads triage instructions and reporting channels. |
 | `src/lookups/rdap.ts` | Discovers the RDAP endpoint through IANA and returns selected registration evidence. |
 | `src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
 | `src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
@@ -84,6 +84,8 @@ Supply extracted email text, relevant headers, and link information with account
 `PhishingTriage` returns the four sections described below. No filesystem, shell, browser, mailbox, scanning, or sending tools are registered for the model. Gmail access, case operations, and sending remain separate work.
 
 The operator completed a first assessment of a prepared historical email. The original `flue run` command echoed the input and duplicated the answer; `triage-cli.ts` uses the same Flue runtime directly without subscribing to the verbose event display.
+
+Known limitation observed on 2026-09-22: one later live run printed the complete assessment but the process remained running and was terminated manually. Shutdown has not been diagnosed or fixed. If the final assessment has printed and the command does not exit, use Ctrl+C to stop it.
 
 ## Read the assessment
 
@@ -134,11 +136,13 @@ DNS can support attribution but does not establish the origin host or historical
 
 Both lookup cores are read-only and keep no local state. Repeating a lookup makes a new request and may return changed records. There is no application cache or automatic retry. A rerun of the triage command creates a new conversation; it does not resume a previous assessment.
 
-## Domain comparisons
+## Local comparisons
 
 For name comparisons, the agent also has the local [`compare_domains` tool](../docs/domain-lookalikes.md). Supply an independently sourced official domain in your operator notes. The tool returns Unicode and label observations; it does not verify ownership or decide whether the message is phishing.
 
 For two explicitly supplied bodies, [`find_shared_passages`](../docs/text-reuse.md) returns reused text and positions using Winnowing. Supply both bodies in labeled sections of the prepared input and ask for a comparison. It has no access to earlier messages or files, and shared text alone is not a spam verdict.
+
+Neither tool searches a brand catalogue, checks a threat list, or learns from past conversations. [Reference-data research](../docs/research/dns-reference-and-threat-lists.md) proposes separate observations for directory websites, service associations, and threat-feed membership. No dataset or importer is installed. Official-source findings still need to be supplied by the operator.
 
 ## Reporting recipients
 

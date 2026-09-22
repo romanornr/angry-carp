@@ -1,12 +1,14 @@
 # Angry Carp
 
-Angry Carp helps you investigate phishing emails and prepare abuse reports for the providers that can act on them, such as hosts, registrars, and email services. It tracks what was reported, what remains unfinished, and what providers say they removed or blocked.
+Angry Carp helps you investigate phishing emails and prepare abuse reports for the providers that can act on them, such as hosts, registrars, and email services. Tracking reports, unfinished case work, and provider outcomes is planned.
 
 You work with an AI agent, review the evidence, and approve each outgoing report. The aim is to help providers stop phishing infrastructure. Reporting does not guarantee a takedown.
 
 ## What you can use today
 
-This repository currently provides Markdown instructions for guided investigation and report drafting. The [local integration](agent/README.md) provides Pi browser authentication and a Flue agent for triaging prepared email evidence. Login and local logout have succeeded; a first live Flue assessment has completed. There is no production Angry Carp CLI yet. Rust tools and local SQLite storage are planned; the code in `experiments/` contains research checks, not an application to install.
+This repository provides portable Markdown instructions and a working [local TypeScript triage command](agent/README.md#assess-prepared-email-evidence). The Flue agent uses Pi browser authentication with your ChatGPT subscription. It can query RDAP and DNS, compare domain lookalikes, and find reused passages in two supplied email bodies using Winnowing. Login, local logout, and live assessments have succeeded.
+
+Mailbox acquisition, durable case operations, and report submission remain unimplemented. SQLite is selected for future case storage; Flue's conversation database currently records assessments. The code in `experiments/` contains research checks.
 
 The instructions work with the capabilities your agent already has. They do not connect Gmail, provide storage, or enforce tool permissions by themselves.
 
@@ -45,6 +47,10 @@ There is no verified one-click Grok Bot template or installation procedure in th
 The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout have succeeded. The `PhishingTriage` module registers the authenticated provider and loads the shared instructions; a first live assessment has completed. See [local authentication and implementation status](agent/README.md) for commands, credential storage, and remaining work.
 
 The triage command reads a prepared email text file and loads the triage instructions and a compact reporting-channel reference, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
+
+See [domain lookalikes](docs/domain-lookalikes.md) and [shared passages](docs/text-reuse.md) for input requirements and algorithm limits. These tools supply observations, not independent phishing verdicts. The agent cannot retrieve official brand pages or search earlier email automatically. Supply reference domains, official-source findings, and any comparison body explicitly.
+
+[Reference-data research](docs/research/dns-reference-and-threat-lists.md) compares brand directories, service-domain catalogues, and threat lists. No dataset has been adopted or loaded into the agent. A listed website, a service association, and a threat-feed hit have different meanings and must remain distinguishable.
 
 The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 
