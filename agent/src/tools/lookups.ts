@@ -1,7 +1,7 @@
 import { defineTool } from '@flue/runtime';
 import * as v from 'valibot';
-import { domainSchema, lookupRdap } from './rdap.ts';
-import { dnsQuerySchema, lookupDns } from './dns.ts';
+import { domainSchema, lookupRdap } from '@angry-carp/checks/rdap';
+import { dnsQuerySchema, lookupDns } from '@angry-carp/checks/dns';
 
 export const lookupRdapTool = defineTool({
   name: 'lookup_rdap',

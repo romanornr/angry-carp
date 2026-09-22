@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import * as v from 'valibot';
 import { brandQuerySchema, buildBrandDirectory } from './brand-directory.ts';
+import { loadBrandDirectory } from './load-directory.ts';
 
 const source = {
   name: '2FA Directory', dataUrl: 'https://api.2fa.directory/v3/all.json',
@@ -105,9 +105,7 @@ test('rejects invalid tool inputs and distinguishes unusable snapshots from no m
 });
 
 test('loads the installed snapshot offline and preserves source identity', async () => {
-  const base = new URL('../../reference-data/2fa-directory/', import.meta.url);
-  const dir = await buildBrandDirectory(await readFile(new URL('v3.json', base), 'utf8'),
-    JSON.parse(await readFile(new URL('source.json', base), 'utf8')));
+  const dir = await loadBrandDirectory();
   const result = dir.lookup(v.parse(brandQuerySchema, { kind: 'hostname', value: 'nordaccount.com' }));
   assert.deepEqual(result.matches.map((m) => m.name), ['NordLocker', 'NordPass', 'NordVPN']);
   assert.equal(result.source.signedUrl, 'https://api.2fa.directory/v3/all.json.sig');

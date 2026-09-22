@@ -1,5 +1,5 @@
 import { defineTool } from '@flue/runtime';
-import { findSharedPassages, passageComparisonSchema } from './winnowing.ts';
+import { findSharedPassages, passageComparisonSchema } from '@angry-carp/checks/text-reuse';
 
 export const findSharedPassagesTool = defineTool({
   name: 'find_shared_passages',

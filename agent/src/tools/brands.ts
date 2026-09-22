@@ -1,6 +1,6 @@
 import { defineTool } from '@flue/runtime';
 import * as v from 'valibot';
-import { brandQuerySchema, type BrandDirectory } from './brand-directory.ts';
+import { brandQuerySchema, type BrandDirectory } from '@angry-carp/checks/brands';
 
 export function createBrandLookupTool(directory: BrandDirectory) {
   return defineTool({

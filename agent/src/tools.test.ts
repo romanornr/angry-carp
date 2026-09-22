@@ -2,11 +2,18 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import * as v from 'valibot';
-import { buildBrandDirectory } from './brands/brand-directory.ts';
-import { createBrandLookupTool } from './brands/tools.ts';
-import { compareDomainsTool } from './lookalikes/tools.ts';
-import { lookupDnsTool, lookupRdapTool } from './lookups/tools.ts';
-import { findSharedPassagesTool } from './text-reuse/tools.ts';
+import { brandQuerySchema, buildBrandDirectory } from '@angry-carp/checks/brands';
+import { loadBrandDirectory } from '@angry-carp/checks/brands/local';
+import { createBrandLookupTool } from './tools/brands.ts';
+import { compareDomainsTool } from './tools/lookalikes.ts';
+import { lookupDnsTool, lookupRdapTool } from './tools/lookups.ts';
+import { findSharedPassagesTool } from './tools/text-reuse.ts';
+
+test('the public local-loader export resolves its snapshot without loading the agent', async () => {
+  const directory = await loadBrandDirectory();
+  const result = directory.lookup(v.parse(brandQuerySchema, { kind: 'hostname', value: 'nordaccount.com' }));
+  assert.deepEqual(result.matches.map((entry) => entry.name), ['NordLocker', 'NordPass', 'NordVPN']);
+});
 
 test('all five tools register with Flue; brand calls validate and run without authentication', async () => {
   const json = JSON.stringify([['Vault', { domain: 'vault.example' }]]);

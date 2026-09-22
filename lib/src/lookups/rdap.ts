@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { requestJson, type RequestFailure } from './request-json.ts';
+export type { RequestFailure } from './request-json.ts';
 
 const bootstrapUrl = 'https://data.iana.org/rdap/dns.json';
 const accept = 'application/rdap+json, application/json';

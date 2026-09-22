@@ -1,0 +1,23 @@
+{
+	"name": "angry-carp",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"lib",
+		"agent"
+	],
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"build": "npm run build --workspace @angry-carp/checks",
+		"prepare": "npm run build",
+		"test": "npm run build && npm run test --workspaces",
+		"check:types": "npm run build && npm run check:types --workspaces",
+		"brands:check": "npm run build && npm run brands:check --workspace @angry-carp/checks"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.10",
+		"typescript": "^7.0.2"
+	}
+}

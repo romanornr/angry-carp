@@ -20,10 +20,10 @@ The model can pass a selected candidate to `compare_domains`. The assessment mus
 
 ## Storage and execution
 
-The public snapshot is in `agent/reference-data/2fa-directory/`. It includes original JSON, the signed message, publisher public key, licence, and `source.json` metadata. These are public reference files intended for Git, separate from credentials and private email evidence.
+The public snapshot is in `lib/reference-data/2fa-directory/`. It includes original JSON, the signed message, publisher public key, licence, and `source.json` metadata. These are public reference files intended for Git, separate from credentials and private email evidence.
 
-The trusted agent module reads the JSON and metadata once, validates their checksum and schema, and builds private `Map` indexes. A corrupt or missing snapshot prevents initialization; it is not reported as an empty directory. Runtime startup checks the pinned digest; it does not run GPG or download data. Neither the pure lookup nor its Flue binding can read credentials or files.
+The trusted agent module calls the library's `loadBrandDirectory` once to read public JSON and metadata, validate their checksum and schema, and build private `Map` indexes. A corrupt or missing snapshot prevents initialization; it is not reported as an empty directory. Runtime startup checks the pinned digest; it does not run GPG or download data. The pure lookup and Flue binding contain no file-loading or credential access. The local loader is a separate export used by trusted setup.
 
 See [updating reference data](updating-reference-data.md) for manual refresh and rollback. No scheduler or automatic refresh is installed. The [implementation research](research/brand-directory-implementation.md) explains the algorithm comparison. The pure lookup uses Web Crypto, JavaScript collections, and Valibot; actual Workers execution remains unverified.
 
-Data sourced from [2FA Directory](https://2fa.directory/) by [2factorauth](https://github.com/2factorauth), under the [included MIT licence](../agent/reference-data/2fa-directory/LICENSE).
+Data sourced from [2FA Directory](https://2fa.directory/) by [2factorauth](https://github.com/2factorauth), under the [included MIT licence](../lib/reference-data/2fa-directory/LICENSE).

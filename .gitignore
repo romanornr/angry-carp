@@ -19,3 +19,7 @@ credentials.json
 *.key
 /private/
 /evidence/
+
+node_modules/
+/lib/dist/
+*.tgz

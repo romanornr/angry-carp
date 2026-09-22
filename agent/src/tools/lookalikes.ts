@@ -1,5 +1,5 @@
 import { defineTool } from '@flue/runtime';
-import { compareDomains, domainComparisonSchema } from './compare-domains.ts';
+import { compareDomains, domainComparisonSchema } from '@angry-carp/checks/lookalikes';
 
 export const compareDomainsTool = defineTool({
   name: 'compare_domains',

@@ -12,7 +12,7 @@ Run the existing triage command:
 npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
 ```
 
-The model chooses whether the comparison helps. Its tool instructions require a reference from operator source notes or a selected directory result and require that provenance in the assessment. The input schema does not enforce this rule. The result contains supplied names and observations, not reference-source metadata or independent verification; retain the source notes or lookup result alongside it. Tool-specific instructions live in `agent/src/lookalikes/tools.ts`, outside the shared triage Markdown.
+The model chooses whether the comparison helps. Its tool instructions require a reference from operator source notes or a selected directory result and require that provenance in the assessment. The input schema does not enforce this rule. The result contains supplied names and observations, not reference-source metadata or independent verification; retain the source notes or lookup result alongside it. Tool-specific instructions live in `agent/src/tools/lookalikes.ts`, outside the shared triage Markdown.
 
 ## Results
 
@@ -50,8 +50,8 @@ The core imports `node:url` for IDNA conversion. [Cloudflare Workers documents t
 From the repository root:
 
 ```sh
-node --test agent/src/lookalikes/compare-domains.test.ts
-npm --prefix agent run check:types
+node --test lib/src/lookalikes/compare-domains.test.ts
+npm run check:types
 ```
 
 The eight tests use the real libraries and synthetic names. They cover Cyrillic and ASCII lookalikes, whole-script matches, public/private suffixes, exact/subdomain boundaries, invisible characters, valid multilingual names, unknown scripts, and malformed input. They verify the mechanism, not real-world phishing detection accuracy. Earlier [Unicode experiments](research/unicode-confusable-evaluation.md) and [detection research](research/phishing-detection-methods.md) explain the broader evaluation needs.

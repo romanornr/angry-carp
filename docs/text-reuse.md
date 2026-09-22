@@ -18,7 +18,7 @@ Footers, quotations, and ordinary templates can be true matches. Inspect the ret
 
 ## Algorithm and returned evidence
 
-[`agent/src/text-reuse/winnowing.ts`](../agent/src/text-reuse/winnowing.ts) implements Winnowing from [Schleimer, Wilkerson, and Aiken, SIGMOD 2003](https://sschleimer.warwick.ac.uk/Maths/winnowing.pdf), retrieved 2026-09-22. It selects the rightmost minimum hash in each window. Hash matches are verified against normalized tokens and extended in both directions to recover the shared passage.
+[`lib/src/text-reuse/winnowing.ts`](../lib/src/text-reuse/winnowing.ts) implements Winnowing from [Schleimer, Wilkerson, and Aiken, SIGMOD 2003](https://sschleimer.warwick.ac.uk/Maths/winnowing.pdf), retrieved 2026-09-22. It selects the rightmost minimum hash in each window. Hash matches are verified against normalized tokens and extended in both directions to recover the shared passage.
 
 Version 1 uses whitespace-delimited tokens, NFC normalization, and JavaScript lowercase conversion. Punctuation, invisible characters, and visually confusable letters remain distinct. This is not Unicode case folding or a confusable skeleton. Whitespace differences disappear for comparison, while excerpts preserve the supplied text. Languages without spaces can form very few tokens and receive little useful coverage.
 
@@ -37,12 +37,12 @@ Repeated boilerplate can consume the match budget through shifted alignments of 
 
 ## Run locally without a model
 
-From `agent/`, this synthetic example exercises the same core without authentication, Flue startup, or a model call:
+From the repository root after `npm ci`, this synthetic example exercises the shared package without authentication, Flue startup, or a model call:
 
 ```sh
 node --input-type=module <<'JS'
 import * as v from 'valibot';
-import { findSharedPassages, passageComparisonSchema } from './src/text-reuse/winnowing.ts';
+import { findSharedPassages, passageComparisonSchema } from '@angry-carp/checks/text-reuse';
 
 const input = v.parse(passageComparisonSchema, {
   firstBody: 'Hello. one two three four five six seven eight',
@@ -57,7 +57,7 @@ The core uses Valibot, already installed in the project, and JavaScript string a
 Run the offline tests from the repository root:
 
 ```sh
-node --test agent/src/text-reuse/winnowing.test.ts
+node --test lib/src/text-reuse/winnowing.test.ts
 ```
 
-Flue registration and model-facing instructions live in `agent/src/text-reuse/tools.ts`. The downloadable `phishing-triage.md` remains independent of this implementation. The [research note](research/email-similarity-and-campaign-linking.md) explains alternatives and deferred corpus-level work.
+Flue registration and model-facing instructions live in `agent/src/tools/text-reuse.ts`. The downloadable `phishing-triage.md` remains independent of this implementation. The [research note](research/email-similarity-and-campaign-linking.md) explains alternatives and deferred corpus-level work.

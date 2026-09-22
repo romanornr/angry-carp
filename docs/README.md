@@ -21,6 +21,8 @@ Angry Carp currently provides a local command for assessing prepared email evide
 - [Domain glossary](../CONTEXT.md): evidence, observations, inference, concern, confidence, reporting readiness, and approval.
 - [Standards and reporting guidance](standards-and-reporting.md): relevant RFCs, ICANN guidance, provider instructions, and the limits of their application.
 
+- [Shared TypeScript library](../lib/README.md): package exports, direct use, dependency ownership, and local builds.
+
 ## Agent instructions
 
 - [Phishing triage](../phishing-triage.md) is portable assessment guidance, usable without Flue or the TypeScript tools. The local assessment agent loads the same file.
@@ -38,6 +40,7 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 - [0005: Keep report authority in case operations](adr/0005-keep-report-authority-in-case-operations.md)
 - [0006: Use SQLite for local case storage](adr/0006-use-sqlite-for-local-case-storage.md)
 - [0007: Separate assessment from reporting](adr/0007-separate-assessment-from-reporting.md)
+- [0008: Extract reusable checks](adr/0008-extract-reusable-checks.md)
 
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
 

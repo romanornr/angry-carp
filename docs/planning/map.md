@@ -50,7 +50,9 @@ These notes retain earlier workflow choices. The current implementation above an
 
 ## Decisions so far
 
-- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the local prompt loads triage instructions and a compact reporting-channel reference and returns Assessment, Evidence, Checks and gaps, and Next action. The [standards reference](../standards-and-reporting.md) records RFCs, ICANN guidance, and provider sources outside the model prompt. The local agent has [RDAP](../../agent/README.md#domain-registration-lookups) and [DNS](../../agent/README.md#dns-lookups) tools in `agent/src/lookups/`. IP RDAP, website browsing, and reporting automation remain unimplemented.
+- [Extract reusable checks](../adr/0008-extract-reusable-checks.md): `lib/` owns the five existing capabilities and their public data. Flue bindings call the package directly. The operator explicitly excluded an HTTP service from this migration.
+
+- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the local prompt loads triage instructions and a compact reporting-channel reference and returns Assessment, Evidence, Checks and gaps, and Next action. The [standards reference](../standards-and-reporting.md) records RFCs, ICANN guidance, and provider sources outside the model prompt. The local agent has [RDAP](../../agent/README.md#domain-registration-lookups) and [DNS](../../agent/README.md#dns-lookups) bindings in `agent/src/tools/lookups.ts`, calling `lib/src/lookups/`. IP RDAP, website browsing, and reporting automation remain unimplemented.
 
 - [Decide ordinary-mail retention](issues/12-decide-ordinary-mail-retention.md): acquisition does not authorize retaining ordinary-email content.
 

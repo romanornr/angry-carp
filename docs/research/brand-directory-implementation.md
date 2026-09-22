@@ -4,6 +4,8 @@ Research date: 2026-09-22. Proposed implementation, following [source selection]
 
 Implementation update, 2026-09-22: the operator subsequently approved this increment. The local lookup and Flue binding now exist; [current behavior](../brand-references.md) and [update commands](../updating-reference-data.md) supersede proposed file and update details below. Verification found that `.sig` contains signed JSON, not a detached signature. Its verified payload has 2,570 entries and differs from the older unsigned response benchmarked here. No runtime dependency was added.
 
+Packaging update, 2026-09-22: [ADR 0008](../adr/0008-extract-reusable-checks.md) moves implementations and public data into `lib/`, with Flue bindings under `agent/src/tools/`. File layouts below remain historical proposals; use the [library guide](../../lib/README.md) for current imports and commands.
+
 ## Recommendation
 
 Use built-in JavaScript Maps for exact service names and exact hostnames, plus an inverted index of words in service names. Load and validate one pinned snapshot in the trusted runtime, then construct the indexes once per process. Each Flue call returns a bounded set of source-labelled candidates. No catalogue enters the prompt and no lookup downloads data.

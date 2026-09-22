@@ -9,19 +9,16 @@
 		"check:codex": "node src/check-codex.ts",
 		"check:types": "tsc --noEmit",
 		"test": "node --test",
-		"brands:check": "node src/brands/check-directory.ts"
+		"pretriage": "npm run build --workspace @angry-carp/checks"
 	},
 	"dependencies": {
 		"@earendil-works/pi-ai": "0.83.0",
 		"@earendil-works/pi-coding-agent": "0.83.0",
 		"@flue/runtime": "^2.1.0",
-		"@moderation-api/unicode-spoofing": "0.4.0",
-		"tldts": "7.4.14",
-		"valibot": "1.5.0"
+		"valibot": "1.5.0",
+		"@angry-carp/checks": "0.1.0"
 	},
 	"devDependencies": {
-		"@flue/cli": "^2.1.0",
-		"@types/node": "^22.10.10",
-		"typescript": "^7.0.2"
+		"@flue/cli": "^2.1.0"
 	}
 }

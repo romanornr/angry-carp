@@ -1,0 +1,51 @@
+{
+	"name": "@angry-carp/checks",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=24"
+	},
+	"exports": {
+		"./brands": {
+			"types": "./dist/brands/brand-directory.d.ts",
+			"default": "./dist/brands/brand-directory.js"
+		},
+		"./brands/local": {
+			"types": "./dist/brands/load-directory.d.ts",
+			"default": "./dist/brands/load-directory.js"
+		},
+		"./lookalikes": {
+			"types": "./dist/lookalikes/compare-domains.d.ts",
+			"default": "./dist/lookalikes/compare-domains.js"
+		},
+		"./dns": {
+			"types": "./dist/lookups/dns.d.ts",
+			"default": "./dist/lookups/dns.js"
+		},
+		"./rdap": {
+			"types": "./dist/lookups/rdap.d.ts",
+			"default": "./dist/lookups/rdap.js"
+		},
+		"./text-reuse": {
+			"types": "./dist/text-reuse/winnowing.d.ts",
+			"default": "./dist/text-reuse/winnowing.js"
+		}
+	},
+	"files": [
+		"dist",
+		"reference-data"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepack": "npm run build",
+		"test": "node --test",
+		"check:types": "tsc --noEmit",
+		"brands:check": "node dist/brands/check-directory.js"
+	},
+	"dependencies": {
+		"@moderation-api/unicode-spoofing": "0.4.0",
+		"tldts": "7.4.14",
+		"valibot": "1.5.0"
+	}
+}

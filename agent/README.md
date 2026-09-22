@@ -4,7 +4,7 @@ The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT
 
 ## Sign in and disconnect
 
-Use Node.js 24. Run these commands from the repository root.
+Use Node.js 24. Run `npm ci` from the repository root to install both workspaces and build the shared library. Run the following commands from the repository root.
 
 To sign in:
 
@@ -42,19 +42,20 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
 | `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
 | `src/agents/phishing-triage.ts` | Registers the authenticated provider, lookups, and local comparison tools, and loads triage instructions and reporting channels. |
-| `src/lookups/rdap.ts` | Discovers the RDAP endpoint through IANA and returns selected registration evidence. |
-| `src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
-| `src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
-| `src/lookups/tools.ts` | Validates model inputs and exposes both lookups as Flue tools. |
-| `src/lookalikes/compare-domains.ts` | Compares supplied domain names locally using Unicode and public-suffix data. |
-| `src/lookalikes/tools.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
-| `src/text-reuse/winnowing.ts` | Finds shared passages in two supplied bodies using local Winnowing. |
-| `src/text-reuse/tools.ts` | Exposes passage comparison and its input-provenance instructions to Flue. |
-| `src/brands/brand-directory.ts` | Validates the public snapshot and builds private name, word, and hostname Maps for local lookup. |
-| `src/brands/tools.ts` | Exposes source-labelled directory candidates through `lookup_brand`. |
-| `src/brands/check-directory.ts` | Checks an installed or staged snapshot without authentication or a model call. |
+| `../lib/src/lookups/rdap.ts` | Discovers the RDAP endpoint through IANA and returns selected registration evidence. |
+| `../lib/src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
+| `../lib/src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
+| `src/tools/lookups.ts` | Validates model inputs and exposes both lookups as Flue tools. |
+| `../lib/src/lookalikes/compare-domains.ts` | Compares supplied domain names locally using Unicode and public-suffix data. |
+| `src/tools/lookalikes.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
+| `../lib/src/text-reuse/winnowing.ts` | Finds shared passages in two supplied bodies using local Winnowing. |
+| `src/tools/text-reuse.ts` | Exposes passage comparison and its input-provenance instructions to Flue. |
+| `../lib/src/brands/brand-directory.ts` | Validates the public snapshot and builds private name, word, and hostname Maps for local lookup. |
+| `src/tools/brands.ts` | Exposes source-labelled directory candidates through `lookup_brand`. |
+| `../lib/src/brands/check-directory.ts` | Checks an installed or staged snapshot without authentication or a model call. |
+| `../lib/src/brands/load-directory.ts` | Loads the public snapshot during trusted Node setup, shared by the agent and maintenance command. |
 
-The lookup cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `lookups/tools.ts` owns the Flue bindings. This keeps each lookup next to its validation and tests without separate wrapper folders or a generic lookup framework.
+The DNS and RDAP cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `src/tools/lookups.ts` owns their Flue bindings. All five capabilities come from [the shared package](../lib/README.md). Flue calls its exports directly, with no intermediate HTTP service.
 
 Both `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` are pinned to `0.83.0`. This integration reuses Pi's provider and credential storage. It does not wrap the Codex CLI as a Flue model adapter. The provider's `apiKey` resolver accepts the resolved OAuth authentication; that name does not imply separate API billing.
 
@@ -145,7 +146,7 @@ For name comparisons, the agent has the local [`compare_domains` tool](../docs/d
 
 For two explicitly supplied bodies, [`find_shared_passages`](../docs/text-reuse.md) returns reused text and positions using Winnowing. Supply both bodies in labeled sections of the prepared input and ask for a comparison. It has no access to earlier messages or files, and shared text alone is not a spam verdict.
 
-`lookup_brand` reads in-memory indexes built from the public 2FA Directory snapshot in `reference-data/2fa-directory/`. It supports exact names, name-word intersections, and exact hostnames, with source metadata and explicit output limits. See [lookup behavior](../docs/brand-references.md) and [manual updates](../docs/updating-reference-data.md). No threat list or learning mechanism is installed. Official product announcements still need to be supplied as separately sourced findings.
+`lookup_brand` reads in-memory indexes built from the public 2FA Directory snapshot in `lib/reference-data/2fa-directory/` at the repository root. It supports exact names, name-word intersections, and exact hostnames, with source metadata and explicit output limits. See [lookup behavior](../docs/brand-references.md) and [manual updates](../docs/updating-reference-data.md). No threat list or learning mechanism is installed. Official product announcements still need to be supplied as separately sourced findings.
 
 ## Reporting recipients
 
@@ -160,11 +161,11 @@ Cloudflare's Phishing & Malware form is the default route. Its [report API](http
 From the repository root:
 
 ```sh
-npm --silent --prefix agent test
-npm --prefix agent run check:types
+npm test
+npm run check:types
 ```
 
-The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all five Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
+The root command builds the shared package and runs both workspace suites. The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all five Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
 
 ## Future deployment
 

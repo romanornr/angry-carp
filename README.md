@@ -54,9 +54,23 @@ See [brand references](docs/brand-references.md), [domain lookalikes](docs/domai
 
 The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 
+## Reuse the TypeScript checks
+
+The [shared library](lib/README.md), `@angry-carp/checks`, owns brand lookup, domain comparisons, DNS, RDAP, and Winnowing. Flue calls these functions directly. The library has no Flue or Pi dependency; no HTTP service is involved.
+
+With Node.js 24, install and verify both workspaces from the repository root:
+
+```sh
+npm ci
+npm test
+npm run check:types
+```
+
+Installation builds the library's JavaScript and declarations. After library edits, `npm run build` refreshes them; the triage command also builds before running. The root lockfile covers both workspaces. [ADR 0008](docs/adr/0008-extract-reusable-checks.md) records the package boundary.
+
 ## Code reviews
 
-[.coderabbit.yaml](.coderabbit.yaml) configures local CodeRabbit CLI reviews and pull-request reviews. It uses the `chill` profile, disables poems and in-progress fortunes, and enables automatic PR reviews while skipping drafts. CodeRabbit automatically reads [agent/AGENTS.md](agent/AGENTS.md) for the agent's coding conventions. Local skills referenced there are not bundled with this repository.
+[.coderabbit.yaml](.coderabbit.yaml) configures local CodeRabbit CLI reviews and pull-request reviews. It uses the `chill` profile, disables poems and in-progress fortunes, and enables automatic PR reviews while skipping drafts. CodeRabbit automatically reads [AGENTS.md](AGENTS.md) for shared coding guidance and [agent/AGENTS.md](agent/AGENTS.md) for Flue-specific instructions. Local skills referenced there are not bundled with this repository.
 
 From the repository root, review local changes, including new files:
 

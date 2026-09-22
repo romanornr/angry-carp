@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { requestJson, type RequestFailure } from './request-json.ts';
+export type { RequestFailure } from './request-json.ts';
 
 const dnsNameSchema = v.pipe(
   v.string(),
