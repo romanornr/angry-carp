@@ -4,19 +4,22 @@
 	"type": "module",
 	"workspaces": [
 		"lib",
+		"cli",
 		"agent"
 	],
 	"engines": {
 		"node": ">=24"
 	},
 	"scripts": {
-		"build": "npm run build --workspace @angry-carp/checks",
+		"build": "npm run build --workspace @angry-carp/checks && npm run build --workspace @angry-carp/cli",
 		"prepare": "npm run build",
 		"test": "npm run build && npm run test --workspaces",
 		"check:types": "npm run build && npm run check:types --workspaces",
 		"brands:check": "npm run build && npm run brands:check --workspace @angry-carp/checks",
 		"reporting:generate": "node lib/src/reporting/write-channels.ts",
-		"reporting:check": "node --test lib/src/reporting/channels.test.ts"
+		"reporting:check": "node --test lib/src/reporting/channels.test.ts",
+		"analyze": "npm run build && node cli/dist/analyze.js",
+		"extract:links": "npm run build && node cli/dist/extract-links.js"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.10",

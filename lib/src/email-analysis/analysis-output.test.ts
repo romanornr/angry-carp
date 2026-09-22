@@ -1,0 +1,89 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { analyzeEmail } from './analyze-email.ts';
+import { loadBrandDirectory } from '../brands/load-directory.ts';
+import { analysisForModel, formatAnalysis } from './analysis-output.ts';
+
+const original = 'From: private-name <private-user@sender.example.com>\r\n' +
+  'DKIM-Signature: d=private-invalid/path?secret; s=test\r\n' +
+  'Content-Type: text/html; charset=utf-8\r\n\r\n' +
+  '<img src="https://image.example.org/private-logo" alt="private-alt">' +
+  '<a href="https://private-user@action.example.com/private-path?private-query">private-body</a>';
+
+test('the automatic model projection excludes private headers, bodies, URLs and invalid identity text', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 503 }));
+  const result = await analyzeEmail(new TextEncoder().encode(original), { directory: await loadBrandDirectory() });
+  const projection = analysisForModel(result);
+  assert.match(JSON.stringify(projection), /image_action_domain_difference/);
+  assert.doesNotMatch(JSON.stringify(projection), /private-/);
+  assert.equal(result.kind, 'analyzed');
+  if (result.kind === 'analyzed') assert.match(result.source.sha256 ?? '', /^[0-9a-f]{64}$/);
+});
+
+test('projection prioritizes action/mail hosts and summarizes skipped checks while retaining found RDAP', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    if (url.hostname === 'cloudflare-dns.com') {
+      const name = url.searchParams.get('name');
+      const types: Record<string, number> = { A: 1, AAAA: 28, MX: 15, TXT: 16, NS: 2 };
+      const type = types[url.searchParams.get('type') ?? ''];
+      const Answer = [];
+      if (type === 1) Answer.push({ name, type: 1, TTL: 60, data: '8.8.8.8' });
+      return Response.json({ Status: 0, TC: false, Question: [{ name, type }], Answer });
+    }
+    if (url.hostname === 'data.iana.org') {
+      let suffixes = ['com', 'net', 'org'];
+      if (url.pathname.endsWith('ipv4.json')) suffixes = ['8.8.8.0/24'];
+      return Response.json({ services: [[suffixes, ['https://registry.example/']]] });
+    }
+    assert.equal(url.hostname, 'registry.example');
+    if (url.pathname.startsWith('/domain/')) return Response.json({ objectClassName: 'domain', ldhName: url.pathname.slice(8),
+      events: [{ eventAction: 'registration', eventDate: '2026-01-01T00:00:00Z' }], privateField: 'private-extra' });
+    return Response.json({ objectClassName: 'ip network', startAddress: '8.8.8.0', endAddress: '8.8.8.255', ipVersion: 'v4',
+      name: 'Example Network', privateField: 'private-extra' });
+  });
+  const tracking = Array.from({ length: 200 }, (_, index) => `<img src="https://image${index}.example.com/private">`).join('');
+  const actions = Array.from({ length: 200 }, (_, index) => `<a href="https://action${index}.example.net/private">open</a>`).join('');
+  const message = 'From: private-name <private-user@sender-example.com>\r\nReturn-Path: <private-user@return-example.org>\r\n' +
+    'DKIM-Signature: d=signing-example.net; s=test\r\nAuthentication-Results: mx.example; dkim=pass header.d=auth-example.com\r\n' +
+    'Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: text/html\r\n\r\n' + tracking +
+    '\r\n--b\r\nContent-Type: text/html\r\n\r\n' + actions + '\r\n--b--\r\n';
+  const result = await analyzeEmail(new TextEncoder().encode(message), { directory: await loadBrandDirectory() });
+  const projection = analysisForModel(result);
+  assert.equal(projection.kind, 'analyzed');
+  if (projection.kind !== 'analyzed') return;
+  assert.equal(projection.hosts[0].role, 'action');
+  // Enough action occurrences may also fill the disclosure cap. Deduplication must retain each mail role.
+  for (const role of ['from', 'return-path', 'signature', 'authentication']) assert.ok(projection.hosts.some((host) => host.role === role), role);
+  assert.ok(projection.checks.length <= 36);
+  assert.ok(projection.registrations.length <= 6);
+  assert.ok(projection.networks.length <= 6);
+  assert.ok(projection.skippedChecks.some(({ count }) => count > 100));
+  assert.ok(projection.registrations.some((record) => 'events' in record && record.events?.[0].eventDate === '2026-01-01T00:00:00Z'));
+  assert.ok(projection.networks.some((record) => 'network' in record && record.network?.name === 'Example Network'));
+  assert.doesNotMatch(JSON.stringify(projection), /private-/);
+  assert.ok(JSON.stringify(projection).length < 60_000);
+  const displayed = formatAnalysis(result);
+  assert.match(displayed, /registration|Registrations/);
+  assert.match(displayed, /2026-01-01T00:00:00Z/);
+  assert.match(displayed, /https:\/\/registry.example\/domain\//);
+  assert.doesNotMatch(displayed, /private-/);
+});
+
+test('authentication domains stay distinct and terminal escaping retains astral format characters', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 503 }));
+  const text = 'Authentication-Results: mx.example; dkim=pass header.d=first.example.com; dkim=pass header.i=private-user@second.example.com\r\n\r\nBody';
+  const result = await analyzeEmail(new TextEncoder().encode(text), { directory: await loadBrandDirectory() });
+  assert.equal(result.kind, 'analyzed');
+  if (result.kind !== 'analyzed') return;
+  assert.match(formatAnalysis(result), /DKIM=pass \(header.d domain=first.example.com\)/);
+  assert.match(formatAnalysis(result), /DKIM=pass \(header.i domain=second.example.com\)/);
+  assert.doesNotMatch(formatAnalysis(result), /private-user/);
+  result.findings.push({ kind: 'observation', code: 'test', text: 'x\u{e0041}\u{1d173}\u001b', evidenceIds: [] });
+  assert.ok(formatAnalysis(result).includes('x\\u{e0041}\\u{1d173}\\u{1b}'));
+});
+
+test('input failure projection also excludes source metadata', async () => {
+  const result = await analyzeEmail(new Uint8Array(), { directory: await loadBrandDirectory() });
+  assert.deepEqual(analysisForModel(result), { kind: 'input_failure', reason: 'input_limit' });
+});

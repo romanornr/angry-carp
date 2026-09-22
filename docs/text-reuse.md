@@ -7,7 +7,7 @@ Flue's `find_shared_passages` tool compares two supplied email body strings loca
 Put the two extracted bodies in separately labeled sections of the prepared input file. Ask the agent to compare those bodies, and identify which message you want assessed. Include any earlier unwanted-mail designation as operator context. Run the existing command from the repository root:
 
 ```sh
-npm --silent --prefix agent run triage -- /absolute/path/comparison.prepared.txt
+npm --silent --prefix agent run triage -- /absolute/path/original.eml --reviewed-text /absolute/path/comparison.prepared.txt
 ```
 
 Both bodies are sent to the configured model as part of that input. Tool arguments and results also enter the conversation and can be stored in `agent/data/flue.db`. The comparison itself makes no network requests. It has no filesystem or authentication imports, and a path supplied as text is treated as text.

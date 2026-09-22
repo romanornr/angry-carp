@@ -54,15 +54,17 @@ type DnsLookup = {
 );
 
 /** Queries a public resolver; cache misses can reach the name's authoritative DNS servers. */
-export async function lookupDns(query: DnsQuery): Promise<DnsLookup> {
+export async function lookupDns(query: DnsQuery, callerSignal?: AbortSignal): Promise<DnsLookup> {
   // Cloudflare's public resolver does not forward EDNS Client Subnet to authoritative servers.
   const url = new URL('https://cloudflare-dns.com/dns-query');
   url.searchParams.set('name', query.name);
   url.searchParams.set('type', query.type);
   const sourceUrl = url.href;
+  let signal = AbortSignal.timeout(15_000);
+  if (callerSignal) signal = AbortSignal.any([signal, callerSignal]);
   const response = await requestJson({
     url: sourceUrl,
-    signal: AbortSignal.timeout(15_000),
+    signal,
     accept: 'application/dns-json',
   });
   const source = { query, sourceUrl, retrievedAt: new Date().toISOString() };

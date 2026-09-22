@@ -13,3 +13,5 @@ A lookup selects published routes for an explicitly named provider and service r
 Clarification, 2026-09-22: an evidence-backed plausible recipient is eligible for lookup even when involvement remains unconfirmed. The assessment retains that qualification. The catalogue's result does not promote a lead to a verified relationship or satisfy its channel conditions. This clarifies selection guidance without adding a provider detector or changing the record schema.
 
 This changes the channel-loading choice in [ADR 0007](0007-separate-assessment-from-reporting.md), retaining its separation of assessment, readiness and approved reporting. The portable triage instructions refer to an available channel reference without naming a host-specific tool. [Usage](../reporting-catalogue.md) and [updates](../updating-reporting-channels.md) document the maintained interface.
+
+Implementation update, 2026-09-22: [ADR 0011](0011-analyze-email-before-assessment.md) replaces the model-directed integration with deterministic original-message analysis. The reusable catalogue/extractor remains; the former Flue binding or triage `--html` path is retired.

@@ -21,6 +21,8 @@ If additional external scanning is needed, use only a private scan whose complet
 
 ## Establish what can be reported
 
+When the operator chooses to prepare a report, always perform targeted AI-assisted research to double-check the material allegation, provider relationship and current reporting channel. Use independent official sources, registry data or permitted existing evidence. Record sources, retrieval times, contradictions and unresolved questions. Supplied notes are starting evidence, not proof that this reporting-time check occurred. If research cannot be completed, mark the draft unverified and hold it for review. The candidate-site and disclosure restrictions above still apply.
+
 Read the source evidence and relevant ticket history before drafting. Identify the specific deceptive instruction or behavior and the resource involved. Check material contrary evidence. Tie each factual claim to a source in the private case record.
 
 Use the assessment and evidence-weighting rules in [Phishing triage](phishing-triage.md). An unfamiliar sender, recent registration, different sender and link domains, or a document-signing request does not alone establish deception. Evaluate the combined evidence rather than turning weak clues into a polished accusation.

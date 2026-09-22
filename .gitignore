@@ -22,4 +22,5 @@ credentials.json
 
 node_modules/
 /lib/dist/
+/cli/dist/
 *.tgz

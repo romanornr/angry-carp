@@ -7,6 +7,10 @@
 		"node": ">=24"
 	},
 	"exports": {
+		"./email-links": {
+			"types": "./dist/email-links/extract-links.d.ts",
+			"default": "./dist/email-links/extract-links.js"
+		},
 		"./brands": {
 			"types": "./dist/brands/brand-directory.d.ts",
 			"default": "./dist/brands/brand-directory.js"
@@ -38,6 +42,18 @@
 		"./reporting": {
 			"types": "./dist/reporting/channels.d.ts",
 			"default": "./dist/reporting/channels.js"
+		},
+		"./email-analysis": {
+			"types": "./dist/email-analysis/analyze-email.d.ts",
+			"default": "./dist/email-analysis/analyze-email.js"
+		},
+		"./email-analysis/output": {
+			"types": "./dist/email-analysis/analysis-output.d.ts",
+			"default": "./dist/email-analysis/analysis-output.js"
+		},
+		"./node/read-input": {
+			"types": "./dist/node/read-input.d.ts",
+			"default": "./dist/node/read-input.js"
 		}
 	},
 	"files": [
@@ -53,6 +69,9 @@
 	},
 	"dependencies": {
 		"@moderation-api/unicode-spoofing": "0.4.0",
+		"@zone-eu/mailsplit": "5.4.17",
+		"email-addresses": "5.0.0",
+		"parse5": "8.0.1",
 		"tldts": "7.4.14",
 		"valibot": "1.5.0"
 	}

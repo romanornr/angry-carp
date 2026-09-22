@@ -4,7 +4,7 @@ export type RequestFailure =
   | { kind: 'http_error'; status: number }
   | {
     kind: 'unavailable';
-    reason: 'request_failed' | 'invalid_response' | 'response_too_large' | 'redirected';
+    reason: 'request_failed' | 'cancelled' | 'timeout' | 'invalid_response' | 'response_too_large' | 'redirected';
   };
 
 export async function requestJson({ url, signal, accept }: {
@@ -13,6 +13,7 @@ export async function requestJson({ url, signal, accept }: {
   accept: string;
 }): Promise<{ kind: 'received'; body: unknown } | RequestFailure> {
   try {
+    signal.throwIfAborted();
     const response = await fetch(url, {
       headers: { accept },
       credentials: 'omit',
@@ -39,6 +40,11 @@ export async function requestJson({ url, signal, accept }: {
     }
     return { kind: 'received', body: JSON.parse(text + decoder.decode()) };
   } catch {
+    if (signal.aborted) {
+      let reason: 'timeout' | 'cancelled' = 'cancelled';
+      if (signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError') reason = 'timeout';
+      return { kind: 'unavailable', reason };
+    }
     // Never forward server bodies, fetch exceptions, or ambient runtime details to the model.
     return { kind: 'unavailable', reason: 'request_failed' };
   }

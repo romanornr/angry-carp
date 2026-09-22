@@ -1,0 +1,22 @@
+{
+	"name": "@angry-carp/cli",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=24"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"analyze": "node dist/analyze.js",
+		"extract:links": "node dist/extract-links.js",
+		"test": "node --test",
+		"check:types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@angry-carp/checks": "0.1.0"
+	}
+}

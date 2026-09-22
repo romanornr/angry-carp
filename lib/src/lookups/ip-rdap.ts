@@ -28,7 +28,7 @@ const bootstrapSchema = v.object({
   services: v.array(v.tuple([v.array(prefixSchema), v.array(v.string())])),
 });
 
-const optionalText = v.nullish(v.pipe(v.string(), v.transform((text) => text.slice(0, 200))), null);
+const optionalText = v.nullish(v.pipe(v.string(), v.maxLength(200)), null);
 const recordSchema = v.object({
   objectClassName: v.literal('ip network'),
   startAddress: ipAddressSchema,
@@ -52,11 +52,12 @@ type IpRdapLookup = {
 );
 
 /** Retrieves network registration, not origin-host attribution; never contacts the queried address. */
-export async function lookupIpRdap(queriedAddress: IpAddress): Promise<IpRdapLookup> {
+export async function lookupIpRdap(queriedAddress: IpAddress, callerSignal?: AbortSignal): Promise<IpRdapLookup> {
   const target = addressBits(queriedAddress);
   let bootstrapUrl = 'https://data.iana.org/rdap/ipv4.json';
   if (target.ipVersion === 'v6') bootstrapUrl = 'https://data.iana.org/rdap/ipv6.json';
-  const signal = AbortSignal.timeout(15_000);
+  let signal = AbortSignal.timeout(15_000);
+  if (callerSignal) signal = AbortSignal.any([signal, callerSignal]);
   const accept = 'application/rdap+json, application/json';
   const bootstrap = await requestJson({ url: bootstrapUrl, signal, accept });
   const discovery = { queriedAddress, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString() };

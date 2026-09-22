@@ -9,6 +9,9 @@ const dbUrl = new URL('../db.ts', import.meta.url).href;
 // Run the real CLI, agent and provider with synthetic auth and an in-memory database.
 registerHooks({
   load(url, context, nextLoad) {
+    if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean' && (url === authUrl || url === dbUrl)) {
+      throw new Error('A no-concerns run must not load credentials or conversation storage.');
+    }
     if (url === authUrl) {
       return { format: 'module', shortCircuit: true,
         source: `export { openAuth } from ${JSON.stringify(import.meta.url)};` };
@@ -36,7 +39,19 @@ export async function openAuth() {
 let opened = 0;
 let closed = 0;
 let networkAttempts = 0;
-globalThis.fetch = async () => {
+globalThis.fetch = async (input) => {
+  const url = new URL(String(input));
+  const host = url.hostname;
+  if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean') {
+    if (host === 'cloudflare-dns.com') {
+      const types: Record<string, number> = { MX: 15, TXT: 16 };
+      return Response.json({ Status: 0, TC: false,
+        Question: [{ name: url.searchParams.get('name'), type: types[url.searchParams.get('type') ?? ''] }], Answer: [] });
+    }
+    if (host === 'data.iana.org') return Response.json({ services: [[['com'], ['https://registry.example/']]] });
+    if (host === 'registry.example') return Response.json({ objectClassName: 'domain', ldhName: 'example.com' });
+  }
+  if (host === 'cloudflare-dns.com' || host === 'data.iana.org') return new Response(null, { status: 503 });
   networkAttempts++;
   throw new Error('Network disabled in offline lifecycle test.');
 };
@@ -54,7 +69,13 @@ class FakeWebSocket extends EventTarget {
     });
   }
 
-  send() {
+  send(data: string) {
+    if (process.env.ANGRY_CARP_TEST_FAILURE === 'projection') {
+      assert.match(data, /action\.example\.com/);
+      assert.match(data, /image\.example\.org/);
+      assert.match(data, /image_action_domain_difference/);
+      assert.doesNotMatch(data, /private-(user|path|query|text|image|alt|filename)/);
+    }
     queueMicrotask(() => {
       const item = { id: 'offline-message', type: 'message', role: 'assistant',
         content: [{ type: 'output_text', text: 'Offline assessment.', annotations: [] }] };
@@ -78,13 +99,19 @@ class FakeWebSocket extends EventTarget {
 
 Object.defineProperty(globalThis, 'WebSocket', { value: FakeWebSocket });
 if (process.env.ANGRY_CARP_TEST_FAILURE === 'output') {
-  Object.defineProperty(process.stdout, 'write', { value() { throw new Error('Synthetic output failure.'); } });
+  const write = process.stdout.write.bind(process.stdout);
+  Object.defineProperty(process.stdout, 'write', { value(chunk: string) {
+    if (chunk.startsWith('\nAI assessment')) throw new Error('Synthetic output failure.');
+    return write(chunk);
+  } });
 }
 if (process.env.ANGRY_CARP_TEST_FAILURE === 'cleanup') {
   registerSessionResourceCleanup(() => { throw new Error('Private cleanup detail.'); });
 }
 process.on('exit', () => {
-  assert.equal(opened, 1);
-  assert.equal(closed, 1);
+  let expected = 1;
+  if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean') expected = 0;
+  assert.equal(opened, expected);
+  assert.equal(closed, expected);
   assert.equal(networkAttempts, 0);
 });

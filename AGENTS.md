@@ -10,7 +10,7 @@ When updating reporting routes, follow [the channel update procedure](docs/updat
 
 ## Code ownership
 
-`lib/` owns reusable checks and their schemas. `agent/` owns Flue bindings, authentication, and conversation storage. Import the library through its package exports; migrate callers and delete obsolete paths in the same change. Package separation does not restrict filesystem access or create a credential sandbox.
+`lib/` owns reusable checks, output functions and their schemas. Its `node/` modules own local file access. `cli/` owns standalone commands; `agent/` owns Flue bindings, authentication and conversation storage. Both import the library through its package exports. For package boundaries or command migrations, follow [ADR 0012](docs/adr/0012-separate-cli-from-flue.md); migrate callers and delete obsolete paths together. Package separation does not restrict filesystem access or create a credential sandbox.
 
 ## Skills to apply
 

@@ -37,6 +37,18 @@ The exact address submitted to an external scanning service. It can differ from 
 **Assessment**:
 A judgement about suspected phishing, its confidence, and the evidence supporting it. An assessment can change when new evidence arrives.
 
+**Email analysis**:
+The collected message observations, check outcomes, derived findings and coverage limitations used to support an assessment. A complete analysis record can contain unresolved questions and does not itself establish a phishing verdict.
+
+**Results display**:
+A presentation of recorded analysis findings and check outcomes for the operator to inspect. It is distinct from an assessment interpreting their significance and an abuse report requesting provider action.
+
+**Reporting candidate**:
+A provider and service role connected to a reported resource by identified evidence or an explicitly qualified lead. A candidate can have an available reporting channel while attribution or disclosure conditions remain unresolved.
+
+**Resource contact**:
+A provider contact associated with an observed resource. Finding that contact does not establish abuse involving the resource or make the provider a reporting candidate.
+
 **Concern level**:
 The High, Medium, or Low classification of a suspected phishing concern based on the combined evidence. It is distinct from impact severity, reporting readiness, and authorization to send.
 

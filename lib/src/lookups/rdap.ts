@@ -60,8 +60,9 @@ type RdapLookup = {
 );
 
 /** Queries public RDAP services, without authentication, redirects, or referral requests. */
-export async function lookupRdap(queriedDomain: Domain): Promise<RdapLookup> {
-  const signal = AbortSignal.timeout(15_000);
+export async function lookupRdap(queriedDomain: Domain, callerSignal?: AbortSignal): Promise<RdapLookup> {
+  let signal = AbortSignal.timeout(15_000);
+  if (callerSignal) signal = AbortSignal.any([signal, callerSignal]);
   const bootstrap = await requestJson({ url: bootstrapUrl, signal, accept });
   const discovery = { queriedDomain, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString() };
   if (bootstrap.kind !== 'received') return { ...discovery, ...bootstrap };
@@ -90,25 +91,30 @@ export async function lookupRdap(queriedDomain: Domain): Promise<RdapLookup> {
 
   const registrars = record.output.entities
     .filter((entity) => entity.roles.includes('registrar'))
-    .slice(0, 5)
     .map((registrar) => ({
       name: cardValues(registrar, 'fn')[0] ?? null,
-      ianaId: registrar.publicIds.find((id) => id.type === 'IANA Registrar ID')?.identifier.slice(0, 32) ?? null,
+      ianaId: registrar.publicIds.find((id) => id.type === 'IANA Registrar ID')?.identifier ?? null,
       // Keep the registrar relationship; top-level abuse contacts may belong to someone else.
       abuseEmails: registrar.entities
         .filter((entity) => entity.roles.includes('abuse'))
         .flatMap((entity) => cardValues(entity, 'email'))
-        .filter((email) => v.is(v.pipe(v.string(), v.email()), email))
-        .slice(0, 5),
+        .filter((email) => v.is(v.pipe(v.string(), v.email()), email)),
     }));
+
+  if (registrars.length > 5 || registrars.some((registrar) =>
+    (registrar.name?.length ?? 0) > 320 || (registrar.ianaId?.length ?? 0) > 32
+    || registrar.abuseEmails.length > 5 || registrar.abuseEmails.some((email) => email.length > 320))
+    || record.output.status.length > 20 || record.output.status.some((status) => status.length > 100)
+    || record.output.events.length > 100) {
+    return { ...source, kind: 'unavailable', reason: 'response_too_large' };
+  }
 
   return {
     ...source,
     kind: 'found',
-    status: record.output.status.slice(0, 20).map((status) => status.slice(0, 100)),
+    status: record.output.status,
     events: record.output.events
-      .filter((event) => ['registration', 'expiration', 'last changed'].includes(event.eventAction))
-      .slice(0, 10),
+      .filter((event) => ['registration', 'expiration', 'last changed'].includes(event.eventAction)),
     registrars,
   };
 }
@@ -122,7 +128,7 @@ function isHttpsService(input: string): boolean {
 function cardValues(contact: v.InferOutput<typeof contactSchema>, name: string): string[] {
   const values: string[] = [];
   for (const [property, , type, value] of contact.vcardArray?.[1] ?? []) {
-    if (property === name && type === 'text' && typeof value === 'string' && value.length <= 320) {
+    if (property === name && type === 'text' && typeof value === 'string') {
       values.push(value);
     }
   }

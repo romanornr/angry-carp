@@ -8,7 +8,7 @@ An evidence-backed workflow and implementation for manually operated phishing in
 
 ## Current implementation, 2026-09-22
 
-- The local TypeScript Flue agent assesses prepared email text through Pi's ChatGPT OAuth provider. It has RDAP, DNS, brand-directory, domain-lookalike, and Winnowing passage-comparison tools. [Usage and limits](../../agent/README.md) describe what each tool can establish.
+- The standalone [CLI](../../cli/README.md) calls the reusable analyzer for original-message parsing, local checks, bounded DNS/RDAP, findings and reporting candidates. Optional [Flue assessment](../../agent/README.md) receives selected analysis fields plus reviewed text through Pi OAuth. Only Winnowing remains a model-directed follow-up tool.
 - `phishing-triage.md` stays portable. Flue-specific tool contracts live under `agent/`, as clarified in [ADR 0004](../adr/0004-distribute-workflow-independently.md).
 - Private evidence remains in ignored files. Flue conversations record assessments; the SQLite case store selected in [ADR 0006](../adr/0006-use-sqlite-for-local-case-storage.md) is not implemented. No mailbox, web search, official-page retrieval, or report-sending tool is connected.
 - The operator approved the [2FA Directory lookup](../brand-references.md), now implemented with a verified public snapshot and manual update guide. [DNS catalogues and threat feeds](../research/dns-reference-and-threat-lists.md) remain proposals. No MetaMask, HaGeZi, or AdGuard dataset is installed.
@@ -17,6 +17,8 @@ An evidence-backed workflow and implementation for manually operated phishing in
 ## Notes
 
 These notes retain earlier workflow choices. The current implementation above and later decisions in the linked issues supersede earlier runner and language assumptions.
+
+- [Issue 13](issues/13-define-model-independent-email-analysis.md) records the implemented analyzer. [ADR 0012](../adr/0012-separate-cli-from-flue.md) separates the standalone CLI from Flue. Remaining behavior gaps are listed under Analyzer follow-up below.
 
 - The operator selected Flue with Pi's existing ChatGPT browser OAuth flow. Reusing exact Codex tokens is not required, and a custom Codex CLI-to-Flue model adapter is excluded. The operator approved the local credential store at `agent/auth.json`, ignored by Git. Browser login and local logout succeeded on 2026-09-22. The [local integration README](../../agent/README.md) owns authentication commands, storage details, and verification limits.
 - Prepared email text can now be assessed using the assessment instructions. `agent/src/agents/phishing-triage.ts` now registers the authenticated Pi provider and loads `phishing-triage.md`; reporting channels are now retrieved through the offline `lookup_reporting_channels` tool. A first live assessment through Flue completed. `agent/src/triage-cli.ts` now accepts a prepared-text file and prints the final answer once, replacing the verbose `flue run` entry point. The model starts without filesystem, shell, browser, or mailbox tools. The operator excluded additional synthetic-agent trials, scratchpads, and authentication test stages.
@@ -52,7 +54,7 @@ These notes retain earlier workflow choices. The current implementation above an
 
 - [Extract reusable checks](../adr/0008-extract-reusable-checks.md): `lib/` owns the five existing capabilities and their public data. Flue bindings call the package directly. The operator explicitly excluded an HTTP service from this migration.
 
-- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the local prompt loads triage instructions; [ADR 0009](../adr/0009-maintain-reporting-channels-as-data.md) replaces the full channel reference with an offline lookup. The assessment returns Assessment, Evidence, Checks and gaps, and Next action. The [standards reference](../standards-and-reporting.md) records RFCs, ICANN guidance, and provider sources outside the model prompt. The local agent has [domain RDAP](../../agent/README.md#domain-registration-lookups), [IP RDAP](../../agent/README.md#ip-registration-lookups) and [DNS](../../agent/README.md#dns-lookups) bindings in `agent/src/tools/lookups.ts`, calling `lib/src/lookups/`. Website browsing and reporting automation remain unimplemented.
+- [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the portable four-section assessment remains available. [ADR 0011](../adr/0011-analyze-email-before-assessment.md) moves routine lookups and channel selection into the analyzer. [Selection and reporting limits](../email-analysis.md) describe current behavior.
 
 - [Decide ordinary-mail retention](issues/12-decide-ordinary-mail-retention.md): acquisition does not authorize retaining ordinary-email content.
 
@@ -89,3 +91,22 @@ The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisitio
 - Training a model or publishing a dataset in this effort. Preserve original evidence so future work can assess those options separately.
 - Identifying a real-world attacker from shared domains, infrastructure, or email similarities alone.
 - Offensive action against suspected infrastructure. Provider reporting is the intervention.
+
+## Deterministic analysis implementation, 2026-09-22
+
+[Issue 13](issues/13-define-model-independent-email-analysis.md) now has a shared analyzer and standalone command, with optional private JSON and Flue interpretation over reviewed text. [ADR 0011](../adr/0011-analyze-email-before-assessment.md) records the ownership and disclosure decisions. Original-message acquisition and case lifecycle work remain separate.
+
+## Analyzer follow-up
+
+The first real-email comparison confirmed collection and exposed the following gaps. The package migration was followed by the implemented fixes below, verified with synthetic messages and offline transports. No automatic reporting is authorized.
+
+| Issue | Status | Delivered scope |
+| --- | --- | --- |
+| [14: Preserve link-role uncertainty](issues/14-preserve-link-role-uncertainty.md) | Implemented | Unknown-purpose text links remain distinct; shared priority preserves MIME provenance. |
+| [15: Justify reporting candidates](issues/15-justify-reporting-candidates-by-resource.md) | Implemented | Resource-specific subjects justify recipients; contacts alone do not. |
+| [16: Display timing and authentication context](issues/16-display-registration-and-authentication-context.md) | Implemented | Stored registration dates, distinct claim domains and complete Unicode escaping. |
+| [17: Independent brand-claim evidence](issues/17-supply-independent-brand-claim-evidence.md) | Implemented | Supplied reviewed source notes; no automatic source retrieval. |
+
+[ADR 0013](../adr/0013-route-assessment-by-concerns-and-coverage.md) records automatic AI routing and bounded recovery. [Issue 18](issues/18-verify-evidence-during-report-preparation.md) defers the executable research/drafting runtime; mandatory reporting-time AI verification is already in the portable reporting workflow. Registration dates remain in the in-memory result and model projection; optional JSON export does not become mandatory storage.
+
+The subsequent live retest retained High concern and included the image/action mismatch and qualified Resend lead. It completed with no model-directed tool calls. [Issue 19](issues/19-preserve-evidence-limits-in-ai-assessments.md) records remaining AI wording errors about provider roles and unexamined content. One RDAP lookup failed and remained visible in coverage; the run does not establish a defect in that lookup. The private comparison remains under ignored `evidence/emails/`. This single case does not establish detection accuracy across other mail.

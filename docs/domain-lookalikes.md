@@ -1,18 +1,10 @@
 # Domain lookalike observations
 
-The local Flue agent can call `compare_domains` to compare one observed domain with an explicitly supplied reference. It computes name observations without DNS requests, website visits, filesystem access, or another model call. This tool does not verify brand ownership or classify phishing.
+`compareDomains` computes name observations through `@angry-carp/checks/lookalikes`, without network or filesystem access. It does not verify brand ownership or classify phishing.
 
-## Supply a reference
+The [email analyzer](email-analysis.md) calls it with bounded operator references, directory candidates and observed image-host references. Each comparison record retains its reference source. The low-level function still accepts two validated names and does not embed reference provenance itself. Direct callers must retain that context alongside its result.
 
-Include the reference domain in a separate operator note with its independent source and retrieval date, or ask the local agent to select a candidate from [the brand directory](brand-references.md). Directory associations remain unverified candidates. An image URL or brand claim inside the email is not sufficient verification.
-
-Run the existing triage command:
-
-```sh
-npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
-```
-
-The model chooses whether the comparison helps. Its tool instructions require a reference from operator source notes or a selected directory result and require that provenance in the assessment. The input schema does not enforce this rule. The result contains supplied names and observations, not reference-source metadata or independent verification; retain the source notes or lookup result alongside it. Tool-specific instructions live in `agent/src/tools/lookalikes.ts`, outside the shared triage Markdown.
+The analyzer accepts operator references through `referenceDomains`. A directory match and an image host remain unverified candidates; neither becomes an official-domain finding. The former model-selected `compare_domains` binding is retired.
 
 ## Results
 
