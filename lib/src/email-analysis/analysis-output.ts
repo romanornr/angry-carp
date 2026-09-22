@@ -5,9 +5,9 @@ import type { EmailAnalysis } from './analyze-email.ts';
 import { prioritizeHosts } from './observations.ts';
 
 /**
- * Applies Angry Carp's bounded model-disclosure policy, not general-purpose anonymization.
+ * Selects evidence for phishing assessment, not provider attribution or report preparation.
  * Excludes email bodies, raw headers and extracted URL paths. Explicitly reviewed source notes retain
- * their full source URLs and claims; retained hosts, notes and provider text can still identify people.
+ * their full source URLs and claims; retained hosts and notes can still identify people.
  * The caller controls disclosure and supplies reviewed text separately. This performs no I/O.
  */
 export function analysisForModel(result: EmailAnalysis) {
@@ -39,14 +39,6 @@ export function analysisForModel(result: EmailAnalysis) {
     sourceNotes: result.sourceNotes,
     hosts: [...selectedHosts],
     hostsOmitted: { invalid: result.observations.hosts.length - hosts.length, budget: hosts.length - selectedHosts.size },
-    reportingCandidates: result.reportingCandidates.map((candidate) => {
-      let resource;
-      if (candidate.resource.kind === 'message') resource = candidate.resource;
-      else resource = { ...candidate.resource, subjectIds: candidate.resource.subjectIds.slice(0, 8),
-        subjectsOmitted: Math.max(0, candidate.resource.subjectIds.length - 8) };
-      return { ...candidate, resource, evidenceIds: candidate.evidenceIds.slice(0, 16),
-        evidenceIdsOmitted: Math.max(0, candidate.evidenceIds.length - 16) };
-    }),
     comparisons: result.comparisons.map((comparison) => {
       const result = comparison.result;
       if (result.kind !== 'compared') return { id: comparison.id, kind: result.kind, referenceSource: comparison.referenceSource };
@@ -61,10 +53,6 @@ export function analysisForModel(result: EmailAnalysis) {
     registrations: result.rdap.filter(({ result }) => result.kind !== 'skipped').map(({ id, domain, result }) => {
       if (result.kind !== 'found') return { id, domain, kind: result.kind };
       return { id, domain, kind: result.kind, events: result.events, sourceUrl: result.sourceUrl, retrievedAt: result.retrievedAt };
-    }),
-    networks: result.ipRdap.filter(({ result }) => result.kind !== 'skipped').map(({ id, address, result }) => {
-      if (result.kind !== 'found') return { id, address, kind: result.kind };
-      return { id, address, kind: result.kind, network: result.network, sourceUrl: result.sourceUrl, retrievedAt: result.retrievedAt };
     }),
     skippedChecks: [...skipped].map(([reason, count]) => ({ reason, count })),
     retries: result.retries.map(({ checkId, previousResult, retryResult }) => ({ checkId, previousKind: previousResult.kind, retryKind: retryResult.kind })),
@@ -99,19 +87,25 @@ export function formatAnalysis(result: EmailAnalysis): string {
   lines.push('', 'Reporting candidates (no reports sent):');
   if (!result.reportingCandidates.length) lines.push('- No supported candidate found within this run.');
   for (const candidate of result.reportingCandidates) {
-    const routes: string[] = [];
-    if (candidate.channel.kind === 'rdap_contact') routes.push(...candidate.channel.addresses);
-    else if (candidate.channel.kind === 'listed') for (const row of candidate.channel.references) {
-      for (const channel of row.channels) {
-        if (channel.kind === 'email') routes.push(channel.address);
-        else routes.push(channel.url);
-      }
-    }
-    let contact = 'channel unavailable';
-    if (routes.length) contact = routes.join(', ');
     let resource = 'this message';
     if (candidate.resource.kind === 'domain') resource = candidate.resource.name;
-    lines.push(`- ${candidate.provider} (${candidate.serviceRole}, ${resource}): ${contact}. ${candidate.limitation}`);
+    lines.push(`- ${candidate.provider} (${candidate.serviceRole}, ${resource}): ${candidate.limitation}`,
+      `  Basis: ${candidate.basis} [${candidate.evidenceIds.join(', ')}].`);
+    const channel = candidate.channel;
+    if (channel.kind === 'rdap_contact') {
+      lines.push(`  Contact: ${channel.addresses.join(', ') || 'unavailable'}.`,
+        `  Source: ${channel.sourceUrl}; retrieved ${channel.retrievedAt}.`);
+    } else if (channel.kind === 'listed') {
+      for (const row of channel.references) {
+        for (const route of row.channels) {
+          let destination = '';
+          if (route.kind === 'email') destination = route.address;
+          else destination = route.url;
+          lines.push(`  ${destination}: ${route.condition}`);
+        }
+        for (const source of row.sources) lines.push(`  Source: ${source.url}; reviewed ${row.checkedAt}.`);
+      }
+    } else lines.push(`  Channel unavailable: ${channel.guidance}`);
   }
   lines.push('', 'Registrations (reported dates; no age or trusted receipt time inferred):');
   for (const lookup of result.rdap) {
@@ -124,6 +118,13 @@ export function formatAnalysis(result: EmailAnalysis): string {
       lines.push(`- ${lookup.domain}: ${event.eventDate}${validity} [${lookup.id}].`);
     }
     lines.push(`  Source: ${lookup.result.sourceUrl}; retrieved ${lookup.result.retrievedAt}.`);
+  }
+  lines.push('', 'Network registrations (records, not verified service roles):');
+  for (const lookup of result.ipRdap) {
+    if (lookup.result.kind !== 'found') continue;
+    const { network, sourceUrl, retrievedAt } = lookup.result;
+    lines.push(`- ${lookup.address}: ${network.name ?? 'unnamed network'}; range ${network.startAddress} to ${network.endAddress} [${lookup.id}].`,
+      `  Source: ${sourceUrl}; retrieved ${retrievedAt}.`);
   }
   lines.push('', 'Coverage:');
   const counts = new Map<string, number>();

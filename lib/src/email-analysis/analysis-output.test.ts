@@ -21,6 +21,7 @@ test('the automatic model projection excludes private headers, bodies, URLs and 
 });
 
 test('projection prioritizes action/mail hosts and summarizes skipped checks while retaining found RDAP', async (t) => {
+  let failNetwork = false;
   t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
     const url = new URL(String(input));
     if (url.hostname === 'cloudflare-dns.com') {
@@ -29,6 +30,7 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
       const type = types[url.searchParams.get('type') ?? ''];
       const Answer = [];
       if (type === 1) Answer.push({ name, type: 1, TTL: 60, data: '8.8.8.8' });
+      if (type === 2) Answer.push({ name, type: 2, TTL: 60, data: 'dan.ns.cloudflare.com.' });
       return Response.json({ Status: 0, TC: false, Question: [{ name, type }], Answer });
     }
     if (url.hostname === 'data.iana.org') {
@@ -38,7 +40,10 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
     }
     assert.equal(url.hostname, 'registry.example');
     if (url.pathname.startsWith('/domain/')) return Response.json({ objectClassName: 'domain', ldhName: url.pathname.slice(8),
-      events: [{ eventAction: 'registration', eventDate: '2026-01-01T00:00:00Z' }], privateField: 'private-extra' });
+      events: [{ eventAction: 'registration', eventDate: '2026-01-01T00:00:00Z' }], privateField: 'private-extra',
+      entities: [{ roles: ['registrar'], vcardArray: ['vcard', [['fn', {}, 'text', 'Example registrar']]],
+        entities: [{ roles: ['abuse'], vcardArray: ['vcard', [['email', {}, 'text', 'abuse@registrar.example']]] }] }] });
+    if (failNetwork) return new Response(null, { status: 503 });
     return Response.json({ objectClassName: 'ip network', startAddress: '8.8.8.0', endAddress: '8.8.8.255', ipVersion: 'v4',
       name: 'Example Network', privateField: 'private-extra' });
   });
@@ -57,10 +62,11 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
   for (const role of ['from', 'return-path', 'signature', 'authentication']) assert.ok(projection.hosts.some((host) => host.role === role), role);
   assert.ok(projection.checks.length <= 36);
   assert.ok(projection.registrations.length <= 6);
-  assert.ok(projection.networks.length <= 6);
   assert.ok(projection.skippedChecks.some(({ count }) => count > 100));
   assert.ok(projection.registrations.some((record) => 'events' in record && record.events?.[0].eventDate === '2026-01-01T00:00:00Z'));
-  assert.ok(projection.networks.some((record) => 'network' in record && record.network?.name === 'Example Network'));
+  assert.equal('networks' in projection, false);
+  assert.equal('reportingCandidates' in projection, false);
+  assert.doesNotMatch(JSON.stringify(projection), /8\.8\.8\.8|Example Network/);
   assert.doesNotMatch(JSON.stringify(projection), /private-/);
   assert.ok(JSON.stringify(projection).length < 60_000);
   const displayed = formatAnalysis(result);
@@ -68,6 +74,28 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
   assert.match(displayed, /2026-01-01T00:00:00Z/);
   assert.match(displayed, /https:\/\/registry.example\/domain\//);
   assert.doesNotMatch(displayed, /private-/);
+
+  assert.match(displayed, /Example Network; range 8\.8\.8\.0 to 8\.8\.8\.255/);
+  assert.match(displayed, /Source: https:\/\/registry\.example\/ip\/8\.8\.8\.8; retrieved/);
+  failNetwork = true;
+  const single = await analyzeEmail(new TextEncoder().encode(original), { directory: await loadBrandDirectory() });
+  assert.equal(single.kind, 'analyzed');
+  if (single.kind !== 'analyzed') return;
+  assert.ok(single.reportingCandidates.some(({ provider }) => provider === 'Example registrar'));
+  assert.ok(single.reportingCandidates.some(({ provider, serviceRole }) => provider === 'cloudflare' && serviceRole === 'dns'));
+  const selected = analysisForModel(single);
+  assert.equal(selected.kind, 'analyzed');
+  if (selected.kind !== 'analyzed') return;
+  assert.ok(selected.checks.some(({ id, kind, httpStatus }) => id.startsWith('ip') && kind === 'http_error' && httpStatus === 503));
+  assert.equal(selected.routing.kind, 'assessment_required');
+  if (selected.routing.kind === 'assessment_required') assert.ok(selected.routing.gaps.some(({ sourceId }) => sourceId.startsWith('ip')));
+  assert.doesNotMatch(JSON.stringify(selected), /Example registrar|Example Network|abuse@registrar|serviceRole|reverse-proxy/);
+  const rendered = formatAnalysis(single);
+  assert.match(rendered, /abuse@registrar\.example/);
+  assert.match(rendered, /Nameservers support a DNS relationship/);
+  assert.match(rendered, /Select Phishing & Malware/);
+  assert.match(rendered, /Network registrations \(records, not verified service roles\)/);
+  assert.match(rendered, /Source: https:\/\/registry\.example\/domain\/example\.com; retrieved/);
 });
 
 test('authentication domains stay distinct and terminal escaping retains astral format characters', async (t) => {

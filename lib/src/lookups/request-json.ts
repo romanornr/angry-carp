@@ -38,7 +38,12 @@ export async function requestJson({ url, signal, accept }: {
       if (bytes > maxResponseBytes) return { kind: 'unavailable', reason: 'response_too_large' };
       text += decoder.decode(chunk, { stream: true });
     }
-    return { kind: 'received', body: JSON.parse(text + decoder.decode()) };
+    text += decoder.decode();
+    try {
+      return { kind: 'received', body: JSON.parse(text) };
+    } catch {
+      return { kind: 'unavailable', reason: 'invalid_response' };
+    }
   } catch {
     if (signal.aborted) {
       let reason: 'timeout' | 'cancelled' = 'cancelled';

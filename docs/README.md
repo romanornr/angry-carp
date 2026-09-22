@@ -13,7 +13,7 @@ Angry Carp provides deterministic original-email analysis with optional AI asses
 
 ## Understand an assessment
 
-- [Read the four assessment sections](../agent/README.md#read-the-assessment): conclusion, evidence, checks and gaps, and next action.
+- [Read the local assessment](../agent/README.md#read-the-assessment): model interpretation of deception evidence alongside deterministic findings and reporting routes.
 - [Domain registration lookups](../agent/README.md#lookups-and-reporting): RDAP operation, returned evidence, privacy, and current limits.
 - [IP registration lookups](../agent/README.md#lookups-and-reporting): IPv4 and IPv6 discovery, network evidence and hosting limits.
 - [DNS lookups](../agent/README.md#lookups-and-reporting): resolver, privacy, returned records, and limits.
@@ -31,7 +31,7 @@ Angry Carp provides deterministic original-email analysis with optional AI asses
 
 ## Agent instructions
 
-- [Phishing triage](../phishing-triage.md) is portable assessment guidance, usable without Flue or the TypeScript tools. The local assessment agent loads the same file.
+- [Phishing triage](../phishing-triage.md) is portable investigation and assessment guidance, usable without Flue or the TypeScript tools. [Local assessment instructions](../agent/phishing-assessment.md) give Flue the narrower evidence-interpretation task.
 - [Reporting channels](../reporting-channels.md) is the generated, portable channel reference. The deterministic analyzer selects matching routes before Flue assessment.
 - [Provider abuse reporting](../provider-abuse-reporting.md) is for separately directed report preparation and review. It is not loaded into the local assessment prompt.
 
@@ -67,3 +67,5 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 - [MIME parser fidelity](research/mime-parser-contract.md): public part/recovery contracts, quoted-message limits, and the reviewed and approved Mailsplit adapter.
 
 [ADR 0013: Route AI assessment by concerns and coverage](adr/0013-route-assessment-by-concerns-and-coverage.md) records the no-concerns skip, bounded recovery, supplied notes and mandatory research during report preparation.
+
+[ADR 0014: Keep provider routing outside AI assessment](adr/0014-keep-provider-routing-outside-ai-assessment.md) records the smaller model input and deterministic presentation of provider roles and reporting routes.

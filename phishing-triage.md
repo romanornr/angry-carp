@@ -55,7 +55,7 @@ Use these four short sections, in this order:
 
 1. **Assessment:** state the conclusion and concern level, with confidence in the specific conclusion.
 2. **Evidence:** give the decisive facts with their sources and any material contrary evidence. Identify inferences.
-3. **Checks and gaps:** distinguish checks described in supplied notes from checks performed during this run. State when no independent lookups were performed. Attribute unsuccessful or unattempted checks to the relevant actor. Keep limitations here, including only gaps that could change the conclusion or next action.
+3. **Checks and gaps:** distinguish checks described in supplied notes from checks performed during this run. State when no independent lookups were performed. Attribute unsuccessful or unattempted checks to the relevant actor. Summarize unexamined content as unknown. Explain what the available evidence supports while those gaps remain.
 4. **Next action:** name the concrete investigation or reporting step justified by the evidence. State reporting readiness, referring to an existing gap rather than repeating it. Address the operator's stated situation and capabilities, building on completed work.
 
 Each section adds information the others lack. The assessment is complete when the conclusion, supporting sources, checks actually performed, material gaps, and next action are clear.

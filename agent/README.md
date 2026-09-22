@@ -26,7 +26,9 @@ The old prepared-text-only and `--html` triage paths are replaced. To inspect a 
 
 ## Read the assessment
 
-The model follows portable `phishing-triage.md`: Assessment, Evidence, Checks and gaps, and Next action. The runtime findings remain visible even if the model omits a point. High concern, reporting readiness and permission to send are separate. Use `--source-notes <reviewed-notes.json>` for separately reviewed external claims, following [the source-note contract](../docs/email-analysis.md#supply-reviewed-source-notes). No web browser or search is installed. Research is mandatory during future report preparation, not routine analysis; [ADR 0013](../docs/adr/0013-route-assessment-by-concerns-and-coverage.md) records this policy.
+The model follows [the local assessment instructions](phishing-assessment.md): Assessment, Evidence and Limits. It interprets deception evidence; the runtime separately renders provider roles, reporting routes, their conditions and source provenance. The model does not receive the automatic provider-candidate or IP network records. Full investigation guidance remains available in standalone `phishing-triage.md`. [ADR 0014](../docs/adr/0014-keep-provider-routing-outside-ai-assessment.md) explains the split.
+
+High concern, reporting readiness and permission to send are separate. Use `--source-notes <reviewed-notes.json>` for separately reviewed external claims, following [the source-note contract](../docs/email-analysis.md#supply-reviewed-source-notes). No web browser or search is installed. Research is mandatory during future report preparation, not routine analysis; [ADR 0013](../docs/adr/0013-route-assessment-by-concerns-and-coverage.md) records this policy.
 
 ## Sign in and disconnect
 
@@ -68,7 +70,7 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `../cli/src/analyze.ts` | Standalone original-email command without Flue or auth dependencies. |
 | `../lib/src/email-analysis/analysis-output.ts` | Formats terminal results and selects the model disclosure fields. |
 | `src/triage-cli.ts` | Calls the analyzer, supplies reviewed text to Flue, prints both outputs and owns shutdown. |
-| `src/agents/phishing-triage.ts` | Loads portable instructions, registers the provider and the optional passage-comparison tool. |
+| `src/agents/phishing-triage.ts` | Loads `phishing-assessment.md`, registers the provider and the optional passage-comparison tool. |
 | `src/auth.ts`, `src/auth-cli.ts` | Keep Pi's ModelRuntime private; handle browser login, storage and logout with sanitized errors. |
 | `../lib/src/node/read-input.ts` | Reads bounded regular files without blocking on a FIFO. |
 

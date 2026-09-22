@@ -21,6 +21,8 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/text-reuse` | `findSharedPassages(input)`; `passageComparisonSchema` | None |
 | `@angry-carp/checks/email-links` | `extractEmailLinks(html)`, `summarizeEmailLinks(result)`; extraction validates string and byte limit internally | None |
 
+`analysisForModel` selects deception evidence and coverage for assessment. Provider candidates, channel references and IP network records remain in the complete result and deterministic display, outside that projection. It is not a report-preparation interface or general-purpose anonymizer.
+
 Parse external input with the corresponding schema before calling a function. The schemas deliberately differ: a DNS selector name, a registered domain, and a Unicode comparison input are not interchangeable. This example runs locally after installation:
 
 ```js

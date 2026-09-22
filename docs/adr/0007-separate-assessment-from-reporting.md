@@ -17,3 +17,5 @@ The alternative was one combined investigation-and-reporting prompt. Separate ta
 The four headings apply to the operator's assessment. Provider reports retain the earlier decision to use natural correspondence adapted to the recipient, without a universal section order or minimum length. The reporting guide remains the single drafting instruction source. Concern remains an evidence-based suspicion level, not a new severity scale; confidence is explained for each conclusion without invented probability estimates.
 
 The headings and concern levels are project choices. [Standards and provider guidance](../standards-and-reporting.md) inform evidence handling and future integrations without imposing this prose format. The agent instructions own the output rules; user documentation explains their meaning. Changes to the headings remain possible without changing the separation between assessment and reporting.
+
+[ADR 0014](0014-keep-provider-routing-outside-ai-assessment.md) narrows the local model's output to Assessment, Evidence and Limits. The runtime displays provider roles and reporting routes. The portable workflow retains the four sections described above.

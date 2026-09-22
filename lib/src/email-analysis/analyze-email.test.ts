@@ -160,6 +160,27 @@ test('completed ordinary checks do not turn authentication passes or registrar c
   assert.equal(result.rdap[0].result.kind, 'found');
 });
 
+test('malformed lookup JSON remains an explicit gap without retrying or disclosing its body', async (t) => {
+  const healthy = fixtureFetch([]);
+  let attempts = 0;
+  t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    if (String(input).includes('type=MX')) {
+      attempts++;
+      return new Response('private-response-marker', { status: 200 });
+    }
+    return healthy(input);
+  });
+  const result = await analyzeEmail(new TextEncoder().encode('From: sender@example.com\r\n\r\nMeeting at noon.'), { directory });
+  assert.equal(result.kind, 'analyzed');
+  if (result.kind !== 'analyzed') return;
+  const response = result.dns.find(({ query }) => query.type === 'MX')?.result;
+  assert.equal(response?.kind, 'unavailable');
+  if (response?.kind === 'unavailable') assert.equal(response.reason, 'invalid_response');
+  assert.equal(attempts, 1);
+  assert.equal(result.routing.kind, 'assessment_required');
+  assert.doesNotMatch(JSON.stringify(result), /private-response-marker/);
+});
+
 test('transient lookup retries reuse successes; persistent failures and 429 require assessment', async (t) => {
   const text = new TextEncoder().encode('From: sender@example.com\r\n\r\nMeeting at noon.');
   for (const status of [503, 429]) {

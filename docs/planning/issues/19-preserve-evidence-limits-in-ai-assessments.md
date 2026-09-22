@@ -1,12 +1,20 @@
 # Preserve evidence limits in AI assessments
 
 Type: bug
-Status: open
+Status: implemented
 Priority: medium
 Assignee: unassigned
 Parent: ../map.md
 Blocked by: none
 Related: 18-verify-evidence-during-report-preparation.md
+
+## Resolution, 2026-09-22
+
+A prompt-only clarification did not fix the proxy wording in a controlled replay. The implemented correction instead narrows the task: `analysisForModel` omits reporting candidates and IP network records; deterministic rendering presents provider roles, route conditions, supporting IDs and provenance. Flue loads the dedicated evidence-assessment instructions. The portable workflow remains usable independently.
+
+Tests verify both the omission and the retained complete result/display, domain chronology and failed-IP coverage. A replay using the previously disclosed input with exactly those two fields removed retained High concern, the image/action distinction and timeline, stated unexamined content accurately, and made no proxy/hosting or recipient reconstruction. It exited normally in 35.676 seconds without rerunning DNS/RDAP. This is one case result, not a general guarantee about model prose.
+
+[ADR 0014](../../adr/0014-keep-provider-routing-outside-ai-assessment.md) records the boundary and [the research note](../../research/assessment-evidence-limits.md) records the alternatives and limits. The original gap and acceptance checks follow.
 
 ## Observed gap
 

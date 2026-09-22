@@ -41,7 +41,7 @@ A judgement about suspected phishing, its confidence, and the evidence supportin
 The collected message observations, check outcomes, derived findings and coverage limitations used to support an assessment. A complete analysis record can contain unresolved questions and does not itself establish a phishing verdict.
 
 **Results display**:
-A presentation of recorded analysis findings and check outcomes for the operator to inspect. It is distinct from an assessment interpreting their significance and an abuse report requesting provider action.
+A presentation of recorded analysis findings, check outcomes and reporting routes with their supported service roles for the operator to inspect. It is distinct from an assessment interpreting their significance and an abuse report requesting provider action.
 
 **Reporting candidate**:
 A provider and service role connected to a reported resource by identified evidence or an explicitly qualified lead. A candidate can have an available reporting channel while attribution or disclosure conditions remain unresolved.
