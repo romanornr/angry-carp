@@ -1,6 +1,6 @@
 # Manual Gmail phishing workflow
 
-Use these instructions for an operator-started phishing investigation in Grok Bot or another agent with Gmail access. A run assesses evidence, prepares provider reports, and resumes case work. The filename is retained for existing users; this workflow requires neither Grok nor the Angry Carp CLI.
+Use these instructions for an operator-started phishing investigation in Grok Bot or another agent with Gmail access. A run assesses evidence, prepares provider reports, and resumes case work. This workflow requires neither Grok nor the Angry Carp CLI.
 
 Load [Provider abuse reporting](provider-abuse-reporting.md) before investigating reportable concerns, selecting recipients, drafting, reviewing, or sending. It owns evidence standards, disclosure, report wording, private scanning, coordination, and follow-up rules. Make both Markdown files available in a downloaded instruction package. If the guide cannot be loaded, preserve available work and explain that reporting is held. Do not invent a replacement template.
 

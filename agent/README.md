@@ -1,46 +1,76 @@
 # Local agent integration
 
-This directory contains a Codex login capability check and the earlier Flue starter. It is not yet a mailbox investigator. The Codex command accepts only a built-in synthetic example.
+The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout work. `PhishingTriage` registers the authenticated provider and loads the shared workflow and reporting instructions. The first live assessment through Flue completed successfully. The terminal entry point now accepts a prepared-text file and prints the assessment once.
 
-## Check your existing Codex login
+## Sign in and disconnect
 
-Use Node.js 24 and an installed Codex CLI. The integration was developed against Codex 0.155.1. It requires `--ignore-user-config` and `--ephemeral`; an older CLI may reject these options.
+Use Node.js 24. Run these commands from the repository root.
 
-From this directory, run:
+To sign in:
 
 ```sh
-npm install
-codex login status
-npm run check:codex
+npm --prefix agent run auth:login
 ```
 
-If you are not signed in, run `codex login` and choose ChatGPT. Do not add an OpenAI API key to `.env` for this check.
+The command prints the credential-file location and an OpenAI authorization link. Open the link in your browser and complete sign-in. Pi receives the callback at `http://localhost:1455/auth/callback` by default. The browser must be able to reach that local process. The CLI supports the automatic browser callback, with a five-minute waiting limit and Ctrl+C cancellation; it does not accept pasted authorization codes.
 
-The command submits one synthetic document-request example using `gpt-5.6-sol`. It consumes subscription capacity. Success requires this exact result:
+To disconnect locally:
 
-```json
-{
-	"classification": "Medium",
-	"reportReady": false
-}
+```sh
+npm --prefix agent run auth:logout
 ```
 
-The command prints `Codex login reuse check passed.` after validating the response. Missing authentication, an unavailable model, a timeout, or an unexpected answer produces an error. There is no automatic retry, model substitution, or API-key fallback.
+Logout removes the `openai-codex` entry from the local credential store. The file may remain. This does not revoke authorization on OpenAI's side or erase tokens already held by another running process.
 
-This check passed on 2026-09-22 using Codex 0.155.1 and the existing ChatGPT login. Type checking also passed.
+## Credential storage and access
 
-## Credentials and temporary files
+The operator selected `agent/auth.json` inside this repository. The CLI resolves it relative to its own source file, so the terminal's working directory does not change the location. The existing `auth.json` Git ignore rule covers this file. Do not commit it or copy credentials from an existing Codex installation.
 
-Codex owns the login and token refresh. Both the status check and model call select Codex's `auto` credential-store mode, which prefers the OS credential store and falls back to its auth file. `CODEX_HOME` is preserved if set; otherwise Codex uses its normal home. Angry Carp does not read or copy tokens and does not create another credential store. This per-process choice does not edit your Codex configuration. [Codex authentication](https://learn.chatgpt.com/docs/auth)
+Pi owns the OAuth credential format, file locking, token refresh, and persistence. It writes the file with owner-only permissions, `0600`. The file is plaintext, not encrypted. Processes running as the same operating-system user, and privileged processes, can read it. Git ignore rules and file placement do not isolate it from those processes.
 
-The command creates a private directory under the OS temporary directory for the synthetic output schema and response, then removes it when the command finishes. Forced termination can leave that synthetic directory behind. It requests an ephemeral Codex session and disables history persistence; this does not promise that Codex writes no operational logs or updates no authentication metadata.
+The trusted runtime may read, store, refresh, and use tokens. Tokens must stay out of model prompts, tool results, logs, and exposed errors. The first email assessment will accept prepared email text and give the model no filesystem, shell, browser, or mailbox tools. Runtime access to credentials does not grant that access to the model.
 
-The child process receives a small environment allowlist, without API keys or endpoint overrides. It skips user configuration and execution rules, uses an empty working directory and a read-only sandbox, and disables shell, browser, app, plugin, hook, and subagent features. These controls are scoped to this check. They do not yet establish a verified isolation boundary for real phishing evidence or all administrator-managed configuration.
+Flue's configured conversation database is `agent/data/flue.db`, separate from the credential store. It is not the authoritative case store.
 
-## Why this calls the CLI
+## Code responsibilities
 
-The TypeScript SDK 0.155.1 does not expose the CLI's `--ignore-user-config` and `--ephemeral` flags. Calling the CLI directly keeps those controls without adding an SDK wrapper. [Integration findings](../docs/research/codex-login-reuse.md) explain the relationship to Flue.
+| File | Responsibility |
+| --- | --- |
+| `src/auth.ts` | Keeps Pi's `ModelRuntime` private and exposes login, logout, and the authenticated provider. Replaces exposed authentication errors with fixed messages. |
+| `src/auth-cli.ts` | Selects the credential path, handles the browser interaction and cancellation, and prints command results. |
+| `src/triage-cli.ts` | Reads the prepared-text file, runs the agent through Flue's runtime API, and prints one progress line and the final assessment. |
+| `src/agents/phishing-triage.ts` | Registers the authenticated provider, loads the shared instructions, and scopes `PhishingTriage` to assessment of supplied email evidence. |
 
-The Flue starter remains in `src/agents/hello.ts`. It has no connected credentials or investigation tools. The main runner choice remains open. Gmail authorization, durable cases, and sending are separate work.
+Both `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` are pinned to `0.83.0`. This integration reuses Pi's provider and credential storage. It does not wrap the Codex CLI as a Flue model adapter. The provider's `apiKey` resolver accepts the resolved OAuth authentication; that name does not imply separate API billing.
 
-Run `npm run check:types` to type-check the code. The synthetic command is the behavior check for this increment; it is not a phishing-detection benchmark.
+`allowModelNetwork: false` disables catalog downloads during runtime creation. It does not disable OAuth traffic or every later catalog refresh.
+
+## What has been checked
+
+On 2026-09-22, browser login completed successfully. File metadata confirmed `0600` permissions and Git ignore coverage without reading token contents. The operator then ran local logout successfully. No model request was made through this integration during those checks.
+
+Type checking and nine offline CLI scenarios passed. The CLI scenarios simulated the authentication dependency and covered argument handling, callback completion, cancellation, timeout, and safe error output. Token refresh has not been exercised with a live request.
+
+The dependency audit reported seven affected package entries, tracing to Undici, brace-expansion, and the existing Hono dependency. Inspection found no trigger for the reported vulnerabilities in the current authentication path; the affected versions remain installed. Importing Pi initializes a plain Undici global dispatcher in a fresh Node process. Dependency updates and future server exposure require their own assessment.
+
+## Assess prepared email evidence
+
+After signing in, run this command from the repository root with the absolute path to your prepared text file:
+
+```sh
+npm --silent --prefix agent run triage -- /absolute/path/prepared-email.txt
+```
+
+The npm command runs from `agent/`. The module resolves `auth.json` there and reads `../phishing-workflow.md` and `../provider-abuse-reporting.md`. Use this command so those relative paths resolve consistently.
+
+Supply extracted email text, relevant headers, and link information with account-access secrets and unrelated personal information removed. The supplied message and instructions are sent to the configured OpenAI provider. Flue's configured database stores conversation data in `agent/data/flue.db`. The command reads the prepared text locally; email contents are not passed as command arguments or echoed by the CLI. The input must be prepared text, not a raw `.eml` file.
+
+`PhishingTriage` returns High, Medium, or Low concern, supporting and contrary evidence, material uncertainties, and the next supported action. No filesystem, shell, browser, mailbox, scanning, or sending tools are registered for the model. Keep report approval separate from assessment. Gmail access, case operations, and sending remain separate work.
+
+The operator completed a first assessment of a prepared historical email. The original `flue run` command echoed the input and duplicated the answer; `triage-cli.ts` uses the same Flue runtime directly without subscribing to the verbose event display.
+
+For Cloudflare later, replace the local browser-login entry point and file storage with suitable runtime and storage components. Keep those concerns separate from model access. Workers compatibility has not been verified; no cloud infrastructure is implemented.
+
+## Earlier Codex CLI experiment
+
+`src/check-codex.ts` and `npm run check:codex` remain from the earlier existing-login experiment. That command makes a synthetic model request through Codex CLI and consumes subscription capacity. It is not needed for the selected Pi OAuth path. The [historical findings](../docs/research/codex-login-reuse.md) explain that experiment.

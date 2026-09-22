@@ -13,11 +13,17 @@ Which architecture best supports the agreed manual workflow: portable agent inst
 
 Choose a language only if custom code is justified. Explain what existing tools can supply before adding new components. Record warranted architectural trade-offs in docs/adr/ without designing the deferred scheduler or dashboard.
 
-## Comments
+## Current implementation decision
 
-The operator authorized a synthetic check of existing-login reuse. The implementation calls Codex CLI directly because SDK 0.155.1 lacks `--ignore-user-config` and `--ephemeral` options. See the [implementation update](../../research/codex-login-reuse.md#bounded-implementation-update) and [run instructions](../../../agent/README.md). The Flue starter remains unchanged. This check does not settle real-evidence isolation, Gmail transfer, case structures, or the final runner.
+The operator selected Flue with Pi's existing ChatGPT browser OAuth flow. A separate browser sign-in is acceptable; exact Codex-token reuse and a custom Codex CLI-to-Flue adapter are excluded. The operator chose `agent/auth.json` as the local credential store. Pi supplies login, refresh, and locked file storage through the private runtime in `agent/src/auth.ts`; `agent/src/auth-cli.ts` supplies the local commands. Browser login and local logout succeeded on 2026-09-22. See the [local integration README](../../../agent/README.md) for commands, permissions, trust boundaries, and verification limits.
 
-Current implementation status: the operator authorized a Flue starter in `agent/` and selected `openai-codex/gpt-5.6-sol`. Authentication and investigation tools are not connected. The operator then proposed reusing the existing Codex login. The [integration findings](../../research/codex-login-reuse.md) distinguish supported Codex SDK use from an unvalidated Flue provider adapter. Recommend discussing a direct SDK call before implementing separate OpenAI credential storage. This does not select a replacement runner or change case authority, Gmail permissions, or report approval requirements.
+The local integration now assesses prepared email text using the existing workflow and reporting instructions. `agent/src/agents/phishing-triage.ts` now registers the authenticated Pi provider and loads `phishing-workflow.md` plus `provider-abuse-reporting.md`. A first live Flue assessment completed. The `triage` npm script now accepts a prepared-text file through `agent/src/triage-cli.ts` and prints the final answer once without echoing the input. Start without filesystem, shell, browser, or mailbox tools for the model. The operator rejected further synthetic-agent trials, scratchpads, and authentication test stages. Show concrete code before implementing each agreed increment.
+
+This decision does not authorize mailbox access or sending, or settle case-state ownership details. Workers deployment remains deferred. This ticket remains open for the outstanding case-operation and enforcement decisions.
+
+## Earlier discussion
+
+The entries below record the earlier design discussion. The current implementation decision above supersedes statements that the local runner or OpenAI authentication route remains undecided. The [Codex CLI experiment](../../research/codex-login-reuse.md#bounded-implementation-update) remains historical capability evidence.
 
 The operator accepted incremental checking through the existing agent connection first. Keep the initial Inbox and Spam trial at 14 days and ten messages. Remember successful checks, retry failures, and use overlapping discovery without relying solely on a last-checked timestamp. Keep ordinary-message content temporary and retain originals needed for investigations. Larger one- or two-month backlog runs and Rust screening before AI review are deferred candidates whose value and reliability need evaluation. The behavior is agreed; checkpoint representation and connector transfer remain open engineering work.
 

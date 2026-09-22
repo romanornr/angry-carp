@@ -6,7 +6,7 @@ You work with an AI agent, review the evidence, and approve each outgoing report
 
 ## What you can use today
 
-This repository currently provides Markdown instructions for guided investigation and report drafting. The [local integration](agent/README.md) adds a synthetic check of an existing Codex ChatGPT login. A Flue starter also exists in `agent/`, but its authentication and investigation tools are not connected. There is no production Angry Carp CLI yet. Rust tools and local SQLite storage are planned; the code in `experiments/` contains research checks, not an application to install.
+This repository currently provides Markdown instructions for guided investigation and report drafting. The [local integration](agent/README.md) provides Pi browser authentication and a Flue agent for triaging prepared email evidence. Login and local logout have succeeded; a first live Flue assessment has completed. There is no production Angry Carp CLI yet. Rust tools and local SQLite storage are planned; the code in `experiments/` contains research checks, not an application to install.
 
 The instructions work with the capabilities your agent already has. They do not connect Gmail, provide storage, or enforce tool permissions by themselves.
 
@@ -16,7 +16,7 @@ Make these two files available together, either in the agent's workspace or as a
 
 | File | Purpose |
 | --- | --- |
-| [Manual Gmail workflow](grokbot-phishing-routine.md) | Start a scoped investigation, assess messages, resume unfinished work, and track provider responses. |
+| [Manual Gmail workflow](phishing-workflow.md) | Start a scoped investigation, assess messages, resume unfinished work, and track provider responses. |
 | [Provider abuse reporting](provider-abuse-reporting.md) | Select verified recipients and prepare readable reports with the necessary evidence and disclosure checks. |
 
 The reporting file is the reusable skill source. There is no packaged skill installer yet. Loading the Markdown explicitly is the supported starting point; copying it into a host's skill directory has not been verified for every agent.
@@ -24,7 +24,7 @@ The reporting file is the reusable skill source. There is no packaged skill inst
 For an agent that can read this repository, start with:
 
 ```text
-Read grokbot-phishing-routine.md and provider-abuse-reporting.md.
+Read phishing-workflow.md and provider-abuse-reporting.md.
 Help me prepare a manual phishing investigation. First explain which
 email, evidence-storage, and privacy capabilities are available.
 Propose Inbox and Spam over the last 14 days, capped at 10 messages,
@@ -39,17 +39,17 @@ Each report is reviewed separately, including its recipient, body, and attachmen
 
 ## Use with Grok Bot
 
-`grokbot-phishing-routine.md` retains its original filename, but now describes a manual workflow usable by other agents too. Pair it with `provider-abuse-reporting.md` when preparing instructions for a Grok Bot.
+`phishing-workflow.md` describes a manual workflow usable by Grok Bot and other agents. Pair it with `provider-abuse-reporting.md` when preparing instructions for a Grok Bot.
 
 There is no verified one-click Grok Bot template or installation procedure in this repository. File loading, Gmail access, private storage, and execution controls need checking in the actual Bot. The file does not install or update a scheduled routine. See the [Grok capability research](docs/research/grok-capabilities.md) for what has and has not been established.
 
 ## Local agent and tools
 
-We are evaluating Flue for an optional local investigator and Composio for Gmail access through browser authorization. Neither is required to read and use the Markdown. The Flue starter and dependencies are installed; Gmail access and model authentication have not been tested end to end. The [compatibility notes](docs/research/flue-gmail-jev-compatibility.md) distinguish documented support from remaining checks.
+The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout have succeeded. The `PhishingTriage` module registers the authenticated provider and loads the shared instructions; a first live assessment has completed. See [local authentication and implementation status](agent/README.md) for commands, credential storage, and remaining work.
 
-For OpenAI subscription access, the synthetic check calls the installed Codex CLI, which manages its own credentials. Run it with `npm run check:codex` from `agent/`; it consumes subscription capacity and accepts no real mail. The [integration findings](docs/research/codex-login-reuse.md) explain why the SDK was not used for this check. Flue's current model setting does not automatically reuse the Codex login, and the main runner choice remains open.
+The triage command reads a prepared email text file and uses the existing workflow and reporting instructions, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
 
-The first planned software behavior is incremental checking: remember completed checks, retry failures, and show any mail left unchecked. Larger historical runs and Rust-based screening before AI review are later candidates for evaluation.
+The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 
 ## Project documentation
 
@@ -58,4 +58,4 @@ The first planned software behavior is incremental checking: remember completed 
 - [Planning decisions and open questions](docs/planning/map.md)
 - [Research findings](docs/research/) and [experimental code](experiments/)
 
-Shared instructions use the role **operator**. Configure your own reporting identity, signature, mailbox, timezone, and private storage location. Keep credentials and personal evidence out of this repository.
+Shared instructions use the role **operator**. Configure your own reporting identity, signature, mailbox, timezone, and private storage location. Keep credentials and personal evidence out of Git. The operator-approved local credential file is `agent/auth.json`, which is ignored by Git; original email evidence remains outside the repository.

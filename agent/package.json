@@ -3,6 +3,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
+		"auth:login": "node src/auth-cli.ts login",
+		"auth:logout": "node src/auth-cli.ts logout",
+		"triage": "node src/triage-cli.ts",
 		"check:codex": "node src/check-codex.ts",
 		"check:types": "tsc --noEmit"
 	},
