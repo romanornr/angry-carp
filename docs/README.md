@@ -37,3 +37,5 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 - [0007: Separate assessment from reporting](adr/0007-separate-assessment-from-reporting.md)
 
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
+
+- [Email similarity and campaign linking](research/email-similarity-and-campaign-linking.md): Eclat, Winnowing, MinHash, and CUSUM for repeated phishing or unwanted mail, with proposed comparisons and their limits.
