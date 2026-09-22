@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { lookupRdap } from './rdap.ts';
+import * as v from 'valibot';
+import { domainSchema, lookupRdap } from './rdap.ts';
 
+const domain = v.parse(domainSchema, 'EXAMPLE.COM');
 const directory = { services: [[['com'], ['https://registry.example/rdap/']]] };
 const sourceUrl = 'https://registry.example/rdap/domain/example.com';
 const record = {
@@ -40,9 +42,7 @@ test('returns attributed registration evidence without personal data or referral
     throw new Error('Unexpected destination');
   });
 
-  const result = await lookupRdap('EXAMPLE.COM');
-  assert.notEqual(result.kind, 'invalid_input');
-  if (result.kind === 'invalid_input') assert.fail('Expected registration evidence');
+  const result = await lookupRdap(domain);
   const { retrievedAt, ...evidence } = result;
   assert.equal(Number.isFinite(Date.parse(retrievedAt)), true);
   assert.deepEqual(evidence, {
@@ -59,12 +59,11 @@ test('returns attributed registration evidence without personal data or referral
   }
 });
 
-test('rejects URLs, paths, addresses, IPs, and malformed domains before networking', async (t) => {
-  const fetch = t.mock.method(globalThis, 'fetch');
+test('validates domain tool inputs and rejects URLs, paths, addresses, IPs, and malformed names', () => {
+  assert.equal(v.parse(domainSchema, 'EXAMPLE.COM'), 'example.com');
   for (const input of ['https://example.com', '../auth.json', 'me@example.com', '127.0.0.1', 'localhost', '-bad.com', 'x'.repeat(64) + '.com']) {
-    assert.deepEqual(await lookupRdap(input), { kind: 'invalid_input' });
+    assert.equal(v.safeParse(domainSchema, input).success, false, input);
   }
-  assert.equal(fetch.mock.callCount(), 0);
 });
 
 test('selects the longest IANA suffix and retains the supplied query domain', async (t) => {
@@ -76,7 +75,7 @@ test('selects the longest IANA suffix and retains the supplied query domain', as
     assert.equal(url, 'https://registry.example/rdap/domain/example.co.uk');
     return Response.json({ ...record, ldhName: 'example.co.uk' });
   });
-  const result = await lookupRdap('example.co.uk');
+  const result = await lookupRdap(v.parse(domainSchema, 'example.co.uk'));
   assert.equal(result.kind, 'found');
   if (result.kind === 'found') assert.equal(result.sourceUrl, 'https://registry.example/rdap/domain/example.co.uk');
 });
@@ -90,19 +89,20 @@ test('distinguishes absent records, throttling, redirects, bad data, and incompl
   });
   for (const status of [404, 429, 302]) {
     reply = new Response(null, { status, headers: { location: 'http://127.0.0.1/private' } });
-    const result = await lookupRdap('example.com');
-    if (result.kind === 'invalid_input') assert.fail('Expected lookup result');
+    const result = await lookupRdap(domain);
     const { retrievedAt, ...evidence } = result;
     if (status === 404) {
       assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'not_found' });
+    } else if (status === 302) {
+      assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'unavailable', reason: 'redirected' });
     } else {
       assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'http_error', status });
     }
   }
   reply = Response.json({ ...record, ldhName: 'different.com' });
-  assert.equal((await lookupRdap('example.com')).kind, 'unavailable');
+  assert.equal((await lookupRdap(domain)).kind, 'unavailable');
   reply = Response.json({ objectClassName: 'domain', ldhName: 'example.com' });
-  const result = await lookupRdap('example.com');
+  const result = await lookupRdap(domain);
   assert.equal(result.kind, 'found');
   if (result.kind === 'found') assert.deepEqual(result.registrars, []);
 });
@@ -111,15 +111,14 @@ test('sanitizes network errors and bounds streamed responses', async (t) => {
   const fetch = t.mock.method(globalThis, 'fetch', async () => {
     throw new Error('private runtime detail');
   });
-  const failed = await lookupRdap('example.com');
-  if (failed.kind === 'invalid_input') assert.fail('Expected lookup result');
+  const failed = await lookupRdap(domain);
   const { retrievedAt, ...evidence } = failed;
   assert.deepEqual(evidence, {
     queriedDomain: 'example.com', sourceUrl: 'https://data.iana.org/rdap/dns.json',
     kind: 'unavailable', reason: 'request_failed',
   });
   fetch.mock.mockImplementation(async () => new Response('x'.repeat(512 * 1024 + 1)));
-  const oversized = await lookupRdap('example.com');
+  const oversized = await lookupRdap(domain);
   assert.equal(oversized.kind, 'unavailable');
   if (oversized.kind === 'unavailable') assert.equal(oversized.reason, 'response_too_large');
 });
@@ -129,7 +128,7 @@ test('does not invent a service when IANA has none or offers an unsafe endpoint'
   t.mock.method(globalThis, 'fetch', async () => Response.json({ services }));
   for (const endpoints of [[], ['http://registry.example/'], ['https://user:password@registry.example/'], ['https://127.0.0.1/']]) {
     services = [[['com'], endpoints]];
-    const result = await lookupRdap('example.com');
+    const result = await lookupRdap(domain);
     assert.equal(result.kind, 'no_service');
   }
 });

@@ -6,6 +6,8 @@ The operator accepted comparing local observations, one configured LLM, and thei
 
 The [additional source review](additional-reporting-and-simulation-sources.md) identifies simulation collections that may help with inert fixtures and scenario coverage. Keep authorized simulations distinct from confirmed malicious campaigns and do not use template familiarity as evidence of real-world detection accuracy.
 
+The [TypeScript methods review](phishing-detection-methods.md), added 2026-09-22, compares concrete lookalike, header, and timing checks with the implemented Flue lookup tools. It proposes two bounded experiments without selecting a new production detector.
+
 ## Findings that affect the architecture
 
 - [Unicode evaluation](unicode-confusable-evaluation.md): standard comparisons expose lookalikes that normalization alone misses. Script checks, normalization, confusable comparisons, and direction-control observations are complementary. None determines malicious intent.

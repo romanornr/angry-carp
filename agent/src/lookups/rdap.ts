@@ -1,7 +1,8 @@
 import * as v from 'valibot';
+import { requestJson, type RequestFailure } from './request-json.ts';
 
 const bootstrapUrl = 'https://data.iana.org/rdap/dns.json';
-const maxResponseBytes = 512 * 1024;
+const accept = 'application/rdap+json, application/json';
 
 export const domainSchema = v.pipe(
   v.string(),
@@ -39,12 +40,10 @@ const recordSchema = v.object({
   })), []),
 });
 
-type RequestFailure =
-  | { kind: 'http_error'; status: number }
-  | { kind: 'unavailable'; reason: 'request_failed' | 'invalid_response' | 'response_too_large' };
+type Domain = v.InferOutput<typeof domainSchema>;
 
 type RdapLookup = {
-  queriedDomain: string;
+  queriedDomain: Domain;
   sourceUrl: string;
   retrievedAt: string;
 } & (
@@ -60,13 +59,9 @@ type RdapLookup = {
 );
 
 /** Queries public RDAP services, without authentication, redirects, or referral requests. */
-export async function lookupRdap(input: string): Promise<RdapLookup | { kind: 'invalid_input' }> {
-  const domain = v.safeParse(domainSchema, input);
-  if (!domain.success) return { kind: 'invalid_input' };
-
-  const queriedDomain = domain.output;
+export async function lookupRdap(queriedDomain: Domain): Promise<RdapLookup> {
   const signal = AbortSignal.timeout(15_000);
-  const bootstrap = await requestJson(bootstrapUrl, signal);
+  const bootstrap = await requestJson({ url: bootstrapUrl, signal, accept });
   const discovery = { queriedDomain, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString() };
   if (bootstrap.kind !== 'received') return { ...discovery, ...bootstrap };
 
@@ -82,7 +77,7 @@ export async function lookupRdap(input: string): Promise<RdapLookup | { kind: 'i
   if (!baseUrl) return { ...discovery, kind: 'no_service' };
 
   const sourceUrl = `${baseUrl.replace(/\/$/, '')}/domain/${queriedDomain}`;
-  const response = await requestJson(sourceUrl, signal);
+  const response = await requestJson({ url: sourceUrl, signal, accept });
   const source = { queriedDomain, sourceUrl, retrievedAt: new Date().toISOString() };
   if (response.kind === 'http_error' && response.status === 404) return { ...source, kind: 'not_found' };
   if (response.kind !== 'received') return { ...source, ...response };
@@ -131,37 +126,4 @@ function cardValues(contact: v.InferOutput<typeof contactSchema>, name: string):
     }
   }
   return values;
-}
-
-async function requestJson(
-  url: string,
-  signal: AbortSignal,
-): Promise<{ kind: 'received'; body: unknown } | RequestFailure> {
-  try {
-    const response = await fetch(url, {
-      headers: { accept: 'application/rdap+json, application/json' },
-      credentials: 'omit',
-      redirect: 'manual',
-      signal,
-    });
-    if (!response.ok) {
-      await response.body?.cancel();
-      return { kind: 'http_error', status: response.status };
-    }
-    if (!response.body) return { kind: 'unavailable', reason: 'invalid_response' };
-
-    const decoder = new TextDecoder();
-    let bytes = 0;
-    let text = '';
-    // Exiting stream iteration cancels the body, including when the byte limit is exceeded.
-    for await (const chunk of response.body) {
-      bytes += chunk.byteLength;
-      if (bytes > maxResponseBytes) return { kind: 'unavailable', reason: 'response_too_large' };
-      text += decoder.decode(chunk, { stream: true });
-    }
-    return { kind: 'received', body: JSON.parse(text + decoder.decode()) };
-  } catch {
-    // Never forward server bodies, fetch exceptions, or ambient runtime details to the model.
-    return { kind: 'unavailable', reason: 'request_failed' };
-  }
 }
