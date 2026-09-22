@@ -6,6 +6,7 @@ import { setProvider, useModel, useTool } from '@flue/runtime';
 import { openAuth } from '../auth.ts';
 import { lookupDnsTool, lookupRdapTool } from '../lookups/tools.ts';
 import { compareDomainsTool } from '../lookalikes/tools.ts';
+import { findSharedPassagesTool } from '../text-reuse/tools.ts';
 
 const triage = await readFile(new URL('../../../phishing-triage.md', import.meta.url), 'utf8');
 const channels = await readFile(new URL('../../../reporting-channels.md', import.meta.url), 'utf8');
@@ -21,6 +22,7 @@ export function PhishingTriage() {
   useTool(lookupRdapTool);
   useTool(lookupDnsTool);
   useTool(compareDomainsTool);
+  useTool(findSharedPassagesTool);
 
   return `${triage}\n\n${channels}`;
 }

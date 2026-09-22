@@ -14,6 +14,7 @@ Angry Carp currently provides a local command for assessing prepared email evide
 - [Domain registration lookups](../agent/README.md#domain-registration-lookups): RDAP operation, returned evidence, privacy, and current limits.
 - [DNS lookups](../agent/README.md#dns-lookups): resolver, privacy, returned records, and limits.
 - [Domain lookalikes](domain-lookalikes.md): local comparisons, explicit reference domains, Unicode behavior, and limits.
+- [Reused email passages](text-reuse.md): local Winnowing comparisons, input preparation, source positions, and limits.
 - [Reporting recipients](../agent/README.md#reporting-recipients): attribution, channels, and recipient-specific readiness.
 - [Domain glossary](../CONTEXT.md): evidence, observations, inference, concern, confidence, reporting readiness, and approval.
 - [Standards and reporting guidance](standards-and-reporting.md): relevant RFCs, ICANN guidance, provider instructions, and the limits of their application.
@@ -39,3 +40,5 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
 
 - [Email similarity and campaign linking](research/email-similarity-and-campaign-linking.md): Eclat, Winnowing, MinHash, and CUSUM for repeated phishing or unwanted mail, with proposed comparisons and their limits.
+- [Offline brand lookup](research/offline-brand-lookup.md): reusable reference data, matching algorithms, source quality, and a proposed Flue lookup that keeps the catalogue outside the prompt.
+- [DNS catalogues and threat lists](research/dns-reference-and-threat-lists.md): AdGuard, NextDNS, Control D, and public feeds compared with 2FA Directory, including offline access, licences, and distinct evidence roles.

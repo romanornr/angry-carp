@@ -48,6 +48,8 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/lookups/tools.ts` | Validates model inputs and exposes both lookups as Flue tools. |
 | `src/lookalikes/compare-domains.ts` | Compares supplied domain names locally using Unicode and public-suffix data. |
 | `src/lookalikes/tools.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
+| `src/text-reuse/winnowing.ts` | Finds shared passages in two supplied bodies using local Winnowing. |
+| `src/text-reuse/tools.ts` | Exposes passage comparison and its input-provenance instructions to Flue. |
 
 The lookup cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `lookups/tools.ts` owns the Flue bindings. This keeps each lookup next to its validation and tests without separate wrapper folders or a generic lookup framework.
 
@@ -135,6 +137,8 @@ Both lookup cores are read-only and keep no local state. Repeating a lookup make
 ## Domain comparisons
 
 For name comparisons, the agent also has the local [`compare_domains` tool](../docs/domain-lookalikes.md). Supply an independently sourced official domain in your operator notes. The tool returns Unicode and label observations; it does not verify ownership or decide whether the message is phishing.
+
+For two explicitly supplied bodies, [`find_shared_passages`](../docs/text-reuse.md) returns reused text and positions using Winnowing. Supply both bodies in labeled sections of the prepared input and ask for a comparison. It has no access to earlier messages or files, and shared text alone is not a spam verdict.
 
 ## Reporting recipients
 

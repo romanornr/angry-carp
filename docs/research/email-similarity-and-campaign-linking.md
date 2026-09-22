@@ -1,10 +1,10 @@
 # Email similarity and campaign linking
 
-Research date: 2026-09-22. Status: proposal, not an accepted implementation plan. Sources retrieved on this date. No private email, credential, or conversation database was read for this research.
+Research date: 2026-09-22. Sources retrieved on this date. No private email, credential, or conversation database was read for this research. The operator subsequently selected a [Winnowing comparison tool](../text-reuse.md); the corpus-level methods below remain proposals.
 
 ## Recommendation
 
-For repeated unwanted email, investigate comparisons that explain which passages or indicators recur. Compare exact text-shingle overlap with Winnowing on a small, operator-selected set before choosing an implementation. A shingle is an overlapping fragment of text. Include legitimate messages with shared footers and templates in the comparison.
+For repeated unwanted email, compare passages or indicators that recur. The selected increment implements Winnowing with matched positions and offline tests, including shared footers, instead of a separate exploratory phase. A shingle is an overlapping fragment of text. Effectiveness on the operator's mail remains unmeasured.
 
 The useful result is a statement such as "these messages share this passage and this destination," with references to the source messages. A similarity result does not itself establish unsolicited delivery, phishing, or common attacker identity. Adult subject matter does not establish spam. The recipient's unwanted-mail designation and the message's deceptive behavior are separate observations.
 
@@ -62,6 +62,6 @@ The current prepared text cannot supply original HTML structure, attachment byte
 
 Weighted edit distance could add typo observations beyond the current domain skeleton and containment checks, but custom costs and decision thresholds need evidence. Defer that extension until examples show a useful gap.
 
-## Next decision
+## Deferred decisions
 
-First decide whether the operator-selected examples contain repeated bodies, repeated indicators, or mainly unrelated spam. For repeated bodies, the proposed comparison is exact shingle overlap versus Winnowing, with visible matched passages and legitimate controls. For repeated indicators, start with an index from each indicator to its source messages and assess whether Eclat adds useful combinations. No runtime changes, storage format, dependency, blocking rule, or automatic reporting action are approved by this note.
+The first tool compares only explicitly supplied bodies. A future indicator index could map each indicator to its source messages and help assess whether Eclat adds useful combinations. No corpus store, blocking rule, automatic reporting action, or model training is selected by this research.
