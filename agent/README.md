@@ -46,6 +46,8 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/lookups/dns.ts` | Queries a fixed public resolver and returns DNS answers with their source and retrieval time. |
 | `src/lookups/request-json.ts` | Bounds HTTP responses, blocks redirects, and returns safe transport errors. |
 | `src/lookups/tools.ts` | Validates model inputs and exposes both lookups as Flue tools. |
+| `src/lookalikes/compare-domains.ts` | Compares supplied domain names locally using Unicode and public-suffix data. |
+| `src/lookalikes/tools.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
 
 The lookup cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `lookups/tools.ts` owns the Flue bindings. This keeps each lookup next to its validation and tests without separate wrapper folders or a generic lookup framework.
 
@@ -129,6 +131,10 @@ Responses have a 15-second deadline and a 512 KiB byte limit. Parsed answers are
 DNS can support attribution but does not establish the origin host or historical configuration. Nameservers identify a DNS service; address ownership needs separate sourced evidence. IP RDAP is not implemented. Inbound MX records alone do not identify a sending platform.
 
 Both lookup cores are read-only and keep no local state. Repeating a lookup makes a new request and may return changed records. There is no application cache or automatic retry. A rerun of the triage command creates a new conversation; it does not resume a previous assessment.
+
+## Domain comparisons
+
+For name comparisons, the agent also has the local [`compare_domains` tool](../docs/domain-lookalikes.md). Supply an independently sourced official domain in your operator notes. The tool returns Unicode and label observations; it does not verify ownership or decide whether the message is phishing.
 
 ## Reporting recipients
 
