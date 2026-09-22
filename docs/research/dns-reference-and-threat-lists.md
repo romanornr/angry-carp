@@ -2,6 +2,8 @@
 
 Research date: 2026-09-22. This extends [offline brand lookup](offline-brand-lookup.md) with AdGuard, NextDNS, Control D, and public threat feeds. It records primary-source checks and independent Claude and Grok reviews. No runtime integration is selected or implemented.
 
+Follow-up: [MetaMask phishing-list reuse](metamask-phishing-list.md) evaluates a focused crypto-threat source, its separate data and detector licences, path-aware matching requirements, and overlap with HaGeZi. It is an additional candidate, not a brand directory or an adopted dependency.
+
 ## The useful combination
 
 These sources can contribute three different observations:

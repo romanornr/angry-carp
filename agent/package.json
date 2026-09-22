@@ -7,7 +7,9 @@
 		"auth:logout": "node src/auth-cli.ts logout",
 		"triage": "node src/triage-cli.ts",
 		"check:codex": "node src/check-codex.ts",
-		"check:types": "tsc --noEmit"
+		"check:types": "tsc --noEmit",
+		"test": "node --test",
+		"brands:check": "node src/brands/check-directory.ts"
 	},
 	"dependencies": {
 		"@earendil-works/pi-ai": "0.83.0",

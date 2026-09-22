@@ -4,7 +4,7 @@ The local Flue agent can call `compare_domains` to compare one observed domain w
 
 ## Supply a reference
 
-Include the official domain in a separate operator note in your prepared evidence. Identify the independent source and retrieval date supporting that reference. An image URL or brand claim inside the email is not sufficient verification.
+Include the reference domain in a separate operator note with its independent source and retrieval date, or ask the local agent to select a candidate from [the brand directory](brand-references.md). Directory associations remain unverified candidates. An image URL or brand claim inside the email is not sufficient verification.
 
 Run the existing triage command:
 
@@ -12,7 +12,7 @@ Run the existing triage command:
 npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
 ```
 
-The model chooses whether the comparison helps. Its tool instructions require a reference from operator notes; this provenance rule is not enforced by the input schema. The function treats both names as supplied inputs and does not label the reference as independently verified. Tool-specific instructions live in `agent/src/lookalikes/tools.ts`, outside the shared triage Markdown.
+The model chooses whether the comparison helps. Its tool instructions require a reference from operator source notes or a selected directory result and require that provenance in the assessment. The input schema does not enforce this rule. The result contains supplied names and observations, not reference-source metadata or independent verification; retain the source notes or lookup result alongside it. Tool-specific instructions live in `agent/src/lookalikes/tools.ts`, outside the shared triage Markdown.
 
 ## Results
 

@@ -1,0 +1,10 @@
+{
+  "name": "2FA Directory",
+  "dataUrl": "https://api.2fa.directory/v3/all.json",
+  "signedUrl": "https://api.2fa.directory/v3/all.json.sig",
+  "retrievedAt": "2026-09-22T12:46:40.418315Z",
+  "signedAt": "2026-09-21T06:59:46Z",
+  "sha256": "e09405bff4ea4f0ce5628371f89e69cea2a553cca95db48c4d39e423618c66d4",
+  "signingKeyFingerprint": "0D504141CE290061BD4F95A4AD8483C1CBABC36D",
+  "attribution": "Data sourced from 2FA Directory by 2factorauth"
+}

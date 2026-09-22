@@ -6,7 +6,7 @@ You work with an AI agent, review the evidence, and approve each outgoing report
 
 ## What you can use today
 
-This repository provides portable Markdown instructions and a working [local TypeScript triage command](agent/README.md#assess-prepared-email-evidence). The Flue agent uses Pi browser authentication with your ChatGPT subscription. It can query RDAP and DNS, compare domain lookalikes, and find reused passages in two supplied email bodies using Winnowing. Login, local logout, and live assessments have succeeded.
+This repository provides portable Markdown instructions and a working [local TypeScript triage command](agent/README.md#assess-prepared-email-evidence). The Flue agent uses Pi browser authentication with your ChatGPT subscription. It can query RDAP and DNS, look up reference-domain candidates, compare domain lookalikes, and find reused passages in two supplied email bodies using Winnowing. Login, local logout, and live assessments have succeeded.
 
 Mailbox acquisition, durable case operations, and report submission remain unimplemented. SQLite is selected for future case storage; Flue's conversation database currently records assessments. The code in `experiments/` contains research checks.
 
@@ -48,9 +48,9 @@ The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT
 
 The triage command reads a prepared email text file and loads the triage instructions and a compact reporting-channel reference, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
 
-See [domain lookalikes](docs/domain-lookalikes.md) and [shared passages](docs/text-reuse.md) for input requirements and algorithm limits. These tools supply observations, not independent phishing verdicts. The agent cannot retrieve official brand pages or search earlier email automatically. Supply reference domains, official-source findings, and any comparison body explicitly.
+See [brand references](docs/brand-references.md), [domain lookalikes](docs/domain-lookalikes.md), and [shared passages](docs/text-reuse.md) for input requirements and algorithm limits. These tools supply observations, not independent phishing verdicts. The agent cannot retrieve official brand pages or search earlier email automatically. Supply official-source findings and any comparison body explicitly; reference domains can come from operator notes or the local directory.
 
-[Reference-data research](docs/research/dns-reference-and-threat-lists.md) compares brand directories, service-domain catalogues, and threat lists. No dataset has been adopted or loaded into the agent. A listed website, a service association, and a threat-feed hit have different meanings and must remain distinguishable.
+[Reference-data research](docs/research/dns-reference-and-threat-lists.md) compares brand directories, service-domain catalogues, and threat lists. The agent uses a pinned 2FA Directory snapshot, with a [manual update guide](docs/updating-reference-data.md). Service catalogues and threat feeds remain proposals. A listed website, a service association, and a threat-feed hit have different meanings and must remain distinguishable.
 
 The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 

@@ -4,6 +4,10 @@ Research and retrieval date: 2026-09-22. This note combines primary-source resea
 
 The subsequent [DNS catalogue and threat-list comparison](dns-reference-and-threat-lists.md) expands these options with AdGuard, NextDNS, Control D, and public feeds. It recommends combining separately labelled reference and threat observations, while retaining 2FA Directory as the first named-service reference candidate. No source has been adopted yet.
 
+The [implementation research](brand-directory-implementation.md) now measures the v3 snapshot, compares Map, binary search, and scans, and proposes exact-name/hostname indexes with a name-word fallback. It includes the code layout and the required change to reference provenance in the existing comparison tool. Runtime integration awaits code review and agreement.
+
+Implementation update, 2026-09-22: the operator approved and the local agent now includes the [2FA Directory lookup](../brand-references.md). The remaining text records the preceding research and proposal. Service catalogues and threat feeds remain unimplemented.
+
 ## What is already solved
 
 An offline index can find reference domains for a supplied brand without exposing the whole catalogue to the model. Exact lookup and multi-pattern matching are established techniques. The unresolved work is selecting and maintaining the reference data.

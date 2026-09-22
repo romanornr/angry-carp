@@ -8,10 +8,10 @@ An evidence-backed workflow and implementation for manually operated phishing in
 
 ## Current implementation, 2026-09-22
 
-- The local TypeScript Flue agent assesses prepared email text through Pi's ChatGPT OAuth provider. It has RDAP, DNS, domain-lookalike, and Winnowing passage-comparison tools. [Usage and limits](../../agent/README.md) describe what each tool can establish.
+- The local TypeScript Flue agent assesses prepared email text through Pi's ChatGPT OAuth provider. It has RDAP, DNS, brand-directory, domain-lookalike, and Winnowing passage-comparison tools. [Usage and limits](../../agent/README.md) describe what each tool can establish.
 - `phishing-triage.md` stays portable. Flue-specific tool contracts live under `agent/`, as clarified in [ADR 0004](../adr/0004-distribute-workflow-independently.md).
 - Private evidence remains in ignored files. Flue conversations record assessments; the SQLite case store selected in [ADR 0006](../adr/0006-use-sqlite-for-local-case-storage.md) is not implemented. No mailbox, web search, official-page retrieval, or report-sending tool is connected.
-- [Brand-reference research](../research/offline-brand-lookup.md) and [DNS catalogue and threat-feed research](../research/dns-reference-and-threat-lists.md) are complete enough to propose an increment. No source is adopted. The current recommendation is to consider 2FA Directory first for named-service references, HaGeZi TIF separately for threat observations, and AdGuard data where additional associations are useful. Snapshot edition, packaging, matching semantics, and refresh behavior still need agreement.
+- The operator approved the [2FA Directory lookup](../brand-references.md), now implemented with a verified public snapshot and manual update guide. [DNS catalogues and threat feeds](../research/dns-reference-and-threat-lists.md) remain proposals. No MetaMask, HaGeZi, or AdGuard dataset is installed.
 - Local tests verify tool behavior. No benchmark establishes parity with a model-only assessment or a human-assisted web investigation. Eclat, MinHash, CUSUM, training, and automatic matching against stored mail remain unimplemented.
 
 ## Notes
@@ -75,7 +75,7 @@ The acquisition/case distinction and ordinary-mail retention boundary are record
 The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisition, assessments, provider coordination, evidence preservation before reporting, approval, interrupted submissions, replies, and handoff from an existing routine. [ADR 0005](../../docs/adr/0005-keep-report-authority-in-case-operations.md) records authority in reusable case operations. The [independent review response](../../docs/research/independent-review-response.md) separates incorporated findings from open storage, client, and runner proposals. These artifacts do not close the runtime or interface tickets.
 
 - How to turn the [research evaluation proposal](../../docs/research/phishing-detection-design.md#evaluation-protocol-to-specify-next) into an agreed benchmark, including historical evidence access, labeling, sample sizes, and acceptance criteria.
-- Whether to adopt a reference or threat-list snapshot next. Preserve source, date, exact match scope, and relation type; catalogue association must not suppress threat evidence. The research recommendation is not approval to import data or add dependencies.
+- Whether to add a threat-list snapshot alongside the implemented 2FA Directory lookup. Preserve source, date, exact match scope, and relation type; catalogue association must not suppress threat evidence. These additional sources still require agreement.
 - Validation of the proposed operator experience for reviewing ambiguous cases, correcting mistakes, and resuming interrupted work.
 - The smallest specification and validation artifacts needed once the architecture is chosen.
 

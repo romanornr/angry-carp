@@ -50,6 +50,9 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `src/lookalikes/tools.ts` | Exposes the comparison as a Flue tool with its reference-provenance instructions. |
 | `src/text-reuse/winnowing.ts` | Finds shared passages in two supplied bodies using local Winnowing. |
 | `src/text-reuse/tools.ts` | Exposes passage comparison and its input-provenance instructions to Flue. |
+| `src/brands/brand-directory.ts` | Validates the public snapshot and builds private name, word, and hostname Maps for local lookup. |
+| `src/brands/tools.ts` | Exposes source-labelled directory candidates through `lookup_brand`. |
+| `src/brands/check-directory.ts` | Checks an installed or staged snapshot without authentication or a model call. |
 
 The lookup cores use Web APIs and Valibot. They have no Flue, authentication, or filesystem imports; `lookups/tools.ts` owns the Flue bindings. This keeps each lookup next to its validation and tests without separate wrapper folders or a generic lookup framework.
 
@@ -138,11 +141,11 @@ Both lookup cores are read-only and keep no local state. Repeating a lookup make
 
 ## Local comparisons
 
-For name comparisons, the agent also has the local [`compare_domains` tool](../docs/domain-lookalikes.md). Supply an independently sourced official domain in your operator notes. The tool returns Unicode and label observations; it does not verify ownership or decide whether the message is phishing.
+For name comparisons, the agent has the local [`compare_domains` tool](../docs/domain-lookalikes.md). Supply an independently sourced reference in operator notes, or ask the agent to select a candidate from [`lookup_brand`](../docs/brand-references.md). Keep directory provenance distinct from operator verification. The comparator returns Unicode and label observations; it does not verify ownership or decide whether the message is phishing.
 
 For two explicitly supplied bodies, [`find_shared_passages`](../docs/text-reuse.md) returns reused text and positions using Winnowing. Supply both bodies in labeled sections of the prepared input and ask for a comparison. It has no access to earlier messages or files, and shared text alone is not a spam verdict.
 
-Neither tool searches a brand catalogue, checks a threat list, or learns from past conversations. [Reference-data research](../docs/research/dns-reference-and-threat-lists.md) proposes separate observations for directory websites, service associations, and threat-feed membership. No dataset or importer is installed. Official-source findings still need to be supplied by the operator.
+`lookup_brand` reads in-memory indexes built from the public 2FA Directory snapshot in `reference-data/2fa-directory/`. It supports exact names, name-word intersections, and exact hostnames, with source metadata and explicit output limits. See [lookup behavior](../docs/brand-references.md) and [manual updates](../docs/updating-reference-data.md). No threat list or learning mechanism is installed. Official product announcements still need to be supplied as separately sourced findings.
 
 ## Reporting recipients
 
@@ -152,16 +155,16 @@ Readiness is recipient-specific. A missing origin host does not block a supporte
 
 Cloudflare's Phishing & Malware form is the default route. Its [report API](https://developers.cloudflare.com/api/resources/abuse_reports/methods/create/) requires account entitlement and a scoped Abuse Reports Edit token. Neither form automation nor API submission is implemented. The registrar email is appropriate only when Cloudflare is the registrar. Routine brand notifications are excluded from this workflow.
 
-## Verify the lookups
+## Verify the agent tools
 
 From the repository root:
 
 ```sh
-node --test agent/src/lookups/rdap.test.ts agent/src/lookups/dns.test.ts
+npm --silent --prefix agent test
 npm --prefix agent run check:types
 ```
 
-The 12 offline tests cover registration attribution, DNS answer preservation, input and response validation, failure distinctions, response limits, blocked redirects, safe errors, and repeated requests. They mock the network and exercise the real parsers and lookup functions. Live RDAP and DNS lookups of `example.com` succeeded on 2026-09-22. Both cores also bundled for a browser target without Node imports. These checks made no model call or candidate website request.
+The offline suite exercises the lookup and comparison cores, the installed brand snapshot, and registration of all five Flue tools. The binding test constructs the tools without loading the authenticated agent module; this catches runtime schema restrictions that TypeScript cannot check. Network tests mock responses and exercise the real parsers. No test opens authentication or makes a model call.
 
 ## Future deployment
 

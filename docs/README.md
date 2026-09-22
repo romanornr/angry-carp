@@ -14,6 +14,8 @@ Angry Carp currently provides a local command for assessing prepared email evide
 - [Domain registration lookups](../agent/README.md#domain-registration-lookups): RDAP operation, returned evidence, privacy, and current limits.
 - [DNS lookups](../agent/README.md#dns-lookups): resolver, privacy, returned records, and limits.
 - [Domain lookalikes](domain-lookalikes.md): local comparisons, explicit reference domains, Unicode behavior, and limits.
+- [Brand references](brand-references.md): local 2FA Directory candidates, source metadata, and matching limits.
+- [Update reference data](updating-reference-data.md): verified snapshot replacement, rollback, and update policy.
 - [Reused email passages](text-reuse.md): local Winnowing comparisons, input preparation, source positions, and limits.
 - [Reporting recipients](../agent/README.md#reporting-recipients): attribution, channels, and recipient-specific readiness.
 - [Domain glossary](../CONTEXT.md): evidence, observations, inference, concern, confidence, reporting readiness, and approval.
@@ -39,8 +41,10 @@ Accepted decisions describe the chosen direction. They do not imply that every c
 
 The [manual workflow specification](manual-workflow.md) describes broader acquisition, case-management, and reporting requirements. The [planning map](planning/map.md) records implementation decisions and outstanding work. [Research notes](research/) preserve supporting investigations; their proposals and historical findings are not automatically current product behavior.
 
-Brand directories, service catalogues, and threat feeds remain research candidates. No snapshot, importer, refresh process, or corresponding lookup tool is installed. Current domain comparisons require an explicitly supplied reference domain.
+The local agent now uses a pinned 2FA Directory snapshot for candidate reference domains. Service catalogues and threat feeds remain research candidates. Updates are manual; no scheduler is installed. Directory results supplement operator-supplied references without certifying ownership.
 
 - [Email similarity and campaign linking](research/email-similarity-and-campaign-linking.md): Eclat, Winnowing, MinHash, and CUSUM for repeated phishing or unwanted mail, with proposed comparisons and their limits.
 - [Offline brand lookup](research/offline-brand-lookup.md): reusable reference data, matching algorithms, source quality, and a proposed Flue lookup that keeps the catalogue outside the prompt.
+- [Brand-directory implementation research](research/brand-directory-implementation.md): measured Map/binary-search/scan comparisons, name-word retrieval, proposed files, and reference provenance.
 - [DNS catalogues and threat lists](research/dns-reference-and-threat-lists.md): AdGuard, NextDNS, Control D, and public feeds compared with 2FA Directory, including offline access, licences, and distinct evidence roles.
+- [MetaMask phishing list](research/metamask-phishing-list.md): crypto-threat observations, data versus detector reuse, matching scope, and HaGeZi overlap.
