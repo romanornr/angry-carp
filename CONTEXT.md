@@ -37,6 +37,15 @@ The exact address submitted to an external scanning service. It can differ from 
 **Assessment**:
 A judgement about suspected phishing, its confidence, and the evidence supporting it. An assessment can change when new evidence arrives.
 
+**Concern level**:
+The High, Medium, or Low classification of a suspected phishing concern based on the combined evidence. It is distinct from impact severity, reporting readiness, and authorization to send.
+
+**Confidence**:
+How strongly the evidence supports a specific conclusion. Confidence in impersonation can differ from confidence about a linked file's behavior.
+
+**Reporting readiness**:
+Whether the evidence, provider attribution, verified channel, and disclosure review are sufficient to prepare a report for a particular recipient. It is separate from concern level and report approval.
+
 **Case**:
 The record of an investigation, its related source messages, evidence, assessments, reporting actions, and unresolved work. A case can contain repeated samples and separate actions for multiple providers.
 Acquiring an ordinary email does not create a case. Acquisition alone is not an investigation.

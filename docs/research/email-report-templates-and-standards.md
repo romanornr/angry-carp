@@ -1,6 +1,6 @@
 # Email report templates and standards
 
-Checked 2026-09-21. This supplements the [provider comparison](reporting-requirements-comparison.md). A reporting address, an intake form, a narrative checklist, and a standardized email format are different artifacts. The first comparison underemphasized sources that can guide the actual report body.
+Checked 2026-09-21; registration and authentication references added on 2026-09-22. This supplements the [provider comparison](reporting-requirements-comparison.md). A reporting address, an intake form, a narrative checklist, and a standardized email format are different artifacts. The first comparison underemphasized sources that can guide the actual report body.
 
 ## IETF email feedback standards
 
@@ -15,6 +15,24 @@ Checked 2026-09-21. This supplements the [provider comparison](reporting-require
 **RFC 5901** defines phishing extensions to IODEF, including lure evidence, impersonated brand, collection site, related incidents, and takedown information. Appendix C contains a sample phishing report. It is an XML exchange format, not a prose letter, and does not establish recipient adoption. [RFC 5901](https://www.rfc-editor.org/info/rfc5901/).
 
 Its base is IODEF version 1, RFC 5070. RFC 7970 later defines version 2 and obsoletes RFC 5070. Any implementation would need a compatibility and recipient-support check rather than assuming the old extension fits a newer schema unchanged. [IODEF version 2](https://www.rfc-editor.org/rfc/rfc7970.html).
+
+## Registration and authentication references
+
+Added 2026-09-22 following the triage-instruction review. These sources inform future lookups and interpretation of supplied headers; reviewing them did not perform any case-domain lookup.
+
+| Source | What it specifies |
+| --- | --- |
+| [RFC 7480](https://www.rfc-editor.org/rfc/rfc7480.html) | HTTP usage for RDAP. |
+| [RFC 9082](https://www.rfc-editor.org/rfc/rfc9082.html) | RDAP queries for domains, entities, nameservers, and Internet-number resources. |
+| [RFC 9083](https://www.rfc-editor.org/rfc/rfc9083.html) | JSON response objects, including entities, roles, events, links, and notices. |
+| [RFC 9224](https://datatracker.ietf.org/doc/html/rfc9224) | Finding authoritative RDAP services through IANA bootstrap registries. |
+| [RFC 8601, sections 1.2, 5, and 7.1](https://www.rfc-editor.org/rfc/rfc8601.html#section-7.1) | Authentication-Results and the trust boundary required to interpret it. |
+
+ICANN identifies RDAP as the definitive source of gTLD registration information from 28 January 2025. Its [transition announcement](https://www.icann.org/en/announcements/details/icann-update-launching-rdap-sunsetting-whois-27-01-2025-en) and [user guidance](https://www.icann.org/en/contracted-parties/registry-operators/registration-data-access-protocol/information-for-rdap-users-31-08-2018-en) support preferring RDAP for future gTLD lookups. They do not establish that WHOIS has disappeared for all resource types. The [gTLD RDAP profile](https://www.icann.org/gtld-rdap-profile) supplies ICANN-specific requirements; ccTLD behavior needs registry-specific verification.
+
+Registration data can identify a registrar and published contacts. It does not by itself establish hosting, brand authorization, or phishing. Preserve the authoritative source, lookup time, and relevant results. Missing or redacted data remains a gap, not a verdict. The current local agent has no registration-lookup tool.
+
+RFC 8601 warns that Authentication-Results headers can be forged, including the receiving domain's name in `authserv-id`. Trust requires established receiver provenance and the receiving system's handling of untrusted headers. Matching that name alone is insufficient. The assessment can interpret supplied receiver results without claiming to have rerun SPF or DKIM verification.
 
 ## A copyable agency incident template
 

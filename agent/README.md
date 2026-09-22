@@ -1,6 +1,6 @@
 # Local agent integration
 
-The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout work. `PhishingTriage` registers the authenticated provider and loads the shared workflow and reporting instructions. The first live assessment through Flue completed successfully. The terminal entry point now accepts a prepared-text file and prints the assessment once.
+The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout work. `PhishingTriage` registers the authenticated provider and loads only `phishing-triage.md`. The first live assessment through Flue completed successfully. The terminal entry point accepts a prepared-text file and prints the assessment once.
 
 ## Sign in and disconnect
 
@@ -24,13 +24,15 @@ Logout removes the `openai-codex` entry from the local credential store. The fil
 
 ## Credential storage and access
 
-The operator selected `agent/auth.json` inside this repository. The CLI resolves it relative to its own source file, so the terminal's working directory does not change the location. The existing `auth.json` Git ignore rule covers this file. Do not commit it or copy credentials from an existing Codex installation.
+The operator selected `agent/auth.json` inside this repository. The sign-in and logout CLI resolves it relative to its own source file, so the terminal's working directory does not change that location. The triage agent resolves it relative to the process working directory; the documented npm command sets that directory to `agent/`. The existing `auth.json` Git ignore rule covers this file. Do not commit it or copy credentials from an existing Codex installation.
 
 Pi owns the OAuth credential format, file locking, token refresh, and persistence. It writes the file with owner-only permissions, `0600`. The file is plaintext, not encrypted. Processes running as the same operating-system user, and privileged processes, can read it. Git ignore rules and file placement do not isolate it from those processes.
 
 The trusted runtime may read, store, refresh, and use tokens. Tokens must stay out of model prompts, tool results, logs, and exposed errors. The first email assessment will accept prepared email text and give the model no filesystem, shell, browser, or mailbox tools. Runtime access to credentials does not grant that access to the model.
 
-Flue's configured conversation database is `agent/data/flue.db`, separate from the credential store. It is not the authoritative case store.
+Flue's configured conversation database is `agent/data/flue.db`, separate from the credential store. It contains conversation data from completed assessments, but does not import original email files or maintain structured case records. Editing a prepared evidence file does not update past conversations.
+
+Original emails and prepared evidence files live in `evidence/emails/` at the repository root. The whole `evidence/` folder is ignored by Git. Local evidence directories use owner-only permissions (`0700`), and the files use `0600`. These permissions allow other processes running as the same user to read them; the model's lack of filesystem tools is a separate boundary.
 
 ## Code responsibilities
 
@@ -61,13 +63,40 @@ After signing in, run this command from the repository root with the absolute pa
 npm --silent --prefix agent run triage -- /absolute/path/prepared-email.txt
 ```
 
-The npm command runs from `agent/`. The module resolves `auth.json` there and reads `../phishing-workflow.md` and `../provider-abuse-reporting.md`. Use this command so those relative paths resolve consistently.
+The npm command runs from `agent/`. The module resolves `auth.json` there and reads `../phishing-triage.md`. It does not load the reporting guide. Use an absolute input path, or a path relative to `agent/`:
 
-Supply extracted email text, relevant headers, and link information with account-access secrets and unrelated personal information removed. The supplied message and instructions are sent to the configured OpenAI provider. Flue's configured database stores conversation data in `agent/data/flue.db`. The command reads the prepared text locally; email contents are not passed as command arguments or echoed by the CLI. The input must be prepared text, not a raw `.eml` file.
+```sh
+npm --silent --prefix agent run triage -- ../evidence/emails/example.prepared.txt
+```
 
-`PhishingTriage` returns High, Medium, or Low concern, supporting and contrary evidence, material uncertainties, and the next supported action. No filesystem, shell, browser, mailbox, scanning, or sending tools are registered for the model. Keep report approval separate from assessment. Gmail access, case operations, and sending remain separate work.
+Supply extracted email text, relevant headers, and link information with account-access secrets and unrelated personal information removed. The supplied message and instructions are sent to the configured OpenAI provider. Flue's configured database stores conversation data in `agent/data/flue.db`. The command reads the prepared text locally; email contents are not passed as command arguments or echoed by the CLI. The input must be prepared text, not a raw `.eml` file. Independent source findings can accompany the email in a separately labeled section of the same input file. Include the source URL, retrieval date, relevant statement, and limits of the finding. These are case evidence, not general assessment rules.
+
+`PhishingTriage` returns the four sections described below. No filesystem, shell, browser, mailbox, scanning, or sending tools are registered for the model. Gmail access, case operations, and sending remain separate work.
 
 The operator completed a first assessment of a prepared historical email. The original `flue run` command echoed the input and duplicated the answer; `triage-cli.ts` uses the same Flue runtime directly without subscribing to the verbose event display.
+
+## Read the assessment
+
+The instructions request four short sections:
+
+| Section | What it tells you |
+| --- | --- |
+| Assessment | The conclusion, High/Medium/Low concern level, and confidence in the particular conclusion. |
+| Evidence | The decisive facts and their sources, including material contrary evidence. Inferences are identified separately. |
+| Checks and gaps | What came from your supplied evidence, what the agent checked during this run, and which unresolved facts matter. |
+| Next action | A concrete step suited to your situation, including whether report preparation has a specific blocker. |
+
+The current agent makes no independent web or registration lookups. If you provide an official-source excerpt, its analysis is based on that supplied note. A claim that the agent rechecked the page or attempted RDAP would be incorrect. An unsuccessful lookup is different from one that was never attempted.
+
+High concern can coexist with missing reporting details or unknown installer behavior. Low concern from limited evidence does not certify safety. Assessments can change when new evidence arrives; a verdict does not authorize sending a report.
+
+To include new evidence, add a labeled source note to your prepared file and rerun the command. Keep the URL, retrieval date, relevant statement, and limitations together. A rerun creates a new conversation; the command does not update a structured case record or automatically load earlier assessments. Include the earlier conclusion in your prepared context if you want an explicit comparison.
+
+The output format is an instruction to the model, not a validated response schema. The CLI prints the returned text. Review claims against their cited evidence before acting.
+
+See [standards and reporting guidance](../docs/standards-and-reporting.md) for the RFCs and provider sources, and [ADR 0007](../docs/adr/0007-separate-assessment-from-reporting.md) for the reason assessment and reporting are separate. These documents are not loaded into the agent prompt.
+
+## Future deployment
 
 For Cloudflare later, replace the local browser-login entry point and file storage with suitable runtime and storage components. Keep those concerns separate from model access. Workers compatibility has not been verified; no cloud infrastructure is implemented.
 

@@ -12,11 +12,11 @@ The instructions work with the capabilities your agent already has. They do not 
 
 ## Use the instructions with your agent
 
-Make these two files available together, either in the agent's workspace or as attached documents:
+Load the instructions for the task at hand, either from the agent's workspace or as an attached document:
 
 | File | Purpose |
 | --- | --- |
-| [Manual Gmail workflow](phishing-workflow.md) | Start a scoped investigation, assess messages, resume unfinished work, and track provider responses. |
+| [Phishing triage](phishing-triage.md) | Assess prepared email evidence, explain concern and confidence, and identify the next action. |
 | [Provider abuse reporting](provider-abuse-reporting.md) | Select verified recipients and prepare readable reports with the necessary evidence and disclosure checks. |
 
 The reporting file is the reusable skill source. There is no packaged skill installer yet. Loading the Markdown explicitly is the supported starting point; copying it into a host's skill directory has not been verified for every agent.
@@ -24,22 +24,19 @@ The reporting file is the reusable skill source. There is no packaged skill inst
 For an agent that can read this repository, start with:
 
 ```text
-Read phishing-workflow.md and provider-abuse-reporting.md.
-Help me prepare a manual phishing investigation. First explain which
-email, evidence-storage, and privacy capabilities are available.
-Propose Inbox and Spam over the last 14 days, capped at 10 messages,
-and wait for me to start the run. Do not send reports or change mail.
+Read phishing-triage.md and assess the prepared email evidence I supply.
+Explain the concern, confidence, and next action.
 ```
 
 If you attach the files instead, refer to the attachments in the prompt. Connect email through your host's supported connection flow if it is available. An agent without email access can help with a supplied, redacted text example. Never paste account-access secrets into the conversation.
 
 Before real mail is processed, establish what the model will receive and where private evidence will be stored. The workflow calls for filtered text, relevant headers, and link information; complete originals and attachment bytes remain local by default. If a connector cannot meet that boundary, the agent must explain the limitation rather than claim it has filtered the evidence.
 
-Each report is reviewed separately, including its recipient, body, and attachments. Original messages needed for investigations belong in private storage outside this repository. Ordinary mail is not kept as a permanent archive. Candidate phishing pages are never opened directly by the agent.
+Load `provider-abuse-reporting.md` when preparing or reviewing a report. Each report is reviewed separately, including its recipient, body, and attachments. Original messages needed for investigations belong in private storage excluded from Git. Local evidence files live in the ignored `evidence/emails/` folder. Ordinary mail is not kept as a permanent archive. Candidate phishing pages are never opened directly by the agent.
 
 ## Use with Grok Bot
 
-`phishing-workflow.md` describes a manual workflow usable by Grok Bot and other agents. Pair it with `provider-abuse-reporting.md` when preparing instructions for a Grok Bot.
+`phishing-triage.md` assesses prepared evidence and can be used by Grok Bot or another agent. Load `provider-abuse-reporting.md` separately for reporting work. The broader acquisition and case-management requirements are in [Manual workflow](docs/manual-workflow.md).
 
 There is no verified one-click Grok Bot template or installation procedure in this repository. File loading, Gmail access, private storage, and execution controls need checking in the actual Bot. The file does not install or update a scheduled routine. See the [Grok capability research](docs/research/grok-capabilities.md) for what has and has not been established.
 
@@ -47,15 +44,17 @@ There is no verified one-click Grok Bot template or installation procedure in th
 
 The selected local runner is Flue, using Pi's OpenAI Codex provider with ChatGPT subscription authentication. Browser login and local logout have succeeded. The `PhishingTriage` module registers the authenticated provider and loads the shared instructions; a first live assessment has completed. See [local authentication and implementation status](agent/README.md) for commands, credential storage, and remaining work.
 
-The triage command reads a prepared email text file and uses the existing workflow and reporting instructions, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
+The triage command reads a prepared email text file and loads only the triage instructions, without filesystem, shell, browser, or mailbox tools for the model. Composio remains a candidate for later Gmail access; no mailbox connection is configured. Neither Flue nor Composio is required to use the Markdown instructions.
 
 The broader incremental-checking workflow will remember completed checks, retry failures, and show mail left unchecked. Larger historical runs and Rust-based screening before AI review remain later candidates for evaluation.
 
 ## Project documentation
 
+- [Documentation guide](docs/README.md): usage, assessment output, storage, standards, and design decisions.
+- [Standards and reporting guidance](docs/standards-and-reporting.md): RFCs, ICANN guidance, and provider requirements.
 - [Workflow specification](docs/manual-workflow.md) and [Gmail labels](docs/gmail-labels.md)
 - [Domain glossary](CONTEXT.md), [architecture options](docs/architecture-options.md), and [ADRs](docs/adr/)
 - [Planning decisions and open questions](docs/planning/map.md)
 - [Research findings](docs/research/) and [experimental code](experiments/)
 
-Shared instructions use the role **operator**. Configure your own reporting identity, signature, mailbox, timezone, and private storage location. Keep credentials and personal evidence out of Git. The operator-approved local credential file is `agent/auth.json`, which is ignored by Git; original email evidence remains outside the repository.
+Shared instructions use the role **operator**. Configure your own reporting identity, signature, mailbox, timezone, and private storage location. Keep credentials and personal evidence out of Git. The local credential file is `agent/auth.json`; evidence files are in `evidence/emails/`. Both locations are ignored by Git.

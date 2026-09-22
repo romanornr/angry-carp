@@ -1,6 +1,6 @@
 # Archived Grok phishing routine
 
-Historical snapshot retained for migration and retrospective research. Do not run these instructions: they include superseded automatic-send, label, scheduling, and mail-movement rules. Use the [current manual workflow](../../phishing-workflow.md) instead.
+Historical snapshot retained for migration and retrospective research. Do not run these instructions: they include superseded automatic-send, label, scheduling, and mail-movement rules. Use the [current manual workflow](../../phishing-triage.md) instead.
 
 # Unified Gmail phishing routine
 

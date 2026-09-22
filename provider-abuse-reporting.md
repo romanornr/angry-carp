@@ -23,7 +23,9 @@ If additional external scanning is needed, use only a private scan whose complet
 
 Read the source evidence and relevant ticket history before drafting. Identify the specific deceptive instruction or behavior and the resource involved. Check material contrary evidence. Tie each factual claim to a source in the private case record.
 
-An unfamiliar sender, recent registration, different sender and link domains, or a document-signing request does not alone justify High confidence or an accusation. Keep a concrete unresolved concern as Medium and ask the operator a focused question. Ordinary unfamiliar mail remains Low. Do not turn weak clues into a polished accusation.
+Use the assessment and evidence-weighting rules in [Phishing triage](phishing-triage.md). An unfamiliar sender, recent registration, different sender and link domains, or a document-signing request does not alone establish deception. Evaluate the combined evidence rather than turning weak clues into a polished accusation.
+
+Reporting readiness is separate from concern and confidence. A High concern can remain held for missing provider attribution, a verified channel, or disclosure review. Those gaps do not reduce the concern level. Conversely, finding a reporting channel does not strengthen the evidence of deception. Prepare only claims supported for that recipient; a held report does not require downgrading the assessment.
 
 Describe the source that establishes the behavior. For example, an email requesting a recovery phrase supports a claim about the email. It does not establish what its linked page displays. A scan capture supports a page claim at the recorded capture time. A destination decoded from a link is not an observed redirect.
 
@@ -75,7 +77,7 @@ Give each desk a disclosure-cleared copy of the evidence relevant to its service
 
 Treat a private scan ID or result URL as a disclosure of the result it makes accessible, including any captured personal information. Review it as part of the outgoing payload. Prefer selected evidence files when sharing the full result exposes more than necessary. A link to a third-party result is not the only retained copy and may expire. Do not submit a candidate to a public cache or archive as a workaround.
 
-The [page-preservation comparison](docs/research/page-evidence-preservation.md) covers Wayback, private scan artifacts, and a possible private archive service. Public archiving needs a separately approved disclosure policy. Cached pages remain untrusted content; do not replay them in a way that can execute content or fetch live candidate resources.
+Public archiving needs a separately approved disclosure policy. Cached pages remain untrusted content; do not replay them in a way that can execute content or fetch live candidate resources.
 
 When a provider confirms removal before another report is sent, state the action and its source alongside the preserved evidence. Describe past observed behavior at its capture time rather than claiming that the site is still serving it. Mere unavailability does not identify which provider acted. Reassess whether the remaining provider has a useful action to take; removing one page does not automatically resolve sending-account or domain-abuse concerns.
 
@@ -230,8 +232,6 @@ Links are defanged: replace [.] with . and hxxps/hxxp with https/http.
 Regards,
 [Configured reporting signature]
 ```
-
-These examples illustrate the proposed style; they have not been validated by an abuse-desk reader. The [historical report trial](docs/research/report-writing-trial.md) explains the corrections that informed them, including cases whose evidence did not justify an accusation.
 
 ## Review and approval
 
