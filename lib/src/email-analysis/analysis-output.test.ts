@@ -10,6 +10,35 @@ const original = 'From: private-name <private-user@sender.example.com>\r\n' +
   '<img src="https://image.example.org/private-logo" alt="private-alt">' +
   '<a href="https://private-user@action.example.com/private-path?private-query">private-body</a>';
 
+test('failed RDAP output distinguishes discovery from registry without exposing exception text', async (t) => {
+  let failDiscovery = true;
+  const bootstrapUrl = 'https://data.iana.org/rdap/dns.json';
+  t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.includes('dns-query')) return new Response(null, { status: 429 });
+    if (!failDiscovery && url === bootstrapUrl) {
+      return Response.json({ services: [[['com', 'org'], ['https://registry.example/']]] });
+    }
+    throw new Error('private-token-in-error', { cause: { code: 'ENOTFOUND' } });
+  });
+  const directory = await loadBrandDirectory();
+  for (const discoveryFailure of [true, false]) {
+    failDiscovery = discoveryFailure;
+    const result = await analyzeEmail(new TextEncoder().encode(original), { directory });
+    const output = formatAnalysis(result);
+    if (discoveryFailure) assert.match(output, /unavailable\/name_resolution at https:\/\/data\.iana\.org\/rdap\/dns\.json/);
+    else assert.match(output, /unavailable\/name_resolution at https:\/\/registry\.example\/domain\//);
+    assert.doesNotMatch(output, /private-token-in-error/);
+    assert.doesNotMatch(JSON.stringify(analysisForModel(result)), /private-token-in-error|data\.iana\.org|registry\.example/);
+    assert.equal(result.kind, 'analyzed');
+    if (result.kind === 'analyzed') {
+      assert.equal(result.routing.kind, 'assessment_required');
+      assert.ok(result.retries.some(({ previousResult }) => previousResult.kind === 'unavailable'
+        && previousResult.reason === 'name_resolution'));
+    }
+  }
+});
+
 test('the automatic model projection excludes private headers, bodies, URLs and invalid identity text', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 503 }));
   const result = await analyzeEmail(new TextEncoder().encode(original), { directory: await loadBrandDirectory() });

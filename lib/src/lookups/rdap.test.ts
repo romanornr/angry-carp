@@ -43,7 +43,7 @@ test('returns attributed registration evidence without personal data or referral
   });
 
   const result = await lookupRdap(domain);
-  const { retrievedAt, ...evidence } = result;
+  const { retrievedAt, discovery, ...evidence } = result;
   assert.equal(Number.isFinite(Date.parse(retrievedAt)), true);
   assert.deepEqual(evidence, {
     queriedDomain: 'example.com', sourceUrl, kind: 'found',
@@ -90,7 +90,7 @@ test('distinguishes absent records, throttling, redirects, bad data, and incompl
   for (const status of [404, 429, 302]) {
     reply = new Response(null, { status, headers: { location: 'http://127.0.0.1/private' } });
     const result = await lookupRdap(domain);
-    const { retrievedAt, ...evidence } = result;
+    const { retrievedAt, discovery, ...evidence } = result;
     if (status === 404) {
       assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'not_found' });
     } else if (status === 302) {
@@ -112,7 +112,7 @@ test('sanitizes network errors and bounds streamed responses', async (t) => {
     throw new Error('private runtime detail');
   });
   const failed = await lookupRdap(domain);
-  const { retrievedAt, ...evidence } = failed;
+  const { retrievedAt, discovery, ...evidence } = failed;
   assert.deepEqual(evidence, {
     queriedDomain: 'example.com', sourceUrl: 'https://data.iana.org/rdap/dns.json',
     kind: 'unavailable', reason: 'request_failed',

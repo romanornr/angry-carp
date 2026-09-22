@@ -52,7 +52,7 @@ test('selects the longest binary prefix and returns only a containing network wi
       return Response.json({ ...record, ipVersion: sample.family, startAddress: sample.start, endAddress: sample.end,
         entities: [{ privateDetail: 'omitted' }], links: [{ href: 'https://candidate.example/' }] });
     });
-    const { retrievedAt, ...result } = await lookupIpRdap(v.parse(ipAddressSchema, sample.input));
+    const { retrievedAt, discovery, ...result } = await lookupIpRdap(v.parse(ipAddressSchema, sample.input));
     assert.equal(Number.isFinite(Date.parse(retrievedAt)), true);
     assert.deepEqual(result, { queriedAddress: sample.expected, sourceUrl: `https://registry.example/ip/${sample.expected}`,
       kind: 'found', network: { startAddress: sample.start, endAddress: sample.end, ipVersion: sample.family,

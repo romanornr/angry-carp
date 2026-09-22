@@ -5,7 +5,7 @@ import { observeMessage, classifyHost, prioritizeHosts, type CoverageGap } from 
 import { brandQuerySchema, type BrandDirectory } from '../brands/brand-directory.ts';
 import { compareDomains, domainComparisonSchema } from '../lookalikes/compare-domains.ts';
 import { lookupDns, dnsQuerySchema } from '../lookups/dns.ts';
-import { lookupRdap, domainSchema } from '../lookups/rdap.ts';
+import { lookupRdap, domainSchema, createRdapBootstrap } from '../lookups/rdap.ts';
 import { lookupIpRdap, ipAddressSchema } from '../lookups/ip-rdap.ts';
 import { deriveFindings } from './findings.ts';
 import { sourceNotesSchema, type SourceNote } from './source-notes.ts';
@@ -57,6 +57,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   const notes = v.safeParse(sourceNotesSchema, options.sourceNotes ?? []);
   if (!notes.success) return { kind: 'input_failure', reason: 'invalid_source_notes', source } as const;
   if (parsed.kind === 'input_failure') return { ...parsed, source };
+  const rdapOptions = { signal, bootstrap: createRdapBootstrap(signal) };
   const observations = observeMessage(parsed.message);
   const evidence: AnalysisEvidence = { message: parsed.message, observations,
     dns: [], rdap: [], ipRdap: [], directory: [], comparisons: [], coverage: [...observations.gaps],
@@ -178,7 +179,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   }
   evidence.retries.push(...await runWithRetry(evidence.rdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), [...selectedRdap], signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
-    check.result = await lookupRdap(check.domain, signal);
+    check.result = await lookupRdap(check.domain, rdapOptions);
   }));
   for (const check of evidence.dns) {
     if (check.result.kind !== 'answered') continue;
@@ -200,7 +201,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   evidence.ipRdap = [...ips.values()];
   evidence.retries.push(...await runWithRetry(evidence.ipRdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), evidence.ipRdap.slice(0, IP_LIMIT), signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
-    check.result = await lookupIpRdap(check.address, signal);
+    check.result = await lookupIpRdap(check.address, rdapOptions);
   }));
   const derived = deriveFindings(evidence);
   return { kind: 'analyzed', version: 1, source, ...evidence, ...derived, routing: routeAnalysis(evidence, derived.findings),
@@ -223,7 +224,7 @@ async function runWithRetry<T extends { id: string; result: LookupResult }>(
     switch (result.kind) {
       case 'skipped': return result.reason === 'budget';
       case 'http_error': return result.status >= 500;
-      case 'unavailable': return result.reason === 'request_failed' || result.reason === 'timeout';
+      case 'unavailable': return result.reason === 'request_failed' || result.reason === 'name_resolution' || result.reason === 'timeout';
       case 'answered': return result.rcode === 'SERVFAIL' || result.truncated;
       case 'found': case 'not_found': case 'no_service': return false;
       default: { const unhandled: never = result; return unhandled; }

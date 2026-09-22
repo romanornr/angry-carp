@@ -32,7 +32,7 @@ function fixtureFetch(calls: string[]) {
       return Response.json({ Status: 0, TC: false, Question: [{ name, type: types[type ?? ''] }], Answer: answers });
     }
     if (url.hostname === 'data.iana.org') {
-      if (url.pathname.endsWith('dns.json')) return Response.json({ services: [[['com', 'ltd', 'download'], ['https://registry.example/']]] });
+      if (url.pathname.endsWith('dns.json')) return Response.json({ services: [[['com', 'ltd', 'download'], ['https://registry.example/']]] }, { headers: { 'cache-control': 'max-age=60', date: new Date().toUTCString() } });
       return Response.json({ services: [[['188.114.96.0/24'], ['https://registry.example/']]] });
     }
     assert.equal(url.hostname, 'registry.example', 'candidate sites must never be fetched');
@@ -64,6 +64,7 @@ test('one analysis retains image/action findings, qualified recipients and every
   assert.equal(result.directory.some(({ sourceIds }) => quotedName && sourceIds.includes(quotedName.sourceId)), false);
   assert.equal(new Set(calls.filter((url) => url.includes('dns-query'))).size, result.dns.filter(({ result }) => result.kind === 'answered').length);
   assert.ok(calls.length <= result.limits.httpRequests);
+  assert.equal(calls.filter((url) => url === 'https://data.iana.org/rdap/dns.json').length, 1);
   assert.equal(result.textReuse.kind, 'skipped');
   assert.equal(result.message.verification, 'not_performed');
 });

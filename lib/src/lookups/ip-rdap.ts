@@ -1,7 +1,9 @@
 import * as v from 'valibot';
 import { domainSchema } from './rdap.ts';
 import { requestJson, type RequestFailure } from './request-json.ts';
+import { createRdapBootstrap, type RdapOptions, type RdapDiscovery } from './rdap-bootstrap.ts';
 export type { RequestFailure } from './request-json.ts';
+export type { RdapOptions } from './rdap-bootstrap.ts';
 
 export const ipAddressSchema = v.pipe(
   v.string(),
@@ -44,6 +46,7 @@ type IpRdapLookup = {
   queriedAddress: IpAddress;
   sourceUrl: string;
   retrievedAt: string;
+  discovery: RdapDiscovery;
 } & (
   | RequestFailure
   | { kind: 'not_found' }
@@ -52,28 +55,27 @@ type IpRdapLookup = {
 );
 
 /** Retrieves network registration, not origin-host attribution; never contacts the queried address. */
-export async function lookupIpRdap(queriedAddress: IpAddress, callerSignal?: AbortSignal): Promise<IpRdapLookup> {
+export async function lookupIpRdap(queriedAddress: IpAddress, options: RdapOptions = {}): Promise<IpRdapLookup> {
   const target = addressBits(queriedAddress);
-  let bootstrapUrl = 'https://data.iana.org/rdap/ipv4.json';
+  let bootstrapUrl: 'https://data.iana.org/rdap/ipv4.json' | 'https://data.iana.org/rdap/ipv6.json' = 'https://data.iana.org/rdap/ipv4.json';
   if (target.ipVersion === 'v6') bootstrapUrl = 'https://data.iana.org/rdap/ipv6.json';
   let signal = AbortSignal.timeout(15_000);
-  if (callerSignal) signal = AbortSignal.any([signal, callerSignal]);
+  if (options.signal) signal = AbortSignal.any([signal, options.signal]);
   const accept = 'application/rdap+json, application/json';
-  const bootstrap = await requestJson({ url: bootstrapUrl, signal, accept });
-  const discovery = { queriedAddress, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString() };
+  const readBootstrap = options.bootstrap ?? createRdapBootstrap(signal);
+  const schema = v.pipe(bootstrapSchema, v.check(({ services }) => services.every(([prefixes]) =>
+    prefixes.every(([address]) => addressBits(address).ipVersion === target.ipVersion))));
+  const bootstrap = await readBootstrap(bootstrapUrl, schema, signal);
+  const discovery = { queriedAddress, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString(), discovery: null };
   if (bootstrap.kind !== 'received') return { ...discovery, ...bootstrap };
-  const directory = v.safeParse(bootstrapSchema, bootstrap.body);
-  if (!directory.success) return { ...discovery, kind: 'unavailable', reason: 'invalid_response' };
+  const selectedDiscovery = { sourceUrl: bootstrapUrl, retrievedAt: bootstrap.retrievedAt };
 
   // RFC 9224 uses the longest binary prefix, including prefixes between byte boundaries.
   let longest = -1;
   let serviceUrls: string[] = [];
-  for (const [prefixes, urls] of directory.output.services) {
+  for (const [prefixes, urls] of bootstrap.body.services) {
     for (const [address, length] of prefixes) {
       const network = addressBits(address);
-      if (network.ipVersion !== target.ipVersion) {
-        return { ...discovery, kind: 'unavailable', reason: 'invalid_response' };
-      }
       const shift = BigInt(target.bits - length);
       if (length >= longest && (target.value >> shift) === (network.value >> shift)) {
         if (length > longest) serviceUrls = [];
@@ -83,11 +85,12 @@ export async function lookupIpRdap(queriedAddress: IpAddress, callerSignal?: Abo
     }
   }
   const baseUrl = serviceUrls.find(isHttpsService);
-  if (!baseUrl) return { ...discovery, kind: 'no_service' };
+  if (!baseUrl) return { ...discovery, ...selectedDiscovery, discovery: selectedDiscovery, kind: 'no_service' };
 
   const sourceUrl = `${baseUrl.replace(/\/$/, '')}/ip/${queriedAddress}`;
   const response = await requestJson({ url: sourceUrl, signal, accept });
-  const source = { queriedAddress, sourceUrl, retrievedAt: new Date().toISOString() };
+  const source = { queriedAddress, sourceUrl, retrievedAt: new Date().toISOString(),
+    discovery: selectedDiscovery };
   if (response.kind === 'http_error' && response.status === 404) return { ...source, kind: 'not_found' };
   if (response.kind !== 'received') return { ...source, ...response };
   const record = v.safeParse(recordSchema, response.body);

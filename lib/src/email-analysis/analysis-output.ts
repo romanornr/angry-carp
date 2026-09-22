@@ -143,6 +143,7 @@ export function formatAnalysis(result: EmailAnalysis): string {
     let detail: string = check.kind;
     if ('reason' in check) detail += `/${check.reason}`;
     if ('status' in check) detail += `/${check.status}`;
+    if ('queriedDomain' in check || 'queriedAddress' in check) detail += ` at ${check.sourceUrl}`;
     lines.push(`- ${id}: ${detail}`);
   }
   for (const [reason, count] of counts) lines.push(`- ${reason} (${count})`);

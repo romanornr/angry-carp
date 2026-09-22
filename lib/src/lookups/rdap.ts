@@ -1,6 +1,8 @@
 import * as v from 'valibot';
 import { requestJson, type RequestFailure } from './request-json.ts';
+import { createRdapBootstrap, type RdapOptions, type RdapDiscovery } from './rdap-bootstrap.ts';
 export type { RequestFailure } from './request-json.ts';
+export { createRdapBootstrap, type RdapOptions } from './rdap-bootstrap.ts';
 
 const bootstrapUrl = 'https://data.iana.org/rdap/dns.json';
 const accept = 'application/rdap+json, application/json';
@@ -47,6 +49,7 @@ type RdapLookup = {
   queriedDomain: Domain;
   sourceUrl: string;
   retrievedAt: string;
+  discovery: RdapDiscovery;
 } & (
   | RequestFailure
   | { kind: 'not_found' }
@@ -60,27 +63,28 @@ type RdapLookup = {
 );
 
 /** Queries public RDAP services, without authentication, redirects, or referral requests. */
-export async function lookupRdap(queriedDomain: Domain, callerSignal?: AbortSignal): Promise<RdapLookup> {
+export async function lookupRdap(queriedDomain: Domain, options: RdapOptions = {}): Promise<RdapLookup> {
   let signal = AbortSignal.timeout(15_000);
-  if (callerSignal) signal = AbortSignal.any([signal, callerSignal]);
-  const bootstrap = await requestJson({ url: bootstrapUrl, signal, accept });
-  const discovery = { queriedDomain, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString() };
+  if (options.signal) signal = AbortSignal.any([signal, options.signal]);
+  const readBootstrap = options.bootstrap ?? createRdapBootstrap(signal);
+  const bootstrap = await readBootstrap(bootstrapUrl, bootstrapSchema, signal);
+  const discovery = { queriedDomain, sourceUrl: bootstrapUrl, retrievedAt: new Date().toISOString(), discovery: null };
   if (bootstrap.kind !== 'received') return { ...discovery, ...bootstrap };
+  const selectedDiscovery = { sourceUrl: bootstrapUrl, retrievedAt: bootstrap.retrievedAt };
 
-  const directory = v.safeParse(bootstrapSchema, bootstrap.body);
-  if (!directory.success) return { ...discovery, kind: 'unavailable', reason: 'invalid_response' };
 
   // RFC 9224 selects the longest matching label suffix, not the website's URL.
-  const service = directory.output.services
+  const service = bootstrap.body.services
     .flatMap(([suffixes, urls]) => suffixes.map((suffix) => ({ suffix, urls })))
     .filter(({ suffix }) => queriedDomain.endsWith(`.${suffix}`))
     .sort((a, b) => b.suffix.length - a.suffix.length)[0];
   const baseUrl = service?.urls.find(isHttpsService);
-  if (!baseUrl) return { ...discovery, kind: 'no_service' };
+  if (!baseUrl) return { ...discovery, ...selectedDiscovery, discovery: selectedDiscovery, kind: 'no_service' };
 
   const sourceUrl = `${baseUrl.replace(/\/$/, '')}/domain/${queriedDomain}`;
   const response = await requestJson({ url: sourceUrl, signal, accept });
-  const source = { queriedDomain, sourceUrl, retrievedAt: new Date().toISOString() };
+  const source = { queriedDomain, sourceUrl, retrievedAt: new Date().toISOString(),
+    discovery: selectedDiscovery };
   if (response.kind === 'http_error' && response.status === 404) return { ...source, kind: 'not_found' };
   if (response.kind !== 'received') return { ...source, ...response };
 

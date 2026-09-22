@@ -15,13 +15,17 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/brands/local` | `loadBrandDirectory(directoryUrl?)` | Reads public snapshot files in Node |
 | `@angry-carp/checks/lookalikes` | `compareDomains(input)`; `domainComparisonSchema` | None; uses Node IDNA |
 | `@angry-carp/checks/dns` | `lookupDns(query, signal?)`; `dnsQuerySchema` | Public DNS resolver |
-| `@angry-carp/checks/rdap` | `lookupRdap(domain, signal?)`; `domainSchema` | IANA bootstrap and registry RDAP |
-| `@angry-carp/checks/ip-rdap` | `lookupIpRdap(address, signal?)`; `ipAddressSchema` | IANA address bootstrap and registry RDAP |
+| `@angry-carp/checks/rdap` | `lookupRdap(domain, { signal, bootstrap }?)`; `domainSchema`, `createRdapBootstrap(signal)` | IANA bootstrap and registry RDAP |
+| `@angry-carp/checks/ip-rdap` | `lookupIpRdap(address, { signal, bootstrap }?)`; `ipAddressSchema` | IANA address bootstrap and registry RDAP |
 | `@angry-carp/checks/reporting` | `findReportingChannels(query)`; `reportingQuerySchema`, `reportingBatchSchema` | None |
 | `@angry-carp/checks/text-reuse` | `findSharedPassages(input)`; `passageComparisonSchema` | None |
 | `@angry-carp/checks/email-links` | `extractEmailLinks(html)`, `summarizeEmailLinks(result)`; extraction validates string and byte limit internally | None |
 
 `analysisForModel` selects deception evidence and coverage for assessment. Provider candidates, channel references and IP network records remain in the complete result and deterministic display, outside that projection. It is not a report-preparation interface or general-purpose anonymizer.
+
+For several RDAP calls in one bounded operation, create one `bootstrap = createRdapBootstrap(ownerSignal)` and pass it in both lookup functions' options. The owner signal cancels shared discovery requests; each lookup's signal cancels only its wait and registry request. The analyzer does this automatically. Without a supplied loader, a standalone lookup owns its discovery request. The former positional RDAP signal argument has been replaced with `{ signal }`; DNS keeps its existing signature.
+
+Discovery reuse is memory-only, limited to fresh validated responses, with no stale fallback or disk storage. The complete RDAP result records `discovery` with its source URL and original retrieval time, or `null` when discovery did not validate. Registry `retrievedAt` remains separate. See [the cache and diagnostic contract](../docs/email-analysis.md#rdap-discovery-and-failures).
 
 Parse external input with the corresponding schema before calling a function. The schemas deliberately differ: a DNS selector name, a registered domain, and a Unicode comparison input are not interchangeable. This example runs locally after installation:
 

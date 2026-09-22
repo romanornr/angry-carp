@@ -1,11 +1,27 @@
 # Diagnose RDAP failures and reuse discovery data
 
 Type: reliability
-Status: open
+Status: implemented
 Priority: medium
 Assignee: unassigned
 Parent: ../map.md
 Blocked by: none
+
+## Resolution, 2026-09-23
+
+RDAP failure coverage now prints the existing failing endpoint. Exact `ENOTFOUND` and `EAI_AGAIN` codes become `name_resolution`; other non-abort transport failures retain `request_failed`. Raw error text stays excluded. The new category follows the existing bounded retry policy.
+
+`analyzeEmail` creates one memory-only discovery loader per run. Domain, IPv4 and IPv6 lookups reuse eligible fresh responses while registry records remain live requests. The owner validates and evicts failed responses even when all waiters have cancelled. Individual cancellation ends the caller's wait; run cancellation owns the shared transport. The complete result retains discovery provenance, including the original retrieval time on cached `no_service` results. The model projection does not gain discovery metadata or diagnostic URLs.
+
+The [documented cache policy](../../email-analysis.md#rdap-discovery-and-failures) defines conservative freshness behavior and the new RDAP options argument. No dependency, persistent storage, stale fallback, resolver substitution or additional retry batch was added. An additional ADR was unnecessary for this reversible lookup implementation; the existing package and assessment boundaries are unchanged.
+
+Verification includes synthetic freshness/expiry, no-store, malformed response, error-category, IPv4/IPv6, cancellation and failed-load recovery cases. Claude and Grok independently found a failed-promise retention bug in the first draft. A regression reproduced it before owner-side eviction fixed it. Owner validation also prevents a malformed schema from surviving abandoned waits. A separate regression fixes the cached `no_service` timestamp.
+
+The final `npm test` gate passed 105 tests across the checks, CLI and agent workspaces. `npm run check:types` passed for all three. Claude verified the ownership and timestamp corrections, including the final owner-side schema validation.
+
+A bounded public lookup at 2026-09-22T22:53:00.638Z found both tested .com domains, including the previously failing brand-image domain. It made exactly one IANA discovery request and two registry requests. Both results recorded the same original discovery retrieval time. The first live probe had exposed `Vary: Accept-Encoding`; the policy now handles that fixed request variant and tests it. No candidate site or model was contacted.
+
+This closes the diagnostic and reuse implementation. It does not establish the historical failure's cause or guarantee network availability. Any new failure now has a more useful retained category and displayed endpoint.
 
 ## Observed failure, 2026-09-22
 
@@ -21,7 +37,7 @@ A single isolated call through the current source at 2026-09-22T22:30:40.712Z th
 
 ## Established guidance and proposed implementation
 
-[RFC 9224 section 8](https://www.rfc-editor.org/rfc/rfc9224.html#section-8), checked on 2026-09-22, recommends caching bootstrap registries according to HTTP freshness signaling instead of retrieving them for every query. Both current RDAP lookup functions retrieve discovery on each invocation. This is a demonstrated improvement opportunity, not proof that repeated discovery caused this failure.
+[RFC 9224 section 8](https://www.rfc-editor.org/rfc/rfc9224.html#section-8), checked on 2026-09-22, recommends caching bootstrap registries according to HTTP freshness signaling instead of retrieving them for every query. Before this change, both RDAP lookup functions retrieved discovery on each invocation. This was a demonstrated improvement opportunity, not proof that repeated discovery caused this failure.
 
 Start with the existing request and lookup owners:
 
