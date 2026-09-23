@@ -84,6 +84,7 @@ test('failed or invalid discovery never poisons subsequent calls', async (t) => 
   for (const [failure, reason] of [
     [() => { throw new Error('private host', { cause: { code: 'ENOTFOUND' } }); }, 'name_resolution'],
     [() => { throw Object.assign(new Error('private host'), { code: 'EAI_AGAIN' }); }, 'name_resolution'],
+    [() => { throw new TypeError('private detail', { cause: { code: 'ECONNRESET' } }); }, 'connection_reset'],
     [() => { throw new Error('private detail'); }, 'request_failed'],
     [() => new Response('private malformed body', { headers }), 'invalid_response'],
     [() => Response.json({ services: 'private invalid shape' }, { headers }), 'invalid_response'],

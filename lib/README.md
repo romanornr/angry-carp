@@ -18,10 +18,13 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/rdap` | `lookupRdap(domain, { signal, bootstrap }?)`; `domainSchema`, `createRdapBootstrap(signal)` | IANA bootstrap and registry RDAP |
 | `@angry-carp/checks/ip-rdap` | `lookupIpRdap(address, { signal, bootstrap }?)`; `ipAddressSchema` | IANA address bootstrap and registry RDAP |
 | `@angry-carp/checks/reporting` | `findReportingChannels(query)`; `reportingQuerySchema`, `reportingBatchSchema` | None |
+| `@angry-carp/checks/reporting/preparation` | `startReportPreparation(request, analysisBytes)`, `checkReportPreparation({ preparation, analysis, research, draft })`, `reportDigest(bytes)`; exported request/preparation/research/draft schemas | No I/O; hashes bytes with Web Crypto |
 | `@angry-carp/checks/text-reuse` | `findSharedPassages(input)`; `passageComparisonSchema` | None |
 | `@angry-carp/checks/email-links` | `extractEmailLinks(html)`, `summarizeEmailLinks(result)`; extraction validates string and byte limit internally | None |
 
 `analysisForModel` selects deception evidence and coverage for assessment. Provider candidates, channel references and IP network records remain in the complete result and deterministic display, outside that projection. It is not a report-preparation interface or general-purpose anonymizer.
+
+Report preparation validates caller-supplied records at its function boundary. It binds exact bytes and returns readiness for operator review or explicit hold reasons. Host research remains attributed and unverified; the functions neither fetch sources nor authorize sending. See [the workflow and limits](../docs/report-preparation.md).
 
 For several RDAP calls in one bounded operation, create one `bootstrap = createRdapBootstrap(ownerSignal)` and pass it in both lookup functions' options. The owner signal cancels shared discovery requests; each lookup's signal cancels only its wait and registry request. The analyzer does this automatically. Without a supplied loader, a standalone lookup owns its discovery request. The former positional RDAP signal argument has been replaced with `{ signal }`; DNS keeps its existing signature.
 
@@ -74,3 +77,5 @@ See [email analysis](../docs/email-analysis.md) for the composing API, private r
 The standalone [CLI](../cli/README.md) and [Flue integration](../agent/README.md) are separate consumers. [ADR 0012](../docs/adr/0012-separate-cli-from-flue.md) records their dependency ownership.
 
 The analyzer returns an attention/coverage route as documented in [ADR 0013](../docs/adr/0013-route-assessment-by-concerns-and-coverage.md). No model is called by this package. The standalone CLI reports the route; Flue performs required assessments with reviewed input.
+
+`email-analysis/output` also exports the structured assessment schema, selectable evidence records and their renderer. Model selections do not supply factual prose; the renderer resolves IDs against the caller's analysis. See [ADR 0016](../docs/adr/0016-render-recorded-assessment-evidence.md) for disclosure and failure behavior.

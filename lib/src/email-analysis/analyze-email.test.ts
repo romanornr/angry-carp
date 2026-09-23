@@ -80,6 +80,48 @@ test('partial lookup failures preserve local findings and do not manufacture a R
   assert.doesNotMatch(JSON.stringify(result), /private response detail/);
 });
 
+test('a deferred registration gets one retry within the shared budget; permanent failures stop', async (t) => {
+  const message = new TextEncoder().encode('From: sender@example.com\r\nContent-Type: text/html\r\n\r\n'
+    + '<a href="https://first.com/">one</a><a href="https://second.com/">two</a><a href="https://deferred.com/">three</a>');
+  for (const failure of ['reset_once', 'reset_always', 'rate_limit', 'invalid_json', 'cancel']) {
+    const calls: string[] = [];
+    const healthy = fixtureFetch(calls);
+    const controller = new AbortController();
+    let attempts = 0;
+    const mock = t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+      if (String(input) === 'https://registry.example/domain/deferred.com') {
+        attempts++;
+        if (failure === 'cancel') { calls.push(String(input)); controller.abort(); throw controller.signal.reason; }
+        if (failure === 'reset_always' || (failure === 'reset_once' && attempts === 1)) {
+          calls.push(String(input));
+          throw new TypeError('fetch failed', { cause: Object.assign(new Error('private transport detail'), { code: 'ECONNRESET' }) });
+        }
+        if (failure === 'rate_limit') { calls.push(String(input)); return new Response(null, { status: 429 }); }
+        if (failure === 'invalid_json') { calls.push(String(input)); return new Response('invalid'); }
+      }
+      return healthy(input);
+    });
+    const result = await analyzeEmail(message, { directory, signal: controller.signal });
+    assert.equal(result.kind, 'analyzed');
+    if (result.kind !== 'analyzed') return;
+    const deferred = result.rdap.find(({ domain }) => domain === 'deferred.com');
+    if (failure === 'reset_once') assert.equal(deferred?.result.kind, 'found');
+    else if (failure === 'rate_limit') assert.equal(deferred?.result.kind, 'http_error');
+    else assert.equal(deferred?.result.kind, 'unavailable');
+    if (failure.startsWith('reset')) assert.equal(attempts, 2);
+    else assert.equal(attempts, 1);
+    assert.equal(result.retries.find(({ checkId }) => checkId === deferred?.id)?.previousResult.kind, 'skipped');
+    assert.ok(calls.filter((url) => url.includes('/domain/')).length <= 6);
+    assert.ok(calls.length <= result.limits.httpRequests);
+    assert.doesNotMatch(JSON.stringify(result), /private transport detail/);
+    if (failure === 'cancel') {
+      assert.ok(result.ipRdap.every(({ result }) => result.kind === 'skipped' && result.reason === 'cancelled'));
+      assert.equal(calls.some((url) => url.includes('/ip/') || url.includes('ipv4.json')), false);
+    }
+    mock.mock.restore();
+  }
+});
+
 test('cancellation reaches an in-flight request and prevents later dispatch', async (t) => {
   const controller = new AbortController();
   let calls = 0;

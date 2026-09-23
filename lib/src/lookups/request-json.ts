@@ -4,7 +4,7 @@ export type RequestFailure =
   | { kind: 'http_error'; status: number }
   | {
     kind: 'unavailable';
-    reason: 'request_failed' | 'name_resolution' | 'cancelled' | 'timeout' | 'invalid_response' | 'response_too_large' | 'redirected';
+    reason: 'request_failed' | 'name_resolution' | 'connection_reset' | 'cancelled' | 'timeout' | 'invalid_response' | 'response_too_large' | 'redirected';
   };
 
 export async function requestJson({ url, signal, accept }: {
@@ -58,10 +58,11 @@ export async function requestJson({ url, signal, accept }: {
     const causes: unknown[] = [error];
     if (error instanceof Error) causes.push(error.cause);
     for (const cause of causes) {
-      if (cause && typeof cause === 'object' && 'code' in cause
-        && (cause.code === 'ENOTFOUND' || cause.code === 'EAI_AGAIN')) {
+      if (!cause || typeof cause !== 'object' || !('code' in cause)) continue;
+      if (cause.code === 'ENOTFOUND' || cause.code === 'EAI_AGAIN') {
         return { kind: 'unavailable', reason: 'name_resolution' };
       }
+      if (cause.code === 'ECONNRESET') return { kind: 'unavailable', reason: 'connection_reset' };
     }
     // Never forward server bodies, fetch exceptions, or ambient runtime details to the model.
     return { kind: 'unavailable', reason: 'request_failed' };

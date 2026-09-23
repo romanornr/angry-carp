@@ -64,6 +64,12 @@ A provider's published route for receiving a report in a stated service role, wi
 **Reporting readiness**:
 Whether the evidence, provider attribution, verified channel, and disclosure review are sufficient to prepare a report for a particular recipient. It is separate from concern level and report approval.
 
+**Report preparation**:
+A directed effort to prepare one provider-specific report about identified resources, with a stated allegation, requested action and reviewed evidence. Starting preparation requests research and drafting, not submission.
+
+**Reporting-time research**:
+New source checks performed for a report preparation, covering the material allegation, provider relationship and current intake. A completed attempt can leave a question unresolved. A host-supplied account identifies who claims to have performed the research; it is not independent verification of that claim.
+
 **Case**:
 The record of an investigation, its related source messages, evidence, assessments, reporting actions, and unresolved work. A case can contain repeated samples and separate actions for multiple providers.
 Acquiring an ordinary email does not create a case. Acquisition alone is not an investigation.

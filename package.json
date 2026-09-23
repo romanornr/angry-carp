@@ -19,7 +19,8 @@
 		"reporting:generate": "node lib/src/reporting/write-channels.ts",
 		"reporting:check": "node --test lib/src/reporting/channels.test.ts",
 		"analyze": "npm run build && node cli/dist/analyze.js",
-		"extract:links": "npm run build && node cli/dist/extract-links.js"
+		"extract:links": "npm run build && node cli/dist/extract-links.js",
+		"report": "npm run build && node cli/dist/report.js"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.10",

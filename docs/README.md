@@ -7,6 +7,7 @@ Angry Carp provides deterministic original-email analysis with optional AI asses
 - [Analyze an original without a model](email-analysis.md): input, optional private JSON, lookup budgets and AI disclosure.
 
 - [Standalone CLI](../cli/README.md): commands and file paths without Flue dependencies.
+- [Prepare a provider report](report-preparation.md): start a reviewed request, use your existing AI host for research, and check the attributed research and draft. No sending.
 - [Run a local assessment](../agent/README.md#assess-analyzed-email-evidence): sign in, prepare the input, run the command, and interpret the output.
 - [Sign in and disconnect](../agent/README.md#sign-in-and-disconnect): browser authentication and local logout.
 - [Credential and evidence storage](../agent/README.md#credential-storage-and-access): file locations, permissions, and what the conversation database stores.
@@ -69,3 +70,7 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 [ADR 0013: Route AI assessment by concerns and coverage](adr/0013-route-assessment-by-concerns-and-coverage.md) records the no-concerns skip, bounded recovery, supplied notes and mandatory research during report preparation.
 
 [ADR 0014: Keep provider routing outside AI assessment](adr/0014-keep-provider-routing-outside-ai-assessment.md) records the smaller model input and deterministic presentation of provider roles and reporting routes.
+
+[ADR 0015: Attribute reporting research to the existing AI host](adr/0015-attribute-host-report-research.md) records the host-assisted preparation workflow, exact input bindings and limits of supplied research records.
+
+[ADR 0016: Render recorded assessment evidence](adr/0016-render-recorded-assessment-evidence.md) replaces free-form local assessment facts with structured selections and runtime rendering.

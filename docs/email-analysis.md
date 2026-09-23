@@ -38,7 +38,7 @@ The result's `routing` controls inference. `no_concerns_detected` returns withou
 
 Authentication passes, ordinary registrar contacts, and intentionally inapplicable work do not trigger AI. Domain resemblance, image/action registration differences and authentication failure claims do, as concerns for interpretation rather than phishing verdicts. Supplied disputed or uncertain source claims also require assessment. Unparsed identities, omitted content, exhausted important lookups and unrecognized coverage gaps remain material. Passive-image lookup failures are supplementary; missing content that could conceal actions is not. Quoted and embedded hosts excluded from current-message lookups are material gaps and require assessment, including forwarded phishing samples. Known quote heuristics and missing optional comparison references remain disclosed limits. This policy has not been calibrated against a representative corpus and can miss phishing, especially deceptive prose without a recognized indicator.
 
-The terminal prints deterministic findings before optional JSON export or AI assessment, so failures in either step do not hide the analysis. Both commands accept an optional `--json <unused-output-path>`. An omitted point in model prose no longer removes the recorded finding. The model's remaining follow-up tool compares two explicitly supplied texts with Winnowing. Routine DNS, RDAP, directory, domain comparisons and channel selection now run in the analyzer; their former Flue bindings are removed. The standalone HTML extractor remains available for inspecting a supplied HTML fragment. The old triage `--html` option is retired.
+The terminal prints deterministic findings before optional JSON export or AI assessment, so failures in either step do not hide the analysis. Both commands accept an optional `--json <unused-output-path>`. The AI selects concern, confidence, a hypothesis and up to eight evidence IDs. The CLI displays the stored records for those IDs, never model-authored factual prose. Missing, malformed or unknown selections fail visibly without discarding the deterministic result. The model may still choose a wrong conclusion or omit relevant records. [ADR 0016](adr/0016-render-recorded-assessment-evidence.md) defines this output contract. The model's remaining follow-up tool compares two explicitly supplied texts with Winnowing. Routine DNS, RDAP, directory, domain comparisons and channel selection now run in the analyzer; their former Flue bindings are removed. The standalone HTML extractor remains available for inspecting a supplied HTML fragment. The old triage `--html` option is retired.
 
 ## Call the library
 
@@ -78,7 +78,7 @@ Selection is deterministic for the supplied bytes, directory and lookup response
 | DNS | 12 name/type pairs per batch, fixed Cloudflare DoH resolver |
 | Domain RDAP | Three ICANN registration queries per batch; exact observed hosts remain separate |
 | IP RDAP | Three eligible address queries per batch, selected after DNS settles |
-| Recovery | One additional batch per family for important transient failures or budget-skipped work; successes reused |
+| Recovery | At most two attempts per check; additional attempts per family capped at its initial selection count |
 | Requests | At most 48 HTTP requests including recovery, counting RDAP bootstrap and registry requests separately; concurrency three |
 | Time | 45-second shared cancellation signal; each lookup also retains its 15-second timeout |
 
@@ -90,7 +90,9 @@ Only validated names with an ICANN suffix enter automatic DNS/domain RDAP. Liter
 
 Failures remain in each lookup result. Budgets and cancellation produce explicit skipped checks. A DNS `NXDOMAIN`, empty answer, truncated response, transport failure and unattempted check are distinct. RDAP arrays are bounded without silently shortening returned values. An omitted or failed check does not become a negative finding.
 
-Recovery reuses complete successful checks and preserves both results of each retry in `retries`. A failed retry, non-NOERROR response or response with fewer answers retains the earlier partial DNS observations as the check result. Both attempts remain recorded with their times; this is not a claim that the retained answer is the latest. Conflicting or partial coverage still requires assessment. It retries transient transport failures, timeouts, server errors, DNS SERVFAIL/truncation and important work skipped by the first budget. It does not immediately retry HTTP 429, refused redirects or deterministic parsing/size failures. The shared deadline is not reset. Those unresolved material failures require AI assessment; deterministic parsing is not repeated against identical bytes. Bulk-mail caching and rate limits across analyses are not implemented.
+Recovery reuses complete successful checks and preserves before/after results in `retries`. A deferred check records `skipped` before its first attempt. If that attempt fails transiently, it can get one retry while the family's recovery budget remains. A check never gets a third attempt. The recovery budget equals the initial selection count; it is a ceiling, not a guarantee of two attempts for every planned check. Stable plan order selects each round before dispatch, so completion order cannot choose targets.
+
+A failed retry, non-NOERROR response or response with fewer answers retains the earlier partial DNS observations as the check result. Both attempts remain recorded with their times; this is not a claim that the retained answer is the latest. Conflicting or partial coverage still requires assessment. Recovery covers transient transport failures, timeouts, server errors, DNS SERVFAIL/truncation and important work skipped by the first budget. HTTP 429, refused redirects and deterministic parsing/size failures are not retried immediately. The shared deadline is not reset. The HTTP ceiling remains 48. Bulk-mail caching and rate limits across analyses are not implemented.
 
 ## RDAP discovery and failures
 
@@ -100,7 +102,7 @@ This implements the reuse direction in [RFC 9224 section 8](https://www.rfc-edit
 
 The run signal owns each shared discovery fetch, with a 15-second request timeout. A lookup retains its own 15-second timeout across discovery and registry work. Cancelling a waiting lookup does not cancel another lookup's discovery request. Cancelling the run cancels the shared transport. Failed or invalid discovery is not retained for a future attempt. Freshness expiry and failed loads can cause more than one request per discovery family; the existing 48-request ceiling remains an upper bound.
 
-Full results retain `discovery.sourceUrl` and its original `retrievedAt`, separately from the registry response's retrieval time. A failed lookup already carries the endpoint where it failed; terminal coverage now prints it. Recognized `ENOTFOUND` and `EAI_AGAIN` codes become `name_resolution`; other non-abort transport failures remain `request_failed`. No raw exception, response body or credential is displayed. The model receives the failure category, not these additional diagnostic URLs or discovery metadata. JSON export remains optional.
+Full results retain `discovery.sourceUrl` and its original `retrievedAt`, separately from the registry response's retrieval time. A failed lookup already carries the endpoint where it failed; terminal coverage prints it. Recognized `ENOTFOUND` and `EAI_AGAIN` codes become `name_resolution`; `ECONNRESET` becomes `connection_reset`. Other non-abort transport failures remain `request_failed`. No raw exception, response body or credential is displayed. The model receives the failure category, not these additional diagnostic URLs or discovery metadata. JSON export remains optional.
 
 Discovery reuse reduces requests. It cannot fix an unavailable registry, a failed first discovery request or every local resolver problem. [Issue 21](planning/issues/21-handle-rdap-discovery-unavailability.md) records the observed failures and the verification limits.
 
@@ -123,6 +125,8 @@ Both commands accept `--source-notes <reviewed-notes.json>`. Library callers pas
   }
 ]
 ```
+
+Supply external claims through `--source-notes` to give each one an individually selectable record in the rendered assessment. Claims buried in reviewed text have only the generic text reference. `retrievedAt` preserves the supplied precision: an ISO timestamp or a date in `YYYY-MM-DD` form. Do not invent a retrieval time when only the date was recorded.
 
 `providedBy` accepts `operator` or `agent`; `sourceAuthority` accepts `claimed_official`, `other` or `unknown`. `relation` accepts `supports_concern`, `contradicts_concern`, `context` or `unknown`. Applicability accepts `applicable`, `not_applicable` or `unknown`. Subject hosts are exact hostnames, not suffix matches. These are the supplier's assertions, not verified authority, historical applicability or a verdict. Missing/ambiguous directory matches remain uninformative. Conflicting notes remain separate and trigger assessment rather than overwriting one another.
 
@@ -149,7 +153,7 @@ These candidates identify where an investigation request could go. They do not e
 
 Candidates identify their affected domain and non-empty subject observation IDs, or this message for a delivery/platform lead. Shared registrars do not merge resource justifications. A supporting note can identify abuse on an image or legitimate domain; directory membership never suppresses it. A contradictory note does not silently erase supporting evidence. AI assessment resolves that conflict before report preparation.
 
-Once the operator chooses report preparation, [provider reporting](../provider-abuse-reporting.md) requires targeted AI research every time to double-check material allegations and current recipients. That reporting runtime remains deferred. Routine analysis/assessment does no browsing, and candidate sites remain prohibited.
+Once the operator chooses report preparation, [provider reporting](../provider-abuse-reporting.md) requires targeted AI research every time to double-check material allegations and current recipients. The [host-assisted reporting command](report-preparation.md) starts a reviewed request and checks attributed research and draft records from the operator's existing AI host. It never browses or sends. Routine analysis/assessment does no browsing, and candidate sites remain prohibited.
 
 ## Sources and design
 

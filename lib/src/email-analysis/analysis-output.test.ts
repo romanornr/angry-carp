@@ -2,7 +2,21 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { analyzeEmail } from './analyze-email.ts';
 import { loadBrandDirectory } from '../brands/load-directory.ts';
-import { analysisForModel, formatAnalysis } from './analysis-output.ts';
+import { analysisForModel, assessmentEvidence, formatAnalysis, formatAssessment } from './analysis-output.ts';
+
+test('assessment renders only selected records and rejects invented prose or references', () => {
+  const evidence = [{ id: 'finding0', text: 'Recorded domain difference; ownership unknown.\n\u001b[31m' }];
+  const selection = { concern: 'high', confidence: 'moderate', hypothesis: 'impersonation',
+    evidence: [{ id: 'finding0', role: 'supports' }] };
+  assert.equal(formatAssessment(selection, evidence), 'Concern: high; confidence: moderate.\n'
+    + 'AI hypothesis: impersonation.\nSelected evidence:\n'
+    + '- supports [finding0]: Recorded domain difference; ownership unknown.\\u{a}\\u{1b}[31m\n'
+    + 'The AI selected the conclusion and evidence. Recorded findings and coverage remain above.\n');
+  for (const invalid of [undefined, 'An unrelated sender.', { ...selection, explanation: 'An unrelated sender.' },
+    { ...selection, evidence: [{ id: 'unrelated sender', role: 'supports' }] }]) {
+    assert.throws(() => formatAssessment(invalid, evidence));
+  }
+});
 
 const original = 'From: private-name <private-user@sender.example.com>\r\n' +
   'DKIM-Signature: d=private-invalid/path?secret; s=test\r\n' +
@@ -41,8 +55,18 @@ test('failed RDAP output distinguishes discovery from registry without exposing 
 
 test('the automatic model projection excludes private headers, bodies, URLs and invalid identity text', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 503 }));
-  const result = await analyzeEmail(new TextEncoder().encode(original), { directory: await loadBrandDirectory() });
+  const result = await analyzeEmail(new TextEncoder().encode(original), { directory: await loadBrandDirectory(), sourceNotes: [{
+    url: 'https://support.example.com/platforms', retrievedAt: '2026-09-22', displayedDate: null,
+    claim: 'No desktop application.', providedBy: 'agent', sourceAuthority: 'claimed_official',
+    relation: 'supports_concern', subjectHosts: ['action.example.com'], messageDateApplicability: 'unknown',
+  }] });
   const projection = analysisForModel(result);
+  const choices = assessmentEvidence(result);
+  assert.equal(choices[0].id, 'reviewed_text');
+  assert.ok(choices.some(({ id }) => id === 'finding0'));
+  assert.deepEqual(choices.find(({ id }) => id === 'note0'), { id: 'note0',
+    text: 'Supplied source claim: No desktop application. Source: https://support.example.com/platforms; retrieved 2026-09-22. Applicability to the message date: unknown. Not independently verified.' });
+  assert.doesNotMatch(JSON.stringify(choices), /private-/);
   assert.match(JSON.stringify(projection), /image_action_domain_difference/);
   assert.doesNotMatch(JSON.stringify(projection), /private-/);
   assert.equal(result.kind, 'analyzed');

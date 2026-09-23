@@ -26,9 +26,11 @@ The old prepared-text-only and `--html` triage paths are replaced. To inspect a 
 
 ## Read the assessment
 
-The model follows [the local assessment instructions](phishing-assessment.md): Assessment, Evidence and Limits. It interprets deception evidence; the runtime separately renders provider roles, reporting routes, their conditions and source provenance. The model does not receive the automatic provider-candidate or IP network records. Full investigation guidance remains available in standalone `phishing-triage.md`. [ADR 0014](../docs/adr/0014-keep-provider-routing-outside-ai-assessment.md) explains the split.
+The model follows [the local assessment instructions](phishing-assessment.md) and submits concern, confidence, a deception hypothesis and evidence IDs. The CLI renders the selected recorded findings, registration records and attributed source notes. Reviewed email text is represented by a label rather than printed. Invalid or missing selections exit with code 1 while preserving the deterministic output. Free-form model prose is not displayed. The hypothesis and evidence weighting remain model judgments; this does not validate their correctness. [ADR 0016](../docs/adr/0016-render-recorded-assessment-evidence.md) records this contract.
 
-High concern, reporting readiness and permission to send are separate. Use `--source-notes <reviewed-notes.json>` for separately reviewed external claims, following [the source-note contract](../docs/email-analysis.md#supply-reviewed-source-notes). No web browser or search is installed. Research is mandatory during future report preparation, not routine analysis; [ADR 0013](../docs/adr/0013-route-assessment-by-concerns-and-coverage.md) records this policy.
+The model interprets deception evidence; the runtime separately renders provider roles, reporting routes, their conditions and source provenance. The model does not receive the automatic provider-candidate or IP network records. Full investigation guidance remains available in standalone `phishing-triage.md`. [ADR 0014](../docs/adr/0014-keep-provider-routing-outside-ai-assessment.md) explains the split.
+
+High concern, reporting readiness and permission to send are separate. Use `--source-notes <reviewed-notes.json>` to make separately reviewed external claims individually citable in the rendered assessment, following [the source-note contract](../docs/email-analysis.md#supply-reviewed-source-notes). No web browser or search is installed. Research is mandatory during future report preparation, not routine analysis; [ADR 0013](../docs/adr/0013-route-assessment-by-concerns-and-coverage.md) records this policy.
 
 ## Sign in and disconnect
 
@@ -70,7 +72,7 @@ Original emails and prepared evidence files live in `evidence/emails/` at the re
 | `../cli/src/analyze.ts` | Standalone original-email command without Flue or auth dependencies. |
 | `../lib/src/email-analysis/analysis-output.ts` | Formats terminal results and selects the model disclosure fields. |
 | `src/triage-cli.ts` | Calls the analyzer, supplies reviewed text to Flue, prints both outputs and owns shutdown. |
-| `src/agents/phishing-triage.ts` | Loads `phishing-assessment.md`, registers the provider and the optional passage-comparison tool. |
+| `src/agents/phishing-triage.ts` | Loads `phishing-assessment.md`, registers the provider, structured assessment submission and optional passage comparison. |
 | `src/auth.ts`, `src/auth-cli.ts` | Keep Pi's ModelRuntime private; handle browser login, storage and logout with sanitized errors. |
 | `../lib/src/node/read-input.ts` | Reads bounded regular files without blocking on a FIFO. |
 

@@ -54,6 +54,10 @@
 		"./node/read-input": {
 			"types": "./dist/node/read-input.d.ts",
 			"default": "./dist/node/read-input.js"
+		},
+		"./reporting/preparation": {
+			"types": "./dist/reporting/report-preparation.d.ts",
+			"default": "./dist/reporting/report-preparation.js"
 		}
 	},
 	"files": [

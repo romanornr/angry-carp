@@ -167,7 +167,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     if (selectedDns.size === DNS_LIMIT) break;
     selectedDns.add(check);
   }
-  evidence.retries.push(...await runWithRetry(importantDns, [...selectedDns], signal, async (check) => {
+  evidence.retries.push(...await runWithRecovery(importantDns, [...selectedDns], signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupDns(check.query, signal);
   }));
@@ -177,7 +177,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     if (selectedRdap.size === DOMAIN_LIMIT) break;
     selectedRdap.add(check);
   }
-  evidence.retries.push(...await runWithRetry(evidence.rdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), [...selectedRdap], signal, async (check) => {
+  evidence.retries.push(...await runWithRecovery(evidence.rdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), [...selectedRdap], signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupRdap(check.domain, rdapOptions);
   }));
@@ -199,7 +199,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     }
   }
   evidence.ipRdap = [...ips.values()];
-  evidence.retries.push(...await runWithRetry(evidence.ipRdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), evidence.ipRdap.slice(0, IP_LIMIT), signal, async (check) => {
+  evidence.retries.push(...await runWithRecovery(evidence.ipRdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), evidence.ipRdap.slice(0, IP_LIMIT), signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupIpRdap(check.address, rdapOptions);
   }));
@@ -207,40 +207,51 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   return { kind: 'analyzed', version: 1, source, ...evidence, ...derived, routing: routeAnalysis(evidence, derived.findings),
     textReuse: { kind: 'skipped', reason: 'missing_comparison_message' } satisfies Skipped,
     limits: { dns: DNS_LIMIT, domainRdap: DOMAIN_LIMIT, ipRdap: IP_LIMIT,
-      retryBatches: 1, httpRequests: 2 * (DNS_LIMIT + 2 * (DOMAIN_LIMIT + IP_LIMIT)), deadlineMs: DEADLINE_MS },
+      attemptsPerCheck: 2, httpRequests: 2 * (DNS_LIMIT + 2 * (DOMAIN_LIMIT + IP_LIMIT)), deadlineMs: DEADLINE_MS },
   } as const;
 }
 
 export type EmailAnalysis = Awaited<ReturnType<typeof analyzeEmail>>;
 
-// One additional bounded batch retries transient failures or work skipped for budget.
-// Never repeat complete successes, deterministic rejections or HTTP 429 without a server-directed wait.
-async function runWithRetry<T extends { id: string; result: LookupResult }>(
+/** Recovery shares the initial attempt budget. Deferred work gets at most one retry if budget remains. */
+async function runWithRecovery<T extends { id: string; result: LookupResult }>(
   plan: T[], initial: T[], signal: AbortSignal, run: (item: T) => Promise<void>,
 ) {
   await runBounded(initial, run);
-  if (signal.aborted) return [];
-  const retry = plan.filter(({ result }) => {
-    switch (result.kind) {
-      case 'skipped': return result.reason === 'budget';
-      case 'http_error': return result.status >= 500;
-      case 'unavailable': return result.reason === 'request_failed' || result.reason === 'name_resolution' || result.reason === 'timeout';
-      case 'answered': return result.rcode === 'SERVFAIL' || result.truncated;
-      case 'found': case 'not_found': case 'no_service': return false;
-      default: { const unhandled: never = result; return unhandled; }
+  const pending = plan.filter(({ result }) => needsRecovery(result));
+  const retries: AnalysisEvidence['retries'] = [];
+  let remaining = initial.length;
+  while (remaining > 0 && pending.length > 0 && !signal.aborted) {
+    const batch = pending.splice(0, remaining);
+    remaining -= batch.length;
+    const previous = batch.map(({ id, result }) => ({ checkId: id, previousResult: result }));
+    await runBounded(batch, run);
+    for (const [index, check] of batch.entries()) {
+      const attempt = { ...previous[index], retryResult: check.result };
+      // Preserve partial DNS observations if the retry fails or supplies less evidence. Keep both attempts.
+      if (attempt.previousResult.kind === 'answered' && (check.result.kind !== 'answered'
+        || check.result.rcode !== 'NOERROR' || check.result.answers.length < attempt.previousResult.answers.length)) {
+        check.result = attempt.previousResult;
+      }
+      retries.push(attempt);
+      // A budget-skipped check has not had its first request yet. A failed retry never gets a third attempt.
+      // GET recovery follows RFC 9110 section 9.2.2: https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2
+      if (attempt.previousResult.kind === 'skipped' && needsRecovery(check.result)) pending.push(check);
     }
-  }).slice(0, initial.length);
-  const previous = retry.map(({ id, result }) => ({ checkId: id, previousResult: result }));
-  await runBounded(retry, run);
-  return retry.map((check, index) => {
-    const attempt = { ...previous[index], retryResult: check.result };
-    // Preserve partial observations when the retry fails or supplies less evidence; both attempts remain recorded.
-    if (attempt.previousResult.kind === 'answered' && (check.result.kind !== 'answered'
-      || check.result.rcode !== 'NOERROR' || check.result.answers.length < attempt.previousResult.answers.length)) {
-      check.result = attempt.previousResult;
-    }
-    return attempt;
-  });
+  }
+  return retries;
+}
+
+function needsRecovery(result: LookupResult): boolean {
+  switch (result.kind) {
+    case 'skipped': return result.reason === 'budget';
+    case 'http_error': return result.status >= 500;
+    case 'unavailable': return result.reason === 'request_failed' || result.reason === 'name_resolution'
+      || result.reason === 'connection_reset' || result.reason === 'timeout';
+    case 'answered': return result.rcode === 'SERVFAIL' || result.truncated;
+    case 'found': case 'not_found': case 'no_service': return false;
+    default: { const unhandled: never = result; return unhandled; }
+  }
 }
 
 async function runBounded<T>(items: T[], run: (item: T) => Promise<void>) {

@@ -4,7 +4,7 @@ import { domainSchema } from '../lookups/rdap.ts';
 /** Explicitly reviewed external evidence. Fields describe the supplier's claims, not a runtime fetch. */
 export const sourceNotesSchema = v.pipe(v.array(v.object({
   url: v.pipe(v.string(), v.maxLength(4096), v.url(), v.regex(/^https?:\/\//i)),
-  retrievedAt: v.pipe(v.string(), v.isoTimestamp()),
+  retrievedAt: v.union([v.pipe(v.string(), v.isoTimestamp()), v.pipe(v.string(), v.isoDate())]),
   displayedDate: v.nullable(v.pipe(v.string(), v.maxLength(64))),
   claim: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
   providedBy: v.picklist(['operator', 'agent']),

@@ -21,6 +21,8 @@ If additional external scanning is needed, use only a private scan whose complet
 
 ## Establish what can be reported
 
+When using Angry Carp's installed host-assisted reporting command, follow the [preparation and record procedure](docs/report-preparation.md). Its checks establish record completeness and binding, not independent verification or approval to send.
+
 When the operator chooses to prepare a report, always perform targeted AI-assisted research to double-check the material allegation, provider relationship and current reporting channel. Use independent official sources, registry data or permitted existing evidence. Record sources, retrieval times, contradictions and unresolved questions. Supplied notes are starting evidence, not proof that this reporting-time check occurred. If research cannot be completed, mark the draft unverified and hold it for review. The candidate-site and disclosure restrictions above still apply.
 
 Read the source evidence and relevant ticket history before drafting. Identify the specific deceptive instruction or behavior and the resource involved. Check material contrary evidence. Tie each factual claim to a source in the private case record.

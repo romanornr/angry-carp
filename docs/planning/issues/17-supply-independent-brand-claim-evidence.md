@@ -9,7 +9,7 @@ Blocked by: none for supplied-note scope
 
 ## Resolution, 2026-09-22
 
-The operator selected supplied notes now and research only during report preparation. Implemented bounded, schema-validated `sourceNotes` in the library and `--source-notes` in both commands. Notes retain supplier, authority claim, relation, exact subject hosts, retrieval/display dates and message-date applicability separately from email bytes. No source URL is fetched. Full reviewed claim/URL fields can enter the model projection. Unknown/conflicting notes stay explicit; no semantic verification is claimed. Executable reporting-time research remains a separate deferred [issue 18](18-verify-evidence-during-report-preparation.md), and the portable reporting workflow already requires it.
+The operator selected supplied notes now and research only during report preparation. Implemented bounded, schema-validated `sourceNotes` in the library and `--source-notes` in both commands. Notes retain supplier, authority claim, relation, exact subject hosts, retrieval/display dates and message-date applicability separately from email bytes. No source URL is fetched. Full reviewed claim/URL fields can enter the model projection. Unknown/conflicting notes stay explicit; no semantic verification is claimed. [Issue 18](18-verify-evidence-during-report-preparation.md) now implements a separate host-assisted preparation workflow; the portable reporting guide requires research at that stage.
 
 The sections below retain the original gap and acceptance criteria.
 

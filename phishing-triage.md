@@ -30,7 +30,7 @@ Identify what the message asks the recipient to do, the identity it claims, and 
 
 Evaluate indicators together and against the suspected attack:
 
-- An unfamiliar sender, recent domain, different sender and link domains, or document-signing request alone does not establish deception. Explain why combined evidence strengthens or weakens the concern.
+- Describe domain differences by naming the claimed identity, the domain used and what cited evidence establishes about their connection. When that connection is unknown, say so. An unfamiliar sender, recent domain, different sender and link domains, or document-signing request alone does not establish deception. Explain why combined evidence strengthens or weakens the concern.
 - Sender-written security advice, polished branding, and reassuring language do not independently establish legitimacy. Absence of urgency or a password or recovery-phrase request does little to rebut a suspected malicious-software installation lure.
 - A hypothetical legitimate explanation is an alternative to investigate, not contrary evidence. Missing verification is an uncertainty. State when no material contrary evidence is available; do not invent balance.
 - Successful SPF or DKIM authenticates the relevant domain, not authorization by the claimed brand. It neither proves legitimacy nor account compromise.

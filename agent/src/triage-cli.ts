@@ -5,7 +5,7 @@ import { cleanupSessionResources } from '@earendil-works/pi-ai';
 import { analyzeEmail, MAX_MESSAGE_BYTES } from '@angry-carp/checks/email-analysis';
 import { loadBrandDirectory } from '@angry-carp/checks/brands/local';
 import { readInput } from '@angry-carp/checks/node/read-input';
-import { analysisForModel, formatAnalysis } from '@angry-carp/checks/email-analysis/output';
+import { analysisForModel, assessmentEvidence, formatAnalysis, formatAssessment } from '@angry-carp/checks/email-analysis/output';
 
 async function main(): Promise<void> {
   const { positionals, values } = parseArgs({ allowPositionals: true, options: {
@@ -37,8 +37,10 @@ async function main(): Promise<void> {
     return;
   }
   const reviewedText = new TextDecoder('utf-8', { fatal: true }).decode(await readInput(values['reviewed-text'], 512 * 1024));
+  const evidence = assessmentEvidence(analysis);
   const message = JSON.stringify({
     analysis: analysisForModel(analysis),
+    assessmentEvidence: evidence,
     reviewedText,
     textAssociation: 'The operator supplied this reviewed text for this message. The association is not independently verified.',
   });
@@ -59,7 +61,17 @@ async function main(): Promise<void> {
   const receipt = await agent.dispatch(message);
   const reply = await agent.read(receipt);
 
-  process.stdout.write(`\nAI assessment\n${reply.text}\n`);
+  const selections = reply.data.assessment;
+  let assessment: string;
+  try {
+    if (!selections || selections.length !== 1) throw new Error('No single structured assessment returned.');
+    assessment = formatAssessment(selections[0], evidence);
+  } catch {
+    process.stderr.write('AI assessment unavailable: missing or invalid structured result.\n');
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(`\nAI assessment\n${assessment}`);
 }
 
 // main's async disposal finishes first. This standalone command owns every Pi session in the process.

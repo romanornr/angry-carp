@@ -1,6 +1,6 @@
 # Standalone commands
 
-This workspace runs email analysis and HTML extraction without Flue, Pi or a model. Its only runtime dependency is `@angry-carp/checks`. Node.js 24 is required.
+This workspace runs email analysis, HTML extraction and host-assisted report preparation without Flue, Pi or a model. Its only runtime dependency is `@angry-carp/checks`. Node.js 24 is required.
 
 From the repository root after `npm ci`:
 
@@ -17,6 +17,8 @@ HTML extraction uses no network. Its output contains full references and a separ
 
 See [analysis behavior](../docs/email-analysis.md) and [HTML extraction](../docs/email-links.md) for input, output and coverage contracts. [Flue assessment](../agent/README.md) is a separate consumer for optional AI interpretation.
 
-`src/analyze.ts` and `src/extract-links.ts` own command arguments and output. Shared formatting, disclosure and bounded file reading live in `lib/`. Root `npm test` and `npm run check:types` build the library and check all workspaces. [ADR 0012](../docs/adr/0012-separate-cli-from-flue.md) records the boundary.
+For reporting, `npm --silent run report -- start ...` creates a private preparation from a reviewed request and existing analysis. Your AI host performs targeted research. `report -- check ...` checks its attributed research and exact draft against that preparation. It never searches or sends. [The report-preparation guide](../docs/report-preparation.md) documents the input files, source policy and operator-review boundary. Held reports exit 3, input/file failures exit 1 and usage errors exit 2.
 
-The result includes routing: completed checks with no concerns need no AI; detected concerns or remaining material gaps require assessment. This command never calls a model. Both analysis commands accept `--source-notes <reviewed-notes.json>`; see [source-note fields and disclosure](../docs/email-analysis.md#supply-reviewed-source-notes). The library reuses successful lookups and makes at most one additional bounded batch per family, under the same deadline.
+`src/analyze.ts`, `src/extract-links.ts` and `src/report.ts` own command arguments and output. Shared formatting, disclosure, reporting checks and bounded file reading live in `lib/`. Root `npm test` and `npm run check:types` build the library and check all workspaces. [ADR 0012](../docs/adr/0012-separate-cli-from-flue.md) records the boundary.
+
+The result includes routing: completed checks with no concerns need no AI; detected concerns or remaining material gaps require assessment. This command never calls a model. Both analysis commands accept `--source-notes <reviewed-notes.json>`; see [source-note fields and disclosure](../docs/email-analysis.md#supply-reviewed-source-notes). The library reuses successful lookups and permits at most two attempts per check within the shared request budget and deadline.

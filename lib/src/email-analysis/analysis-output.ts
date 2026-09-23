@@ -4,6 +4,47 @@ import { ipAddressSchema } from '../lookups/ip-rdap.ts';
 import type { EmailAnalysis } from './analyze-email.ts';
 import { prioritizeHosts } from './observations.ts';
 
+export const assessmentSchema = v.strictObject({
+  concern: v.picklist(['high', 'medium', 'low']),
+  confidence: v.picklist(['high', 'moderate', 'low']),
+  hypothesis: v.picklist(['impersonation', 'credential_theft', 'deceptive_software_delivery', 'payment_fraud', 'other_deception', 'no_specific_deception']),
+  evidence: v.pipe(v.array(v.strictObject({
+    id: v.pipe(v.string(), v.maxLength(64)),
+    role: v.picklist(['supports', 'contrary', 'context']),
+  })), v.minLength(1), v.maxLength(8)),
+});
+
+/** Supplies selectable records. Reviewed text stays private to the model input, never copied to terminal output. */
+export function assessmentEvidence(result: EmailAnalysis) {
+  const evidence = [{ id: 'reviewed_text', text: 'Operator-reviewed email text.' }];
+  if (result.kind === 'input_failure') return evidence;
+  for (const [index, finding] of result.findings.entries()) evidence.push({ id: `finding${index}`, text: finding.text });
+  for (const { id, domain, result: lookup } of result.rdap) {
+    if (lookup.kind !== 'found') continue;
+    evidence.push({ id, text: `Registration record for ${domain}: ${lookup.events.map((event) => `${event.eventAction}: ${event.eventDate}`).join('; ')}. Source: ${lookup.sourceUrl}; retrieved ${lookup.retrievedAt}.` });
+  }
+  for (const note of result.sourceNotes) evidence.push({ id: note.id,
+    text: `Supplied source claim: ${note.claim} Source: ${note.url}; retrieved ${note.retrievedAt}. Applicability to the message date: ${note.messageDateApplicability}. Not independently verified.` });
+  return evidence;
+}
+
+/** Rejects invented references and free-text fields. Displays stored evidence, never model-authored factual prose. */
+export function formatAssessment(value: unknown, evidence: ReturnType<typeof assessmentEvidence>): string {
+  const parsed = v.safeParse(assessmentSchema, value);
+  if (!parsed.success) throw new Error('Invalid structured assessment.');
+  const assessment = parsed.output;
+  const records = new Map(evidence.map((record) => [record.id, record.text]));
+  const lines = [`Concern: ${assessment.concern}; confidence: ${assessment.confidence}.`,
+    `AI hypothesis: ${assessment.hypothesis.replaceAll('_', ' ')}.`, 'Selected evidence:'];
+  for (const selection of assessment.evidence) {
+    const text = records.get(selection.id);
+    if (text === undefined) throw new Error('Assessment selected an unknown evidence record.');
+    lines.push(`- ${selection.role} [${selection.id}]: ${text}`);
+  }
+  lines.push('The AI selected the conclusion and evidence. Recorded findings and coverage remain above.');
+  return terminalLines(lines);
+}
+
 /**
  * Selects evidence for phishing assessment, not provider attribution or report preparation.
  * Excludes email bodies, raw headers and extracted URL paths. Explicitly reviewed source notes retain
@@ -149,7 +190,11 @@ export function formatAnalysis(result: EmailAnalysis): string {
   for (const [reason, count] of counts) lines.push(`- ${reason} (${count})`);
   lines.push('- Fresh authentication verification, payload scanning and official-site verification were not performed.',
     '- Text reuse comparison skipped: no second message supplied.');
-  // Prevent untrusted header/provider strings from becoming terminal escape sequences or forged lines.
+  return terminalLines(lines);
+}
+
+// Prevent untrusted header/provider strings from becoming terminal escape sequences or forged lines.
+function terminalLines(lines: string[]): string {
   return lines.map((line) => line.replace(/[\x00-\x1f\x7f-\x9f\p{Cf}]/gu, (char) => {
     const codePoint = char.codePointAt(0);
     return `\\u{${codePoint?.toString(16)}}`;

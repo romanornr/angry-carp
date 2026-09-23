@@ -39,6 +39,7 @@ export async function openAuth() {
 let opened = 0;
 let closed = 0;
 let networkAttempts = 0;
+let modelCalls = 0;
 globalThis.fetch = async (input) => {
   const url = new URL(String(input));
   const host = url.hostname;
@@ -70,6 +71,7 @@ class FakeWebSocket extends EventTarget {
   }
 
   send(data: string) {
+    modelCalls++;
     if (process.env.ANGRY_CARP_TEST_FAILURE === 'projection') {
       assert.match(data, /action\.example\.com/);
       assert.match(data, /image\.example\.org/);
@@ -78,13 +80,27 @@ class FakeWebSocket extends EventTarget {
     }
     queueMicrotask(() => {
       const item = { id: 'offline-message', type: 'message', role: 'assistant',
-        content: [{ type: 'output_text', text: 'Offline assessment.', annotations: [] }] };
-      for (const event of [
+        content: [{ type: 'output_text', text: 'Invented unrelated sender identity.', annotations: [] }] };
+      const events: unknown[] = [
         { type: 'response.output_item.added', output_index: 0, item: { ...item, content: [] } },
-        { type: 'response.output_text.delta', output_index: 0, delta: 'Offline assessment.' },
+        { type: 'response.output_text.delta', output_index: 0, delta: 'Invented unrelated sender identity.' },
         { type: 'response.output_item.done', output_index: 0, item },
-        { type: 'response.completed', response: { id: 'offline-response', status: 'completed', output: [item] } },
-      ]) {
+      ];
+      const output: unknown[] = [item];
+      if (process.env.ANGRY_CARP_TEST_FAILURE !== 'unstructured') {
+        let id = 'reviewed_text';
+        if (process.env.ANGRY_CARP_TEST_FAILURE === 'unknown-reference') id = 'invented';
+        const args = JSON.stringify({ concern: 'high', confidence: 'moderate', hypothesis: 'impersonation',
+          evidence: [{ id, role: 'supports' }] });
+        const call = { id: 'fc_assessment', call_id: 'call_assessment', type: 'function_call',
+          name: 'submit_assessment', arguments: args };
+        events.push({ type: 'response.output_item.added', output_index: 1, item: { ...call, arguments: '' } },
+          { type: 'response.function_call_arguments.delta', output_index: 1, delta: args },
+          { type: 'response.output_item.done', output_index: 1, item: call });
+        output.push(call);
+      }
+      events.push({ type: 'response.completed', response: { id: 'offline-response', status: 'completed', output } });
+      for (const event of events) {
         this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(event) }));
       }
     });
@@ -113,5 +129,6 @@ process.on('exit', () => {
   if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean') expected = 0;
   assert.equal(opened, expected);
   assert.equal(closed, expected);
+  assert.equal(modelCalls, expected, 'a completed structured assessment must not request another model turn');
   assert.equal(networkAttempts, 0);
 });

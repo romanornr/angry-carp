@@ -5,7 +5,9 @@ type BootstrapUrl = `https://data.iana.org/rdap/${'dns' | 'ipv4' | 'ipv6'}.json`
 type Response = Awaited<ReturnType<typeof requestJson>>;
 const accept = 'application/rdap+json, application/json';
 
-/** Run-owned discovery only. Callers cancel their wait; the owner cancels the shared request. */
+/** Reuses successful, schema-valid discovery while HTTP freshness lasts. Failures are evicted.
+ * Callers cancel their wait; the run owner cancels the shared request.
+ */
 export function createRdapBootstrap(ownerSignal: AbortSignal) {
   const entries = new Map<BootstrapUrl, Promise<Response>>();
 

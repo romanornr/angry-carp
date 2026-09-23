@@ -9,13 +9,15 @@ import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
-for (const { failure, code, stdout, stderr } of [
-  { failure: 'none', code: 0, stdout: 'Offline assessment.\n', stderr: '' },
-  { failure: 'projection', code: 0, stdout: 'Offline assessment.\n', stderr: '' },
-  { failure: 'output', code: 1, stdout: '', stderr: 'Assessment failed. Check the input, authentication and optional output path. Existing output files are not replaced.\n' },
-  { failure: 'cleanup', code: 1, stdout: 'Offline assessment.\n', stderr: 'Provider session cleanup failed.\n' },
-  { failure: 'clean', code: 0, stdout: '', stderr: '' },
-  { failure: 'input-failure', code: 1, stdout: 'Offline assessment.\n', stderr: '' },
+for (const { failure, code, stderr } of [
+  { failure: 'none', code: 0, stderr: '' },
+  { failure: 'projection', code: 0, stderr: '' },
+  { failure: 'output', code: 1, stderr: 'Assessment failed. Check the input, authentication and optional output path. Existing output files are not replaced.\n' },
+  { failure: 'cleanup', code: 1, stderr: 'Provider session cleanup failed.\n' },
+  { failure: 'unstructured', code: 1, stderr: 'AI assessment unavailable: missing or invalid structured result.\n' },
+  { failure: 'unknown-reference', code: 1, stderr: 'AI assessment unavailable: missing or invalid structured result.\n' },
+  { failure: 'clean', code: 0, stderr: '' },
+  { failure: 'input-failure', code: 1, stderr: '' },
 ]) {
   test(`CLI exits naturally and reports the right outcome; failure=${failure}`, async (t) => {
     const directory = await mkdtemp(join(tmpdir(), 'angry-carp-lifecycle-'));
@@ -49,11 +51,12 @@ for (const { failure, code, stdout, stderr } of [
         assert.equal(error.code, code);
         assert.equal(error.killed, false);
         assert.equal(error.stderr, expectedStderr);
-        if (failure === 'output') {
+        if (['output', 'unstructured', 'unknown-reference'].includes(failure)) {
           assert.match(String(error.stdout), /^Deterministic email analysis/);
           assert.doesNotMatch(String(error.stdout), /\nAI assessment\n/);
         }
-        else assert.match(String(error.stdout), /AI assessment\nOffline assessment\.\n$/);
+        else assert.match(String(error.stdout), /AI assessment\nConcern: high; confidence: moderate\./);
+        assert.doesNotMatch(String(error.stdout), /Invented unrelated/);
         return true;
       });
     } else {
@@ -61,7 +64,8 @@ for (const { failure, code, stdout, stderr } of [
       if (failure === 'clean') {
         assert.match(result.stdout, /No concerns detected within completed applicable checks/);
         assert.doesNotMatch(result.stdout, /AI assessment\n/);
-      } else assert.match(result.stdout, /AI assessment\nOffline assessment\.\n$/);
+      } else assert.match(result.stdout, /AI assessment\nConcern: high; confidence: moderate\./);
+      assert.doesNotMatch(result.stdout, /Invented unrelated/);
       assert.equal(result.stderr, expectedStderr);
     }
   });
