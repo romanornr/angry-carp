@@ -16,6 +16,8 @@ PILFER combines hand-designed email features with a random forest. Its observati
 
 **Use:** a historical example of inspectable feature extraction and time-appropriate evidence. **Limit:** old data, class correlated with corpus source, and cross-validation that does not establish performance on later campaigns. Reuse the idea of explicit observations; do not import historical scores or assume every feature is suspicious by itself.
 
+**Dot-count clarification (2026-09-23):** Section 3.2.8 uses the maximum number of literal `.` characters in any link in the email, including dots outside the hostname. The examples cover misleading subdomains and URLs embedded in redirect parameters. This is one numeric feature in the classifier, not a standalone phishing threshold. The authors explicitly acknowledge that legitimate URLs also contain multiple dots. Angry Carp does not implement this feature or the PILFER classifier. Its domain comparisons instead retain full hostnames, use public-suffix parsing and compare names against supplied references.
+
 ### 2. Detecting and Characterizing Lateral Phishing at Scale — USENIX Security, August 2019
 
 Studies phishing sent from compromised enterprise accounts. Its random forest uses recipient behavior, message content, and URL reputation. Training covers April–June 2018; testing covers July–October with additional held-out organizations and monthly updates using earlier observations. This is a more relevant evaluation pattern than random message splitting. [Author-hosted paper, sections 3–5](https://www.icir.org/vern/papers/lat-phish-usec19.pdf)

@@ -62,9 +62,13 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 - [Brand-directory implementation research](research/brand-directory-implementation.md): measured Map/binary-search/scan comparisons, name-word retrieval, proposed files, and reference provenance.
 - [DNS catalogues and threat lists](research/dns-reference-and-threat-lists.md): AdGuard, NextDNS, Control D, and public feeds compared with 2FA Directory, including offline access, licences, and distinct evidence roles.
 - [MetaMask phishing list](research/metamask-phishing-list.md): crypto-threat observations, data versus detector reuse, matching scope, and HaGeZi overlap.
+- [Spamhaus options](research/spamhaus-options.md): initial checks of threat data and evidence submission, with a [local evaluation ticket](planning/issues/25-evaluate-spamhaus-data-and-submissions.md).
 - [Email image and action-link extraction](research/email-link-extraction.md): established scanner behavior, HTML and MIME standards, parser candidates, dependency review and a proposed offline extractor.
 - [Model-independent email analysis](research/model-independent-email-analysis.md): proposed structured analysis before optional AI assessment, library reuse, missing capabilities and migration.
 - [Email analysis precedents](research/email-analysis-precedents.md): Rspamd and SpamAssassin result/lifecycle patterns, completeness limits, and possible future export conventions.
+- [Phishing takedowns and disruption](research/phishing-takedown-disruption.md): evidence for reducing exposure and interrupting campaigns, limits of deterrence claims, and the distinction between provider acknowledgements and action.
+- [Phishing recompromise and public disclosure](research/phishing-recompromise-and-disclosure.md): the 17% historical finding, the earlier 2009 study and what public-list comparisons establish.
+- [PILFER reading ticket](planning/issues/23-read-pilfer-and-evaluate-email-features.md): a local follow-up on the WWW 2007 paper, its URL features and possible experiments.
 - [MIME parser fidelity](research/mime-parser-contract.md): public part/recovery contracts, quoted-message limits, and the reviewed and approved Mailsplit adapter.
 
 [ADR 0013: Route AI assessment by concerns and coverage](adr/0013-route-assessment-by-concerns-and-coverage.md) records the no-concerns skip, bounded recovery, supplied notes and mandatory research during report preparation.
@@ -74,3 +78,5 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 [ADR 0015: Attribute reporting research to the existing AI host](adr/0015-attribute-host-report-research.md) records the host-assisted preparation workflow, exact input bindings and limits of supplied research records.
 
 [ADR 0016: Render recorded assessment evidence](adr/0016-render-recorded-assessment-evidence.md) replaces free-form local assessment facts with structured selections and runtime rendering.
+
+[ADR 0017: Track provider outcomes and recurrence per resource](adr/0017-track-resource-outcomes-and-recurrence.md) records the reporting follow-up direction. [Ticket 24](planning/issues/24-implement-provider-outcomes-and-recurrence.md) tracks the unimplemented local case operations and acceptance scenarios.

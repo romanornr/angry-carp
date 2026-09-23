@@ -24,3 +24,6 @@ node_modules/
 /lib/dist/
 /cli/dist/
 *.tgz
+
+.agents/
+skills-lock.json

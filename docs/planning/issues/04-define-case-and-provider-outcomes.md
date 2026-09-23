@@ -25,6 +25,8 @@ The operator accepted one case for repeated phishing emails pointing to the same
 
 ## Answer
 
+Implementation follow-up: [ADR 0017](../../adr/0017-track-resource-outcomes-and-recurrence.md) refines the accepted direction with recurrence evidence and chronology. [Ticket 24](24-implement-provider-outcomes-and-recurrence.md) tracks implementation. This issue remains resolved as a planning decision, not a claim that case operations exist.
+
 A case preserves related source messages and their assessments, resources, and destination-specific reporting actions. Repeated samples about the same specific phishing page can share a case across different sending services. Campaign links remain provisional evidence associations, not permission to merge unrelated cases or assume common ownership. A report may use an existing provider ticket when appropriate without erasing the separate resources or sending activities under investigation.
 
 Track acknowledgement, recipient protection, sending-account suspension, resource removal, and mitigation with unknown scope separately. Preserve provider statements and independent observations as distinct evidence. Count repeated confirmations of the same removal once. Keep outstanding work separate from protective outcomes so a mitigation statement does not silently close an evidence request or another provider's unfinished action.

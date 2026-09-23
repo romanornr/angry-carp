@@ -1,11 +1,16 @@
 # Angry Carp
 
-Angry Carp investigates suspected phishing received by the operator, reports supported abuse to the providers that can act on it, and tracks their responses.
+Angry Carp supports phishing investigation and evidence-backed reporting aimed at disrupting abusive infrastructure.
+
+This glossary covers analysis and the reporting lifecycle. A term's presence does not imply an implemented feature. The [documentation](docs/README.md) and [planning map](docs/planning/map.md) record current capabilities and outstanding work.
 
 ## Language
 
 **Operator**:
-The person authorized to run Angry Carp for a connected mailbox and approve its reporting actions. Their identity and preferences belong to deployment configuration, not shared workflow instructions.
+The person authorized to investigate supplied email evidence and approve reporting actions. The evidence can come from local files or an authorized mailbox connection.
+
+**AI host**:
+The application running an AI assistant and providing its tools, such as shell access, research or mailbox connections. A host's account of an action is distinct from evidence that the action occurred.
 
 **Source message**:
 An email under investigation, distinct from reports sent about it and replies from providers.
@@ -25,6 +30,15 @@ A fact recorded from an identified source at a stated time, such as a request in
 **Inference**:
 A conclusion drawn from observations, with the supporting evidence and uncertainty identified. It is distinct from what a source directly shows.
 
+**Reported authentication result**:
+An authentication outcome, such as SPF, DKIM or DMARC pass or fail, claimed in supplied message headers. Parsing that claim does not establish receiver provenance or perform fresh verification.
+
+**Source note**:
+A supplied claim attributed to an external source, with its URL, stated retrieval date, supplier and applicability to the message. The claim, source authority and retrieval remain unverified unless separately established.
+
+**Reference domain**:
+A domain used as the comparison reference for an observed name, with its source identified. A directory-supplied candidate is an association recorded by that directory, not proof of ownership or authorization by the represented brand.
+
 **Existing scan result**:
 A stored observation from an earlier visit by an external scanning service. Retrieving it is distinct from requesting another visit to the reported resource.
 
@@ -39,6 +53,9 @@ A judgement about suspected phishing, its confidence, and the evidence supportin
 
 **Email analysis**:
 The collected message observations, check outcomes, derived findings and coverage limitations used to support an assessment. A complete analysis record can contain unresolved questions and does not itself establish a phishing verdict.
+
+**Finding**:
+An observation or concern derived from recorded evidence, with references to that evidence. A concern finding warrants attention without independently establishing that the message is phishing.
 
 **Results display**:
 A presentation of recorded analysis findings, check outcomes and reporting routes with their supported service roles for the operator to inspect. It is distinct from an assessment interpreting their significance and an abuse report requesting provider action.
@@ -55,6 +72,9 @@ The High, Medium, or Low classification of a suspected phishing concern based on
 **Confidence**:
 How strongly the evidence supports a specific conclusion. Confidence in impersonation can differ from confidence about a linked file's behavior.
 
+**Structured assessment**:
+A conclusion expressed as concern, confidence, a hypothesis and selections of recorded evidence as supporting, contrary or contextual. The selection interprets the records without changing their contents or establishing the hypothesis as fact.
+
 **Service role**:
 The function a provider performs for a reported resource, such as registration, email delivery, DNS, or hosting. Evidence for one role does not establish another.
 
@@ -68,12 +88,13 @@ Whether the evidence, provider attribution, verified channel, and disclosure rev
 A directed effort to prepare one provider-specific report about identified resources, with a stated allegation, requested action and reviewed evidence. Starting preparation requests research and drafting, not submission.
 
 **Reporting-time research**:
-New source checks performed for a report preparation, covering the material allegation, provider relationship and current intake. A completed attempt can leave a question unresolved. A host-supplied account identifies who claims to have performed the research; it is not independent verification of that claim.
+New source checks for a report preparation, covering the material allegation, provider relationship and current intake, with unresolved questions retained. A host-supplied account identifies who claims to have performed the research without independently verifying that claim.
+
+**Ready for review**:
+A report-preparation result indicating that the supplied records passed consistency and source-policy checks. It does not establish the truth of the claims, operator approval or submission.
 
 **Case**:
-The record of an investigation, its related source messages, evidence, assessments, reporting actions, and unresolved work. A case can contain repeated samples and separate actions for multiple providers.
-Acquiring an ordinary email does not create a case. Acquisition alone is not an investigation.
-Opening a case records an investigation; it does not approve or submit an abuse report.
+An investigation record containing related source messages, evidence, assessments, provider-specific reporting actions and unresolved work, including repeated samples. Acquiring an email does not by itself open a case, and opening a case does not approve or submit an abuse report.
 _Avoid_: Email thread, label
 
 **Suspected campaign**:
@@ -87,13 +108,19 @@ A provisional, evidence-supported association of a message or resource with a su
 Messages observed in the operator's mailbox within a stated period and discovery scope. The count does not represent other recipients or global sending volume.
 
 **Coverage gap**:
-Mail within the intended checking scope that has not been successfully assessed, such as messages left by a run limit or a download failure. A coverage gap is unfinished work, not a Low assessment or evidence that the mailbox is clear.
+A limitation in what an investigation has examined or established, such as missing messages, ambiguous content boundaries, unreadable content or incomplete lookups. Its significance depends on the limitation, not merely the existence of a gap.
+
+**Assessment routing**:
+The decision whether detected concerns or material coverage gaps require an assessment. It determines attention, not a phishing verdict or permission to report.
+
+**No concerns detected**:
+A routing result indicating that the implemented checks produced no concern and no material coverage gap remains. It does not establish that the message is legitimate or that every possible threat was checked.
 
 **External sighting**:
 An observation of a related resource recorded by an external source, with its provenance and time. Repeated observations are not necessarily independent, and scans requested by Angry Carp are not independent sightings.
 
 **Reported resource**:
-The specific URL, domain, object, account, or sending activity identified in an abuse report, with its observed role.
+The specific URL, domain, object, account, or sending activity identified in a proposed or submitted abuse report, with its observed role.
 
 **Abuse report**:
 A recipient-specific statement of supported abuse, its evidence, and the action requested from a provider or reporting service.
@@ -134,3 +161,6 @@ A provider's statement that it acted without enough detail to identify the prote
 
 **Takedown**:
 Removal or disabling of an abusive resource. Blocking delivery to one recipient does not establish a takedown.
+
+**Recurrence observation**:
+Later evidence referring to a previously observed or reported resource, linked to the earlier evidence with its source and time. It does not by itself establish continued availability, failed removal or a new compromise.

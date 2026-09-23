@@ -52,6 +52,8 @@ These notes retain earlier workflow choices. The current implementation above an
 
 ## Decisions so far
 
+- [Track provider outcomes and recurrence per resource](../adr/0017-track-resource-outcomes-and-recurrence.md): preserve scoped provider actions, distinct chronology and later observations. [Ticket 24](issues/24-implement-provider-outcomes-and-recurrence.md) is open for local case operations and manual outcome recording. Sending and public intelligence sharing remain separate.
+
 - [Extract reusable checks](../adr/0008-extract-reusable-checks.md): `lib/` owns the five existing capabilities and their public data. Flue bindings call the package directly. The operator explicitly excluded an HTTP service from this migration.
 
 - [Separate assessment from reporting](../adr/0007-separate-assessment-from-reporting.md): the portable four-section assessment remains available. [ADR 0011](../adr/0011-analyze-email-before-assessment.md) moves routine lookups and channel selection into the analyzer. [Selection and reporting limits](../email-analysis.md) describe current behavior.
@@ -73,6 +75,9 @@ These notes retain earlier workflow choices. The current implementation above an
 - [Evaluate Unicode and phishing detection research](issues/09-evaluate-phishing-detection-research.md): research informed the implemented domain and passage comparisons. Flue is selected; a comparative detection benchmark remains open.
 
 ## Not yet specified
+
+- [Issue 23: Read PILFER and evaluate reusable email features](issues/23-read-pilfer-and-evaluate-email-features.md) keeps the operator's paper reading and follow-up ideas local. Dot count and the PILFER classifier are not implemented.
+- [Issue 25: Evaluate Spamhaus data and submissions](issues/25-evaluate-spamhaus-data-and-submissions.md) tracks threat-data access and evidence submission as separate future capabilities. Neither is integrated.
 
 The acquisition/case distinction and ordinary-mail retention boundary are recorded. The next engineering discussion must connect mailbox acquisition, disclosure-safe AI input, source identity, and durable case operations without inheriting the withdrawn importer's choices. The exact automatic case-opening trigger remains unconfirmed; opening a case itself never authorizes sending.
 
