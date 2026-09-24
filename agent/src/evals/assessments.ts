@@ -22,8 +22,8 @@ async function main() {
   const { values } = parseArgs({ options: { output: { type: 'string' } } });
   if (!values.output) throw new Error('Missing evaluation output path.');
   const records = [{ id: 'reviewed_text', text: 'Supplied synthetic reviewed evidence.' }];
-  // Use Flue's ordinary dispatch/read eval pattern, with fresh conversations and no persistent DB.
-  // https://github.com/withastro/flue/blob/main/apps/docs/src/content/docs/guide/evals.md
+  // Follow Flue's evaluation pattern with a fresh conversation for each case and an in-memory database.
+  // https://github.com/withastro/flue/blob/2663e507b52fc8b3b11b251314c5476d650116a1/apps/docs/src/content/docs/guide/evals.md
   await using output = await open(values.output, 'wx', 0o600);
   await using flue = await start({ agents: [PhishingTriage], db: sqlite() });
   for (const example of cases) {

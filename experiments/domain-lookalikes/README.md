@@ -10,7 +10,7 @@ From the repository root with installed workspace dependencies and Node 24:
 node experiments/domain-lookalikes/reproduce-routing.mjs
 ```
 
-This runs the current analyzer with synthetic DNS/RDAP responses. It checks embedded domains, a known confusable, a genuine child domain, directory reference selection, and absent references. No network or model call occurs. `--require-detection` intentionally fails while the `coinbsae.com` transposition remains undetected.
+This runs the current analyzer with synthetic DNS/RDAP responses. It checks embedded domains, a known confusable, a genuine child domain, directory reference selection, and absent references. No network or model call occurs. Swaps and accents must trigger concerns for operator references and remain observations for directory references. The obsolete `--require-detection` experiment mode was removed.
 
 ## Reproduce the historical comparison
 
@@ -49,3 +49,7 @@ The checkout and dependency installation use the network. Generation and evaluat
 The recorded runtime was Node `v24.15.0`, ICU 78.2, `tldts` 7.4.14, `unicode-spoofing` 0.4.0 with Unicode 17 data, and Valibot 1.5.0. Runtime and dependency changes can change the output. The evaluator checks the baseline hash before use.
 
 `dnstwistCoverage` reports mechanism matches by generator. `directoryPairs` counts ordered lexical collisions, not false-positive rates. `currentLogicCrossCheck` validates the optimized baseline calculation against real comparisons. `directoryEmbedding` tests primary and additional directory hosts. `cases` retains the named controls and corrected draft variants. The `current` fields always mean the frozen baseline, never the working tree.
+
+## Run the raw-mail benchmark
+
+See [MAIL-BENCHMARK.md](MAIL-BENCHMARK.md) for pinned public inputs, reproduction commands, before/after results, and coverage limits. `evaluate-current.mjs` separately compares the shipping comparator with `9364211` on the dnstwist corpus.

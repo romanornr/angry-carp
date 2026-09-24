@@ -1,3 +1,20 @@
+/**
+ * Compares a hostname with one supplied reference and describes how the names resemble each other.
+ * The embedding, adjacent-swap, and Latin-folding checks were informed by Chromium.
+ * Each helper links the relevant upstream code and explains its local differences.
+ *
+ * Steps:
+ * 1. Record invisible input characters before IDNA conversion can remove them.
+ * 2. Convert the names and use tldts to find identifying labels, including private suffixes.
+ * 3. Distinguish exact-host and child-host relationships from other names.
+ * 4. Compare labels and embedded domains using unicode-spoofing's confusable skeletons.
+ *
+ * Implementation choices:
+ * - Each comparison uses one supplied reference, without Chromium's site lists or warning policy.
+ * - deriveFindings decides which matches warrant assessment based on how the reference was selected.
+ *
+ * See docs/domain-lookalikes.md for the design, dependencies, and evaluation.
+ */
 import { domainToASCII, domainToUnicode } from 'node:url';
 import { primaryScript, skeleton, UNICODE_VERSION } from '@moderation-api/unicode-spoofing';
 import { parse } from 'tldts';
@@ -33,6 +50,8 @@ type ParsedDomain = Extract<DomainInspection, { kind: 'parsed' }>;
 type Relationship = 'same_domain' | 'subdomain_of_reference' | 'different_domain';
 type Resemblance =
   | { kind: 'confusable_label' }
+  | { kind: 'folded_label' }
+  | { kind: 'character_swap'; form: 'folded' | 'skeleton' }
   | { kind: 'label_contained'; form: 'literal' | 'skeleton'; prefix: string; suffix: string }
   | { kind: 'registrable_domain_embedded'; text: string; utf16Index: number };
 
@@ -48,7 +67,7 @@ type DomainComparison = { confusablesUnicodeVersion: string } & (
   )
 );
 
-/** Compares names locally. The caller supplies the reference; this does not verify brand ownership. */
+/** Compares names locally against a caller-supplied reference without verifying brand ownership. */
 export function compareDomains(input: v.InferOutput<typeof domainComparisonSchema>): DomainComparison {
   const reference = inspectDomain(input.referenceDomain);
   const observed = inspectDomain(input.observedDomain);
@@ -71,8 +90,20 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   const confusable = findExtraText({ reference: referenceSkeleton, observed: observedSkeleton });
   if (literal) resemblance.push({ kind: 'label_contained', form: 'literal', ...literal });
   if (confusable) resemblance.push({ kind: 'label_contained', form: 'skeleton', ...confusable });
-  // References can be hosts, so a sibling under the same registrable domain is not an embedding.
+  // A reference can be a host, so these methods exclude siblings under the same registrable domain.
   if (reference.registrableDomain !== observed.registrableDomain) {
+    const foldedReference = foldLatinLabel(reference.label);
+    const foldedObserved = foldLatinLabel(observed.label);
+    const foldedReferenceSkeleton = skeleton(foldedReference);
+    const foldedObservedSkeleton = skeleton(foldedObserved);
+    if (referenceSkeleton !== observedSkeleton && foldedReferenceSkeleton === foldedObservedSkeleton) resemblance.push({ kind: 'folded_label' });
+    if (Array.from(foldedReference).length >= 5) {
+      if (hasOneCharacterSwap({ reference: foldedReference, observed: foldedObserved })) {
+        resemblance.push({ kind: 'character_swap', form: 'folded' });
+      } else if (hasOneCharacterSwap({ reference: foldedReferenceSkeleton, observed: foldedObservedSkeleton })) {
+        resemblance.push({ kind: 'character_swap', form: 'skeleton' });
+      }
+    }
     const embedded = embeddedDomain({ reference: reference.registrableDomain, observed: observed.unicode });
     if (embedded) resemblance.push({ kind: 'registrable_domain_embedded', ...embedded });
   }
@@ -80,8 +111,30 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   return { ...comparison, kind: 'compared', relationship, resemblance };
 }
 
+// Latin-only folding inspired by Chromium, using Unicode nonspacing marks instead of its hostname eligibility set:
+// https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/url_formatter/spoof_checks/skeleton_generator.cc#L52-L73
+function foldLatinLabel(label: string) {
+  const decomposed = label.normalize('NFD');
+  if (!/^[\p{Script=Latin}\p{Mn}0-9-]+$/u.test(decomposed)) return label;
+  return decomposed.replace(/\p{Mn}/gu, '').normalize('NFC').replace(/ł/gu, 'l').replace(/ø/gu, 'o').replace(/đ/gu, 'd');
+}
+
+// Chromium's HasOneCharacterSwap heuristic, independently implemented over code points:
+// https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/lookalikes/core/lookalike_url_util.cc#L1338-L1371
+function hasOneCharacterSwap({ reference, observed }: { reference: string; observed: string }) {
+  const left = Array.from(reference);
+  const right = Array.from(observed);
+  if (left.length !== right.length) return false;
+  const at = left.findIndex((character, index) => character !== right[index]);
+  if (at < 0) return false;
+  return left[at] === right[at + 1] && left[at + 1] === right[at]
+    && left.slice(at + 2).every((character, offset) => character === right[at + 2 + offset]);
+}
+
 function embeddedDomain({ reference, observed }: { reference: string; observed: string }) {
-  // Match the whole reference domain: bare brand labels also appear in tenant hosts such as paypal.zendesk.com.
+  // Match the whole reference domain because bare brand labels also occur in tenant hosts such as paypal.zendesk.com.
+  // The embedding concept comes from Chromium's SearchForEmbeddings:
+  // https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/lookalikes/core/lookalike_url_util.cc#L1125-L1234
   const target = domainToUnicode(reference).split(/[.-]/u).map(skeleton);
   const tokens = observed.split(/[.-]/u);
   const skeletons = tokens.map(skeleton);
@@ -98,7 +151,7 @@ function embeddedDomain({ reference, observed }: { reference: string; observed: 
 }
 
 function inspectDomain(input: string): DomainInspection {
-  // IDNA can remove invisible characters; capture them before converting the name.
+  // Capture invisible characters before IDNA conversion can remove them.
   const original = inspectInput(input);
   const ascii = domainToASCII(input).replace(/\.$/, '');
   if (ascii.length > 253 || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]+$/.test(ascii)) {
@@ -119,7 +172,7 @@ function inspectDomain(input: string): DomainInspection {
     unicode,
     changedByIdna: given !== ascii && given !== unicode,
     registrableDomain: parts.domain,
-    // Convert the full domain: a standalone numeric label is parsed as an IPv4 address by node:url.
+    // Convert the full domain because node:url can interpret a standalone numeric label as an IPv4 address.
     label: domainToUnicode(parts.domain).split('.')[0],
     // Primary scripts are an inventory, not the UTS #39 resolved script set or a risk flag.
     labels: unicode.split('.').map((text) => ({

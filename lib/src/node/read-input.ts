@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
-/** Reads a bounded regular file; nonblocking open prevents a FIFO from hanging the command. */
+/** Reads a regular file within maxBytes. Nonblocking open prevents a FIFO from hanging the command. */
 export async function readInput(filePath: string, maxBytes: number): Promise<Buffer> {
   await using file = await open(filePath, constants.O_RDONLY | constants.O_NONBLOCK);
   if (!(await file.stat()).isFile()) throw new Error('Supply a regular input file.');

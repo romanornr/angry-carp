@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+/**
+ * Dispatches standalone angry-carp commands without starting the Flue agent.
+ * The package also supplies instructions for AI hosts that run the workflow.
+ *
+ * Output rules:
+ * - Write results to stdout so another program can consume or save them.
+ * - Write fixed diagnostics to stderr without exposing private input or runtime exception details.
+ *
+ * See docs/adr/0012-separate-cli-from-flue.md for the package split.
+ */
 import { readFile } from 'node:fs/promises';
 import { readInput } from '@angry-carp/checks/node/read-input';
 import { formatSavedAssessment } from '@angry-carp/checks/email-analysis/output';
@@ -57,7 +67,8 @@ async function main() {
   process.exitCode = 2;
 }
 
-// Data stays on stdout; sanitized diagnostics stay on stderr, as in gh's command boundary.
+// Keep diagnostics on stderr so errors do not mix with command data on stdout.
+// GitHub CLI uses the same separation at its command boundary:
 // https://github.com/cli/cli/blob/b6770c8bc54c72e74e785c307850446b8e10be9d/internal/ghcmd/cmd.go
 main().catch((error: unknown) => {
   if (error instanceof Error && 'code' in error && typeof error.code === 'string' && error.code.startsWith('ERR_PARSE_ARGS_')) {

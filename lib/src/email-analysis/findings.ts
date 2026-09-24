@@ -1,3 +1,20 @@
+/**
+ * Interprets recorded checks and identifies possible reporting recipients.
+ * The rules are project policy, applied after the checks describe what they found.
+ *
+ * Reference policy:
+ * - Adjacent swaps and Latin-folded matches become concerns for operator-supplied references.
+ * - For references selected using message content, those methods alone do not raise a concern.
+ * - Other resemblance methods retain their concern policy regardless of reference source.
+ *
+ * Reporting policy:
+ * - Associate a concern with the resource before proposing its registrar or provider.
+ * - Preserve the evidence IDs so the relationship can be reviewed.
+ * - A contact address alone does not justify a report.
+ *
+ * The reference rule below links to Sublime's organization-domain check, which informed that choice.
+ * See docs/adr/0013-route-assessment-by-concerns-and-coverage.md for the project policy.
+ */
 import * as v from 'valibot';
 import { findReportingChannels, reportingQuerySchema } from '../reporting/channels.ts';
 import { authenticationIdentity, classifyHost } from './observations.ts';
@@ -16,7 +33,7 @@ type ReportingCandidate = {
   };
 };
 
-/** Derivations name their supporting observations. No rule establishes an overall phishing verdict. */
+/** Attaches evidence IDs to findings and reporting candidates without deciding an overall phishing verdict. */
 export function deriveFindings(evidence: AnalysisEvidence) {
   const findings: Finding[] = [];
   const reportingCandidates: ReportingCandidate[] = [];
@@ -50,18 +67,25 @@ export function deriveFindings(evidence: AnalysisEvidence) {
     if (result.kind !== 'compared' || result.relationship !== 'different_domain') continue;
     if (result.resemblance.length > 0) {
       const subject = comparison.sourceIds[0];
-      if (subject) supportedHosts.set(subject, [comparison.id]);
+      let kind: Finding['kind'] = 'observation';
+      // Only operator references turn swap or Latin-folded matches into concerns on their own.
+      // Target-selection precedent, not the full Sublime policy: https://github.com/sublime-security/sublime-rules/blob/3f2b9a7f670ad1782575aca0516e91ec0ee155fc/detection-rules/lookalike_sender_domain.yml#L7-L13
+      if (comparison.referenceSource === 'operator' || result.resemblance.some((match) =>
+        match.kind === 'confusable_label' || match.kind === 'label_contained' || match.kind === 'registrable_domain_embedded')) kind = 'concern';
+      if (kind === 'concern' && subject) supportedHosts.set(subject, [comparison.id]);
       const reasons = result.resemblance.map((match) => {
         switch (match.kind) {
+          case 'folded_label': return 'matching label skeletons after Latin diacritic folding';
+          case 'character_swap': return `one adjacent character swap in the ${match.form} labels`;
           case 'confusable_label': return 'matching Unicode label skeletons';
           case 'label_contained': return 'reference label inside a longer label';
           case 'registrable_domain_embedded': return 'reference domain embedded in the hostname';
           default: { const unhandled: never = match; return unhandled; }
         }
       });
-      findings.push({ kind: 'concern', code: 'domain_resemblance',
-        text: `${result.observed.ascii} resembles ${result.reference.ascii}: ${[...new Set(reasons)].join('; ')}. Reference source: ${comparison.referenceSource}. This does not establish ownership or deception.`,
-        evidenceIds: [comparison.id] });
+      let text = `${result.observed.ascii} resembles ${result.reference.ascii}: ${[...new Set(reasons)].join('; ')}. Reference source: ${comparison.referenceSource}. This does not establish ownership or deception.`;
+      if (kind === 'observation') text += ' This match is informational because the reference was selected using message evidence.';
+      findings.push({ kind, code: 'domain_resemblance', text, evidenceIds: [comparison.id] });
     }
   }
   for (const note of evidence.sourceNotes) {
@@ -143,9 +167,9 @@ export function deriveFindings(evidence: AnalysisEvidence) {
     evidenceIds: sesHeaders, limitation: 'Supplied Received header names SES. Header provenance has not been verified.',
     channel: findReportingChannels(v.parse(reportingQuerySchema, { provider: 'amazon-ses', serviceRole: 'email-delivery' })) });
 
-  // Resend's documented older configuration uses BOTH SES MX and SPF at the MAIL FROM host.
+  // Resend's documented older configuration requires both SES MX and SPF at the MAIL FROM host.
   // https://resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying
-  // These shared records plus a sender-chosen selector support an investigation lead, not platform custody.
+  // These shared records and a sender-chosen selector justify an inquiry without proving Resend handled the message.
   const rootMessage = evidence.message.messages.find((message) => message.id === 'message');
   const selectorClaims: string[] = [];
   const mailFromHosts = new Set<string>();

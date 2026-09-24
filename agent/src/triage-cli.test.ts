@@ -70,3 +70,20 @@ for (const { failure, code, stderr } of [
     }
   });
 }
+
+test('Flue triage accepts operator references without authorizing model disclosure', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'angry-carp-operator-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const original = join(directory, 'original.eml');
+  await writeFile(original, 'From: Sender <sender@coinbsae.com>\r\n\r\nHello');
+  await assert.rejects(run(process.execPath, [
+    '--import', new URL('../../cli/src/fixtures/analysis-preload.ts', import.meta.url).href,
+    fileURLToPath(new URL('./triage-cli.ts', import.meta.url)), original, '--reference-domain', 'coinbase.com',
+  ], { timeout: 10_000 }), (error: unknown) => {
+    assert.ok(error instanceof Error && 'code' in error && 'stdout' in error && 'stderr' in error);
+    assert.equal(error.code, 2);
+    assert.match(String(error.stdout), /adjacent character swap.*Reference source: operator/);
+    assert.equal(error.stderr, 'Analyzing email…\nAI assessment required. Supply --reviewed-text with text approved for model disclosure.\n');
+    return true;
+  });
+});

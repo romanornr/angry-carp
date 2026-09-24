@@ -72,6 +72,8 @@ The carp's revenge is paperwork, addressed to the people who can pull the plug.
 - **Help dismantle phishing campaigns.** Build reports asking providers to remove pages, suspend domains and disable abusive sending accounts.
 - **Planned: mailbox labels and cleanup.** Label suspected phishing and opt into removal. Today, you decide what to delete.
 
+Use repeatable `--reference-domain <domain>` with `angry-carp analyze` or Flue triage only for references explicitly supplied by the operator. Never populate it from message content. Those unverified targets enable adjacent-swap and Latin-folded-label concerns and are disclosed in comparisons.
+
 The checks use established methods such as Unicode confusable comparisons and, when you supply two messages, Winnowing text fingerprints. [See the algorithms and their limits](#checks-and-algorithms).
 
 ## What it looks like
@@ -360,7 +362,7 @@ The analyzer runs the applicable checks below. Passage comparison is separately 
 | Domain registration | Registrar, registration dates and available abuse contacts for selected registration domains | RDAP with IANA bootstrap (RFC 9224), registrable domain from the Public Suffix List via `tldts` | 3 initial domains, plus bounded recovery. No WHOIS fallback, no redirects. |
 | IP registration | Network registration records for selected public addresses | IP RDAP, longest-prefix bootstrap | 3 initial addresses, plus bounded recovery. Private ranges excluded. Network records do not identify origin hosting or a service product. |
 | Brand references | Matches hostnames and display names against a pinned snapshot of the 2FA Directory, crowdsourced service/domain associations | Exact hostname, exact name, or all-words name | Incomplete and not a blocklist. No match means nothing. |
-| Domain lookalikes | Compares selected hosts with supplied references, directory candidates and image domains in the same message | Unicode UTS #39 confusable skeletons, label containment, script inventory, IDNA via Node | Unicode 17 data. No edit distance. Invisible characters are escaped and their positions recorded. |
+| Domain lookalikes | Compares selected hosts with supplied references, directory candidates and image domains in the same message | Unicode UTS #39 skeletons, containment, full-domain embedding, adjacent swaps, Latin folding, IDNA via Node | Unicode 17 data. New swap/folding matches require operator references to raise concerns. No general edit distance. Invisible characters are escaped and their positions recorded. |
 | Shared passages | Finds reused text between two messages, the way plagiarism checkers do | [Winnowing](docs/text-reuse.md#algorithm-and-returned-evidence) (Schleimer, Wilkerson and Aiken, 2003): 5-word grams, windows of 4, FNV-1a hashes | 16,000 UTF-16 units per body, 10 matches. Two texts only, no corpus. Footers match legitimately. |
 | Recovery | Retries transient failures inside a shared budget | At most two attempts per check; transient failures, partial DNS answers and deferred checks share recovery budgets | Rate limits and deterministic failures are not retried. |
 | Reporting candidates | Works out who could receive a report and in what role | Rules: registrar when that resource has a concern, Cloudflare nameservers, Amazon SES in a Received header, Resend's DKIM selector plus SES mail records | A candidate is somewhere to ask. It is not attribution and not permission to send. |

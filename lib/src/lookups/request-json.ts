@@ -1,3 +1,15 @@
+/**
+ * Fetches JSON for DNS, RDAP, and IANA service discovery with shared transport safeguards.
+ * Callers choose the endpoint and validate successful JSON against their own schemas.
+ *
+ * Transport rules:
+ * - Refuse redirects so a service cannot choose another destination for the lookup.
+ * - Stop reading after 512 KiB to bound retained response data.
+ * - Return fixed failure reasons so server error bodies and runtime exceptions do not enter evidence.
+ *
+ * These limits and failure rules are project choices.
+ * The freshUntil function below applies HTTP freshness rules to bootstrap response reuse.
+ */
 const maxResponseBytes = 512 * 1024;
 
 export type RequestFailure =
@@ -7,6 +19,13 @@ export type RequestFailure =
     reason: 'request_failed' | 'name_resolution' | 'connection_reset' | 'cancelled' | 'timeout' | 'invalid_response' | 'response_too_large' | 'redirected';
   };
 
+/**
+ * requestJson sends one GET and returns parsed JSON or a failure reason without retrying.
+ * Network, HTTP, cancellation, size-limit, and JSON errors return failures without throwing.
+ * The caller supplies an abort signal to cancel the request or impose a deadline.
+ * A successful body still needs validation against the lookup's schema. freshUntil gives
+ * the reuse deadline in epoch milliseconds. Zero or a past time means it cannot be reused.
+ */
 export async function requestJson({ url, signal, accept }: {
   url: string;
   signal: AbortSignal;
@@ -69,9 +88,11 @@ export async function requestJson({ url, signal, accept }: {
   }
 }
 
-// Conservative private-cache subset of RFC 9111 sections 4.2.1 and 4.2.3.
-// Only the fixed request's Accept/Accept-Encoding variants can be reused by the bootstrap loader.
-// Unknown directives, missing freshness and malformed values disable reuse, not the lookup.
+// freshUntil uses the private-cache freshness and age rules from RFC 9111 sections 4.2.1 and 4.2.3.
+// The bootstrap loader reuses a response only when its headers permit it. Unknown directives or
+// malformed freshness values disable reuse, but the lookup can still use the received JSON.
+// Only variations in Accept and Accept-Encoding are supported because those request headers are fixed.
+// https://www.rfc-editor.org/rfc/rfc9111.html#section-4.2
 function freshUntil(headers: Headers, startedAt: number, receivedAt: number): number {
   if (headers.has('pragma')) return 0;
   if (headers.get('vary')?.split(',').some((name) => !['accept', 'accept-encoding'].includes(name.trim().toLowerCase()))) return 0;

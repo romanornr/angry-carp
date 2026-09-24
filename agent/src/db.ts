@@ -1,7 +1,5 @@
 import { sqlite } from '@flue/runtime/node';
 
-// Conversations, attachments, and accepted submissions are stored here so
-// they survive a restart. Swap in another adapter (Postgres, libSQL, ...)
-// when one host's SQLite file is no longer enough:
-// https://flueframework.com/docs/guide/database/
+// Persist Flue conversations in a local SQLite file so they survive a process restart.
+// See agent/README.md for the current storage layout.
 export default sqlite('./data/flue.db');

@@ -1,3 +1,16 @@
+/**
+ * Runs shared analysis before deciding whether to start a Flue assessment.
+ *
+ * Lifecycle:
+ * 1. Return before importing the agent if completed checks find no concerns.
+ * 2. Stop on cancellation or invalid source notes.
+ * 3. Require separately reviewed text before starting an assessment.
+ * 4. Dispose Flue before cleaning up Pi's provider sessions, including when assessment fails.
+ *
+ * Other input failures may still be assessed from reviewed text.
+ * A parsing failure never authorizes sending original message bytes to the model.
+ * See docs/adr/0013-route-assessment-by-concerns-and-coverage.md for the routing policy.
+ */
 import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
@@ -9,11 +22,11 @@ import { analysisForModel, assessmentEvidence, formatAnalysis, formatAssessment 
 
 async function main(): Promise<void> {
   const { positionals, values } = parseArgs({ allowPositionals: true, options: {
-    'reviewed-text': { type: 'string' }, 'source-notes': { type: 'string' }, json: { type: 'string' },
+    'reference-domain': { type: 'string', multiple: true }, 'reviewed-text': { type: 'string' }, 'source-notes': { type: 'string' }, json: { type: 'string' },
   } });
   const [filePath] = positionals;
   if (!filePath || positionals.length !== 1) {
-    process.stderr.write('Usage: npm run triage -- <original.eml> [--reviewed-text <reviewed-email.txt>] [--source-notes <reviewed-notes.json>] [--json <private-output.json>]\n');
+    process.stderr.write('Usage: npm run triage -- <original.eml> [--reviewed-text <reviewed-email.txt>] [--source-notes <reviewed-notes.json>] [--json <private-output.json>] [--reference-domain <domain>]...\n');
     process.exitCode = 2;
     return;
   }
@@ -21,7 +34,7 @@ async function main(): Promise<void> {
   let sourceNotes: unknown = [];
   if (values['source-notes']) sourceNotes = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readInput(values['source-notes'], 128 * 1024)));
   process.stderr.write('Analyzing email…\n');
-  const analysis = await analyzeEmail(await readInput(filePath, MAX_MESSAGE_BYTES), { directory, sourceNotes });
+  const analysis = await analyzeEmail(await readInput(filePath, MAX_MESSAGE_BYTES), { directory, sourceNotes, referenceDomains: values['reference-domain'] });
   process.stdout.write(formatAnalysis(analysis));
   if (values.json) await writeFile(values.json, JSON.stringify(analysis, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   if (analysis.kind === 'analyzed' && analysis.routing.kind === 'no_concerns_detected') return;

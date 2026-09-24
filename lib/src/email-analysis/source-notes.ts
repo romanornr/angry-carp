@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 import { domainSchema } from '../lookups/rdap.ts';
 
-/** Explicitly reviewed external evidence. Fields describe the supplier's claims, not a runtime fetch. */
+/** Describes reviewed source claims supplied by the caller. Parsing a note does not fetch or verify its source. */
 export const sourceNotesSchema = v.pipe(v.array(v.object({
   url: v.pipe(v.string(), v.maxLength(4096), v.url(), v.regex(/^https?:\/\//i)),
   retrievedAt: v.union([v.pipe(v.string(), v.isoTimestamp()), v.pipe(v.string(), v.isoDate())]),

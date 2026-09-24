@@ -152,18 +152,53 @@ function decodeParts(parts: Uint8Array[]) {
 
 ## Comments and JSDoc
 
-- First try clearer names, types, and control flow.
+- Use names, types, and control flow to explain the mechanics. Use comments
+  to explain purpose, design history, and constraints those cannot express.
+- Open substantive modules with an orientation comment: the problem they
+  solve, their place in the execution flow, and the decisions a reader needs
+  before reading the implementation. Tiny adapters and obvious declarations
+  need no boilerplate. Preserve shebangs and required framework directives.
+- Use connected prose to explain why a design was chosen. For algorithms, prefer
+  a short purpose and source introduction followed by `Steps`, `Behavior and
+  guarantees`, and `Implementation choices` when those sections help the reader.
+  Number the steps and use bullets for independent properties or adaptations.
+  [Winnowing](../lib/src/text-reuse/winnowing.ts) shows this format.
+- Keep one idea per sentence or list item. Start each step, property, and
+  reason on its own line, wrapping only when needed for readability.
+  Use repository-root paths in code comments, such as `docs/text-reuse.md`,
+  instead of chains of `../`. Markdown documents retain normal relative links.
+- Keep algorithm sections concise. Define symbols where they first appear,
+  qualify guarantees with their assumptions and limits, and explain significant
+  differences from the source. Distinguish choosing a published variant from
+  changing its algorithm. Avoid unmeasured performance claims and speculative
+  instructions to replace the implementation. Include a reason for a departure
+  and, when supported by evidence, a concrete condition for reconsidering it.
+- Omit sections that add no useful context. Ordinary adapters do not need an
+  algorithm template. Avoid internal shorthand and compressed notes joined by
+  semicolons. Put caller-specific contracts beside the function, and keep shared
+  algorithm properties in one place instead of repeating them in every comment.
+- Explain algorithm and software lineage where it matters. Name the source,
+  the idea used, and the local changes or limits. Distinguish implementing a
+  standard, following an algorithm, adapting upstream code, taking inspiration
+  from a design, using a dependency, and making a project-specific choice.
+  Do not describe an independent implementation as a port or invent lineage.
+- Verify cited sources. Link papers and standards to stable URLs and upstream
+  code to a commit-pinned file, with a symbol or section when useful. Preserve
+  required attribution and license notices when copying or adapting code.
+  Explain the relevant idea in the comment. A link alone is not an explanation.
 - Use comments for non-obvious reasons, external constraints, security
   boundaries, or ordering requirements that code alone cannot explain.
-- Place a comment immediately above the relevant code. Keep it as short
-  as the explanation permits.
+- Place module context at the opening and local reasoning immediately above
+  the relevant code. Use as much space as the explanation needs, with no fixed
+  line cap. Avoid repeating the same explanation at both levels.
 - Avoid comments that narrate the next statement, decorative section
   banners, and commented-out code.
 - Use JSDoc when callers need a contract that the signature cannot express:
   side effects, ownership, cancellation behavior, or important failure
   conditions. Being exported alone does not require JSDoc.
 - Do not repeat TypeScript types in `@param` or `@returns` tags.
-- Keep architecture decisions and operating instructions in project docs.
-  Link from code only when that context is needed to understand it.
+- Keep full architecture decisions and operating instructions in project docs.
+  Summarize the reasoning needed to understand a module in its comment, and
+  link to the relevant doc for alternatives, evidence, or operating details.
 - Give TODOs a concrete remaining action and an issue reference or removal
   condition. Update or remove comments when their assumptions change.

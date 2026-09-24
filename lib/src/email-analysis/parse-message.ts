@@ -1,3 +1,18 @@
+/**
+ * Parses an email while preserving its MIME parts, headers, and nested messages.
+ * Uses Mailsplit's public node/body stream and per-node decoders:
+ * https://github.com/zone-eu/mailsplit/blob/23e2d737ba59017bd9c8bc46aecf68ef551658e5/README.md
+ *
+ * Steps:
+ * 1. Collect MIME nodes and encoded chunks from the bounded input.
+ * 2. Decode one part at a time and retain its headers and decoding result.
+ * 3. Parse embedded messages within the shared part, header, and decoded-byte limits.
+ * 4. Record unavailable content as a limitation for later assessment.
+ *
+ * Keeping separate parts lets a decoding failure remain visible without discarding other parts.
+ * Sequential decoding gives each stream pipeline a clear lifetime for cancellation and cleanup.
+ * See docs/adr/0011-analyze-email-before-assessment.md for the parser-interface choice.
+ */
 import { Readable, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Splitter, type SplitterChunk } from '@zone-eu/mailsplit';
@@ -85,8 +100,7 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
       }
     });
 
-    // The complete input is already bounded. Collect first, then own and settle one decoder at a time.
-    // Mailsplit public node/body contract: https://github.com/zone-eu/mailsplit/tree/23e2d737ba59017bd9c8bc46aecf68ef551658e5
+    // The input is already bounded, so collect chunks before starting the per-part decoding pipelines.
     await pipeline(Readable.from([Buffer.from(bytes)]), splitter, { signal });
     const root = collected[0];
     if (!root || !root.node.headers || !root.node.headers.getList().length) throw new Error('Missing message headers.');

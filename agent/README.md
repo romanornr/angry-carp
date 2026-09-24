@@ -20,6 +20,8 @@ After signing in, supply the original and an explicitly reviewed text file:
 npm --silent --prefix agent run triage -- ../evidence/emails/example.eml --reviewed-text ../evidence/emails/example.prepared.txt
 ```
 
+Both analysis commands accept repeatable `--reference-domain <domain>` for domains the operator explicitly supplies. Never promote names inferred from message content to operator references. References are unverified and are disclosed in the analysis. See the [CLI guide](../cli/README.md) for limits and typo-matching policy.
+
 Paths are relative to `agent/` under `npm --prefix`; absolute paths also work. The command analyzes the original in the trusted runtime. Completed applicable checks with no concerns return without loading authentication or conversation storage. Detected concerns or material gaps after bounded recovery automatically send selected fields and the reviewed text to OpenAI. Without reviewed text, required assessment stops with exit code 2; the original is never substituted. It prints deterministic findings and the AI assessment separately. Your original, unreviewed body, raw headers and attachment contents are not automatically sent. Hostnames can carry identifiers. The reviewed text is sent unchanged, so remove secrets and unrelated personal data yourself.
 
 The old prepared-text-only and `--html` triage paths are replaced. To inspect a separate HTML fragment without MIME or a model, use [the independent extractor](../docs/email-links.md).

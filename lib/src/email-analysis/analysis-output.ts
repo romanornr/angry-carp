@@ -1,3 +1,19 @@
+/**
+ * Prepares analysis for a model and renders assessments from recorded evidence.
+ * This replaced free-text explanations after they introduced unsupported factual claims.
+ *
+ * Steps:
+ * 1. Select the analysis fields needed by the model, excluding bodies, raw headers, and extracted URL paths.
+ * 2. Give the model evidence records with IDs it can cite alongside its judgment.
+ * 3. Validate its selection and render the stored text for each selected ID.
+ *
+ * Behavior:
+ * - Unknown evidence IDs and unexpected free-text fields are rejected.
+ * - Reviewed source notes retain their URLs and claims, so the model input can still identify people.
+ * - The model can misinterpret evidence, but the displayed records come from the analyzer.
+ *
+ * See docs/adr/0016-render-recorded-assessment-evidence.md for the design history.
+ */
 import * as v from 'valibot';
 import { domainSchema } from '../lookups/rdap.ts';
 import { ipAddressSchema } from '../lookups/ip-rdap.ts';
@@ -14,7 +30,7 @@ export const assessmentSchema = v.strictObject({
   })), v.minLength(1), v.maxLength(8)),
 });
 
-/** Supplies selectable records. Reviewed text stays private to the model input, never copied to terminal output. */
+/** Lists records the model can cite. Reviewed text is represented by a label, not copied into the records. */
 export function assessmentEvidence(result: EmailAnalysis) {
   const evidence = [{ id: 'reviewed_text', text: 'Operator-reviewed email text.' }];
   if (result.kind === 'input_failure') return evidence;
@@ -33,7 +49,7 @@ export function assessmentEvidence(result: EmailAnalysis) {
   return evidence;
 }
 
-/** Rejects invented references and free-text fields. Displays stored evidence, never model-authored factual prose. */
+/** Renders recorded evidence for a validated selection. Unknown IDs and extra fields are rejected. */
 export function formatAssessment(value: unknown, evidence: ReturnType<typeof assessmentEvidence>): string {
   const parsed = v.safeParse(assessmentSchema, value);
   if (!parsed.success) throw new Error('Invalid structured assessment.');
@@ -51,10 +67,11 @@ export function formatAssessment(value: unknown, evidence: ReturnType<typeof ass
 }
 
 /**
- * Selects evidence for phishing assessment, not provider attribution or report preparation.
- * Excludes email bodies, raw headers and extracted URL paths. Explicitly reviewed source notes retain
- * their full source URLs and claims; retained hosts and notes can still identify people.
- * The caller controls disclosure and supplies reviewed text separately. This performs no I/O.
+ * Selects evidence for phishing assessment without performing I/O.
+ * - Excludes bodies, raw headers, and extracted URL paths.
+ * - Retains reviewed source notes, including their full URLs and claims.
+ * - Leaves disclosure and any separately reviewed text to the caller.
+ * Retained hosts and notes can still identify people.
  */
 export function analysisForModel(result: EmailAnalysis) {
   if (result.kind === 'input_failure') return { kind: result.kind, reason: result.reason };
@@ -121,7 +138,7 @@ export function analysisForModel(result: EmailAnalysis) {
   };
 }
 
-/** Reduced host input. No reviewed-text record is offered because this command does not disclose a body. */
+/** Builds a saved assessment packet. Omits the reviewed-text label because no body is included. */
 export function assessmentPacket(result: EmailAnalysis) {
   return { version: assessmentPacketVersion, analysis: analysisForModel(result),
     assessmentEvidence: assessmentEvidence(result).filter(({ id }) => id !== 'reviewed_text') };
@@ -139,7 +156,7 @@ const savedAssessmentSchema = v.object({
   })), v.check((records) => new Set(records.map(({ id }) => id)).size === records.length)),
 });
 
-/** Renders a host selection against caller-retained records; does not authenticate the file or repeat lookups. */
+/** Renders a selection against saved records without authenticating the file or repeating lookups. */
 export function formatSavedAssessment(packet: unknown, selection: unknown): string {
   const parsed = v.safeParse(savedAssessmentSchema, packet);
   if (!parsed.success) throw new Error('Invalid packet or assessment not required.');
@@ -223,7 +240,7 @@ export function formatAnalysis(result: EmailAnalysis): string {
   return terminalLines(lines);
 }
 
-// Prevent untrusted header/provider strings from becoming terminal escape sequences or forged lines.
+// Escape control characters so untrusted text cannot alter the terminal or insert output lines.
 function terminalLines(lines: string[]): string {
   return lines.map((line) => line.replace(/[\x00-\x1f\x7f-\x9f\p{Cf}]/gu, (char) => {
     const codePoint = char.codePointAt(0);

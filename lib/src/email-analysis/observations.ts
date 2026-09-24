@@ -1,3 +1,19 @@
+/**
+ * Records hosts and names from parsed message parts and headers.
+ * A host's role matters because an image and its enclosing link can lead to different places.
+ *
+ * Steps:
+ * 1. Extract occurrences from HTML, plain text, and parsed headers.
+ * 2. Give each host an ID, source location, role, and quote or embedded-message context.
+ * 3. Keep parsing and extraction limitations with the observations.
+ *
+ * Design choices:
+ * - Repeated hosts remain separate occurrences so findings can cite where each appeared.
+ * - The same role priority is used for lookup selection and model-input limits.
+ * - Quote markers describe message structure without proving who wrote the content.
+ *
+ * See docs/email-analysis.md for the observation format and limits.
+ */
 import { domainToASCII } from 'node:url';
 import { parse as parseDomain } from 'tldts';
 import * as v from 'valibot';
@@ -27,7 +43,7 @@ const priority: Record<HostObservation['role'], number> = {
   authentication: 6, signature: 7, 'text-reference': 8, image: 9,
 };
 
-/** Shared selection order for lookup and disclosure budgets; never mutates source occurrences. */
+/** Returns a sorted copy using the same priority for lookup selection and model-input limits. */
 export function prioritizeHosts(hosts: HostObservation[]): HostObservation[] {
   return hosts.toSorted((a, b) => {
     if (a.context === 'unmarked' && b.context !== 'unmarked') return -1;
@@ -36,7 +52,7 @@ export function prioritizeHosts(hosts: HostObservation[]): HostObservation[] {
   });
 }
 
-/** Retains exact hosts and part ownership. Quote markers indicate syntax, not verified authorship. */
+/** Retains each host and its source part. Quote markers identify structure without verifying authorship. */
 export function observeMessage(message: ParsedMessage) {
   const hosts: HostObservation[] = [];
   const html: { sourceId: string; result: EmailLinks }[] = [];
@@ -80,7 +96,8 @@ export function observeMessage(message: ParsedMessage) {
           role, context, enclosingActionId }, reference.hostname);
       }
     } else {
-      // Syntactic HTTP(S) references only; punctuation, defanging and prose forwarding boundaries remain ambiguous.
+      // Recognize literal HTTP(S) references only.
+      // Punctuation, altered URLs, and forwarded prose can still make their boundaries ambiguous.
       let count = 0;
       for (const match of part.content.text.matchAll(/https?:\/\/[^\s<>"']+/giu)) {
         if (count++ >= 200) { gaps.push({ sourceId: part.id, reason: 'plain_link_limit' }); break; }
@@ -154,6 +171,8 @@ export function authenticationIdentity(raw: string): string | null {
   return null;
 }
 
+// Registration lookups need the public registration domain. For paypal.github.io, that is github.io.
+// compareDomains includes private suffixes because it compares the tenant's name instead.
 export function classifyHost(input: string) {
   const ip = v.safeParse(ipAddressSchema, input.replace(/^\[|\]$/g, ''));
   if (ip.success) return { kind: 'ip_literal', address: ip.output } as const;

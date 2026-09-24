@@ -1,3 +1,20 @@
+/**
+ * Looks up candidate reference domains in a pinned 2FA Directory snapshot.
+ * The directory records associations between services and domains, not verified email senders.
+ *
+ * Steps:
+ * 1. Validate the snapshot's schema and digest, then index hosts, names, and name words.
+ * 2. Match hostname queries exactly.
+ * 3. For name queries, prefer an exact normalized name match.
+ * 4. Otherwise, require every query word to appear in the entry's name.
+ *
+ * Behavior:
+ * - Google Cloud can match Google Cloud Platform without a fuzzy-matching rule.
+ * - Limited results include counts so callers can see that entries were omitted.
+ *
+ * The matching rules are local choices applied to upstream data.
+ * See docs/brand-references.md for attribution, snapshot verification, and lookup behavior.
+ */
 import * as v from 'valibot';
 
 const textSchema = v.pipe(v.string(), v.minLength(1), v.maxLength(1024));

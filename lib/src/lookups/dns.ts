@@ -1,3 +1,15 @@
+/**
+ * Retrieves current DNS records through Cloudflare's DNS-over-HTTPS JSON endpoint.
+ *
+ * Response checks:
+ * - Validate that the response answers the requested name and record type.
+ * - Retain DNS error codes and truncation so incomplete checks remain visible.
+ * - Reject oversized answers rather than silently shortening records.
+ *
+ * An empty successful answer differs from a failed lookup.
+ * Records describe DNS at lookup time, which may differ from when the email was sent.
+ * See docs/email-analysis.md for target selection and disclosure rules.
+ */
 import * as v from 'valibot';
 import { requestJson, type RequestFailure } from './request-json.ts';
 export type { RequestFailure } from './request-json.ts';
@@ -53,7 +65,7 @@ type DnsLookup = {
   }
 );
 
-/** Queries a public resolver; cache misses can reach the name's authoritative DNS servers. */
+/** Queries a public resolver whose cache misses can reach the name's authoritative DNS servers. */
 export async function lookupDns(query: DnsQuery, callerSignal?: AbortSignal): Promise<DnsLookup> {
   // Cloudflare's public resolver does not forward EDNS Client Subnet to authoritative servers.
   const url = new URL('https://cloudflare-dns.com/dns-query');

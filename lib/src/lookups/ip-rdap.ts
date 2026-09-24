@@ -1,3 +1,16 @@
+/**
+ * Retrieves the registered network containing an observed IP address.
+ * Service discovery implements RFC 9224's longest binary-prefix rule:
+ * https://www.rfc-editor.org/rfc/rfc9224.html#section-5
+ *
+ * Steps:
+ * 1. Find the most specific matching address prefix in IANA's bootstrap data.
+ * 2. Select an HTTPS service and request the network record.
+ * 3. Verify that the returned range contains the address and uses the same address family.
+ *
+ * Prefixes can end between bytes, so matching uses bits rather than whole-byte boundaries.
+ * Network registration alone does not identify a website's operator on a shared or proxied address.
+ */
 import * as v from 'valibot';
 import { domainSchema } from './rdap.ts';
 import { requestJson, type RequestFailure } from './request-json.ts';
@@ -54,7 +67,7 @@ type IpRdapLookup = {
   | { kind: 'found'; network: Omit<v.InferOutput<typeof recordSchema>, 'objectClassName'> }
 );
 
-/** Retrieves network registration, not origin-host attribution; never contacts the queried address. */
+/** Queries a registry for network registration without contacting the supplied address. */
 export async function lookupIpRdap(queriedAddress: IpAddress, options: RdapOptions = {}): Promise<IpRdapLookup> {
   const target = addressBits(queriedAddress);
   let bootstrapUrl: 'https://data.iana.org/rdap/ipv4.json' | 'https://data.iana.org/rdap/ipv6.json' = 'https://data.iana.org/rdap/ipv4.json';
@@ -113,7 +126,8 @@ function addressBits(address: IpAddress):
     return { ipVersion: 'v4', bits: 32,
       value: address.split('.').reduce((value, byte) => (value << 8n) | BigInt(byte), 0n) };
   }
-  // URL canonicalization converts embedded IPv4 to hex; expand the remaining zero compression.
+  // URL canonicalization has already converted embedded IPv4 to hex.
+  // Expand the remaining zero compression before converting the address to bits.
   const [left, right = ''] = address.split('::');
   const head = left.split(':').filter(Boolean);
   const tail = right.split(':').filter(Boolean);

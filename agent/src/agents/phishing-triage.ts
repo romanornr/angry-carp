@@ -20,8 +20,9 @@ export function PhishingTriage() {
   useModel(assessmentModel);
   useTool(findSharedPassagesTool);
 
-  // Flue's data channel carries the validated selection; terminate avoids a prose-generation turn.
-  // https://github.com/withastro/flue/blob/main/apps/docs/src/content/docs/guide/agent-hooks.md
+  // Flue's data writer validates the selection before returning it to the caller.
+  // The tool terminates after submission to avoid another prose-generation turn.
+  // https://github.com/withastro/flue/blob/2663e507b52fc8b3b11b251314c5476d650116a1/apps/docs/src/content/docs/guide/agent-hooks.md#streaming-data-to-the-client
   const writeAssessment = useDataWriter('assessment', { schema: assessmentSchema });
   useTool({
     name: 'submit_assessment',

@@ -1,3 +1,17 @@
+/**
+ * Retrieves a domain's registration record and registrar-associated abuse contacts.
+ * Service discovery implements RFC 9224's longest matching domain suffix rule:
+ * https://www.rfc-editor.org/rfc/rfc9224.html#section-4
+ *
+ * Steps:
+ * 1. Find the registry service in IANA's bootstrap data and select an HTTPS endpoint.
+ * 2. Request the domain record without following referrals.
+ * 3. Verify that the response names the requested domain.
+ * 4. Extract abuse contacts associated with a registrar entity.
+ *
+ * Other contacts in the record may belong to a different party.
+ * The findings module decides whether a resource concern makes the registrar a reporting candidate.
+ */
 import * as v from 'valibot';
 import { requestJson, type RequestFailure } from './request-json.ts';
 import { createRdapBootstrap, type RdapOptions, type RdapDiscovery } from './rdap-bootstrap.ts';
@@ -98,7 +112,7 @@ export async function lookupRdap(queriedDomain: Domain, options: RdapOptions = {
     .map((registrar) => ({
       name: cardValues(registrar, 'fn')[0] ?? null,
       ianaId: registrar.publicIds.find((id) => id.type === 'IANA Registrar ID')?.identifier ?? null,
-      // Keep the registrar relationship; top-level abuse contacts may belong to someone else.
+      // Keep contacts attached to this registrar because top-level abuse contacts may belong to someone else.
       abuseEmails: registrar.entities
         .filter((entity) => entity.roles.includes('abuse'))
         .flatMap((entity) => cardValues(entity, 'email'))

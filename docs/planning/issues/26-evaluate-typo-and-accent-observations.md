@@ -1,7 +1,7 @@
 # Evaluate typo and accent observations
 
 Type: research and policy evaluation
-Status: open
+Status: partially implemented; broader policies remain open
 Assignee: unassigned
 Parent: ../map.md
 Related: 09-evaluate-phishing-detection-research.md
@@ -10,7 +10,7 @@ Related: 09-evaluate-phishing-detection-research.md
 
 Should single edits, adjacent transpositions, or additional diacritic folding create domain-resemblance concerns, and for which reference sources?
 
-`coinbsae.com` against `coinbase.com` and `päypal.com` against `paypal.com` remain undetected. The [source review and corrected experiment](../../research/domain-impersonation.md) compare existing software and candidate rules. The shipping full-domain embedding increment does not implement these proposals.
+`coinbsae.com` against `coinbase.com` and `päypal.com` against `paypal.com` now produce observations, and concerns when the operator supplies the reference. The [source review and corrected experiment](../../research/domain-impersonation.md) compare existing software and candidate rules. The [current contract](../../domain-lookalikes.md) adds only adjacent swaps and Latin-folded equality. General edits and broader source policies remain deferred.
 
 ## Evaluate
 
@@ -23,3 +23,7 @@ Should single edits, adjacent transpositions, or additional diacritic folding cr
 ## Done when
 
 A reproducible comparison supports a specific rule and its limits, or recommends deferral. State the expected evidence, normalization, guards, and assessment consequence. Keep similarity distinct from a phishing verdict. Use the existing observation contract without introducing another detector API, a rule engine, or stateful lifecycle. Private-mail evaluation requires separately authorized samples and disclosure conditions.
+
+## Delivered increment
+
+The comparator records both new kinds without a new API or dependency. `findings.ts` owns the operator-only concern policy. Directory and image matches remain observations and do not qualify reporting recipients. The [public-mail benchmark](../../../experiments/domain-lookalikes/MAIL-BENCHMARK.md) ran 3,231 messages before and after, with no new matches in either reference configuration. Synthetic controls prove the intended mechanisms; these corpora provide no evidence of improved phishing accuracy.

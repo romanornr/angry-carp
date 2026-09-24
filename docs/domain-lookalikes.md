@@ -4,7 +4,7 @@
 
 The [email analyzer](email-analysis.md) calls it with bounded operator references, directory candidates and observed image-host references. Each comparison record retains its reference source. The low-level function still accepts two validated names and does not embed reference provenance itself. Direct callers must retain that context alongside its result.
 
-The analyzer accepts operator references through `referenceDomains`. A directory match and an image host remain unverified candidates; neither becomes an official-domain finding. The former model-selected `compare_domains` binding is retired.
+The analyzer accepts operator references through `referenceDomains`, exposed by both analysis commands as repeatable `--reference-domain`. Use only targets the operator explicitly supplied, never names inferred from the message. A directory match and an image host remain unverified candidates; neither becomes an official-domain finding. The former model-selected `compare_domains` binding is retired.
 
 ## Results
 
@@ -17,6 +17,8 @@ The analyzer accepts operator references through `referenceDomains`. A directory
 | `labels[].scripts` | Primary-script inventory for each Unicode label. `Common`, `Inherited`, and `Unknown` remain visible. |
 | `relationship` | Exact canonical name, a subdomain of the reference at a dot boundary, or a different name. None means that a website is safe. |
 | `resemblance` | Named observations for `different_domain` comparisons. An empty list means none of these methods matched. Exact names and children of the reference omit the list. |
+| `folded_label` | Equal label skeletons after Latin diacritic folding, when the original skeletons differ. |
+| `character_swap` | Exactly one adjacent character swap in `folded` labels or their `skeleton` forms. The folded reference label must have at least five code points. |
 | `confusable_label` | Equal identifying-label Unicode skeletons. This ignores suffixes and does not compare website content. |
 | `label_contained` | First occurrence of the reference label inside a longer observed label. `form` is `literal` or `skeleton`; `prefix` and `suffix` belong to that form. Both forms can match. |
 | `registrable_domain_embedded` | First complete reference-domain token sequence inside a longer observed Unicode hostname with a different registrable domain. `text` preserves the matched spelling and separators; `utf16Index` locates it in `observed.unicode`. |
@@ -46,7 +48,11 @@ Matching the entire observed hostname is not embedding: `t.mobile.com` against `
 
 The design references are Chromium's [`SearchForEmbeddings`](https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/lookalikes/core/lookalike_url_util.cc#L1125-L1234) and its dot/hyphen [`kTargetEmbeddingSeparators`](https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/lookalikes/core/lookalike_url_util.cc#L71). Our single-reference token-run match is independently implemented. It does not port Chromium's sweep over popular or engaged sites, exemptions, or warning policy. Full embedded domains in legitimate CDN or storage names can still require assessment. Registration boundaries and reference provenance remain independent of resemblance.
 
-There is no edit-distance check, additional diacritic folding, embedded bare-brand scan, or automatic reference discovery in this comparator. `coinbsae.com`, `päypal.com`, and `paypal.attacker.net` remain outside these methods for a `coinbase.com` or `paypal.com` reference as appropriate. Missing references remain informational in assessment routing. No match means only that these particular comparisons found no match.
+`coinbsae.com` against `coinbase.com` produces `character_swap`; `päypal.com` against `paypal.com` produces `folded_label`. Both require different registrable domains. Folding applies NFD, removes nonspacing marks, restores NFC, and maps `ł`, `ø`, and `đ` to `l`, `o`, and `d`. It runs only on labels made of Latin letters, nonspacing marks, ASCII digits, and hyphens. Other labels remain unchanged. Folding does not expand containment or embedding. Swap matching checks the folded spelling first, then its skeleton, because skeleton expansions such as `m` to `rn` can hide swaps. It uses code points, accepts first-character and digit swaps, and does not compute general edit distance.
+
+The analyzer makes these two new kinds concerns only for operator references. For directory or image references they remain observations, which neither trigger assessment nor justify registrar reporting candidates alone. Existing resemblance kinds retain their concern policy. Supplying `referenceDomains` opts into this additional attention; it does not verify those domains. This is a local policy informed by Chromium and [Sublime's organization-domain rule](https://github.com/sublime-security/sublime-rules/blob/3f2b9a7f670ad1782575aca0516e91ec0ee155fc/detection-rules/lookalike_sender_domain.yml). Sublime also checks sender history and authentication, which we do not reproduce.
+
+There is no general edit-distance check, embedded bare-brand scan, or automatic reference discovery. `paypal.attacker.net` remains outside these methods for `paypal.com`. Missing references remain informational in assessment routing. No match means only that these particular comparisons found no match.
 
 The [domain-impersonation research](research/domain-impersonation.md) preserves the upstream comparisons, corrected experiment, and remaining evaluation tickets. Its broader prototype rules are not the shipping implementation.
 

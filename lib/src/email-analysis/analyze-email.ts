@@ -1,3 +1,22 @@
+/**
+ * Runs email checks before a person or model interprets the results.
+ * Earlier versions let the model choose checks and could omit relevant evidence.
+ * The standalone CLI and Flue now call this same sequence.
+ *
+ * Steps:
+ * 1. Parse the message and record hosts with their roles and source locations.
+ * 2. Select comparison references and plan DNS and domain RDAP lookups before sending requests.
+ * 3. Run the lookups, then use eligible addresses from DNS answers for additional IP RDAP lookups.
+ * 4. Derive findings and decide whether concerns or incomplete checks require assessment.
+ *
+ * Design choices:
+ * - Planning before dispatch keeps target selection independent of response timing.
+ * - Reserved sender capacity prevents a body full of links from taking every lookup slot.
+ * - Skipped, failed, and retried checks remain in the result so missing work is visible.
+ *
+ * See docs/adr/0011-analyze-email-before-assessment.md for the move away from model-chosen checks.
+ * See docs/adr/0013-route-assessment-by-concerns-and-coverage.md for routing and recovery rules.
+ */
 import { BlockList } from 'node:net';
 import * as v from 'valibot';
 import { parseMessage, MAX_MESSAGE_BYTES, type ParsedMessage } from './parse-message.ts';
@@ -38,7 +57,7 @@ export type AnalysisEvidence = {
   retries: { checkId: string; previousResult: LookupResult; retryResult: LookupResult }[];
 };
 
-/** Analyzes private bytes and queries DNS/RDAP automatically. Never fetches message URLs or calls a model. */
+/** Analyzes supplied bytes using DNS and RDAP lookups without fetching message URLs or calling a model. */
 export async function analyzeEmail(bytes: Uint8Array, options: {
   directory: BrandDirectory;
   referenceDomains?: string[];
@@ -91,7 +110,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     else directoryQueries.set(key, { query: query.output, sourceIds: [sourceId] });
   }
 
-  // Build the entire plan before dispatch. Stable role priority prevents completion order from choosing targets.
+  // Choose targets before requests start so completion order cannot change the selection.
   const hosts = prioritizeHosts(observations.hosts);
   const importantIds = new Set(hosts.filter((host) => host.context === 'unmarked' && host.role !== 'image').map(({ id }) => id));
   for (const observed of hosts) {
@@ -116,7 +135,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
       addDns(target.host, 'TXT', observed.id);
     }
   }
-  // Names are bounded candidates from the message, never a claim that the directory verified the sender.
+  // A name from the message selects directory candidates without verifying the sender.
   for (const name of observations.names) {
     if (name.context === 'unmarked') addDirectory('name', name.value, name.sourceId);
   }
@@ -159,7 +178,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   evidence.rdap = [...registrations.values()];
   const importantDns = evidence.dns.filter((check) => check.sourceIds.some((id) => importantIds.has(id)));
   for (const check of importantDns) importantIds.add(check.id);
-  // Keep MAIL FROM/return-path prerequisites reachable even when the body contains many action hosts.
+  // Reserve capacity for MAIL FROM and return-path checks so body links cannot crowd them out.
   const mailIds = new Set(hosts.filter((host) => host.context === 'unmarked'
     && (host.role === 'mail-from' || host.role === 'return-path')).map(({ id }) => id));
   const selectedDns = new Set(evidence.dns.filter((check) => check.sourceIds.some((id) => mailIds.has(id))).slice(0, 4));
@@ -213,7 +232,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
 
 export type EmailAnalysis = Awaited<ReturnType<typeof analyzeEmail>>;
 
-/** Recovery shares the initial attempt budget. Deferred work gets at most one retry if budget remains. */
+/** Recovery allows as many requests as the initial batch, with at most two attempts per check. */
 async function runWithRecovery<T extends { id: string; result: LookupResult }>(
   plan: T[], initial: T[], signal: AbortSignal, run: (item: T) => Promise<void>,
 ) {
@@ -261,7 +280,7 @@ async function runBounded<T>(items: T[], run: (item: T) => Promise<void>) {
   }));
 }
 
-// Conservative outbound-lookup eligibility, not an assertion that every allowed address is globally reachable.
+// Exclude these special-purpose addresses from outbound lookups without claiming all others are reachable.
 // IANA special-purpose registries: https://www.iana.org/assignments/iana-ipv4-special-registry/
 const excluded = new BlockList();
 for (const [network, prefix] of [

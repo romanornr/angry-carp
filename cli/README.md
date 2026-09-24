@@ -58,6 +58,8 @@ These commands build the library, then compile the CLI to JavaScript. Input and 
 
 Analysis automatically runs bounded DNS and RDAP lookups. It never visits candidate websites. The terminal displays findings, reporting candidates and incomplete checks without printing the email body or raw headers. Add `--json evidence/emails/example.analysis.json` to save the private structured result. No analysis file is created by default.
 
+`angry-carp analyze` and Flue triage accept repeatable `--reference-domain`, for example `angry-carp analyze original.eml --reference-domain coinbase.com --reference-domain paypal.com`. Use only references explicitly supplied by the operator, never names inferred from the message. They are unverified comparison targets, disclosed in the analysis packet, and enable concerns for adjacent swaps and Latin-folded labels. The analyzer uses at most 16 references. Additional values create a `reference_limit` coverage gap; unsupported comparison inputs create `unsupported_comparison_input`.
+
 HTML extraction uses no network. Its output contains full references and a separate hostname summary. Both commands create output files with mode `0600` and refuse an existing output path. A hostname can contain a private identifier; the summaries are not anonymization.
 
 See [analysis behavior](../docs/email-analysis.md) and [HTML extraction](../docs/email-links.md) for input, output and coverage contracts. [Flue assessment](../agent/README.md) is a separate consumer for optional AI interpretation.

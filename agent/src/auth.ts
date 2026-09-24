@@ -1,7 +1,23 @@
+/**
+ * Connects the login command and Flue provider to the same local credential store.
+ * Pi handles OAuth and credential storage at the path supplied by each caller.
+ *
+ * Failure handling:
+ * - Replace credential-runtime exceptions with fixed messages naming the failed operation.
+ * - Keep exception details out of command output because they may contain private information.
+ *
+ * See agent/README.md for store setup and location.
+ */
 import type { AuthInteraction } from '@earendil-works/pi-ai';
 import { openaiCodexProvider } from '@earendil-works/pi-ai/providers/openai-codex';
 import { ModelRuntime } from '@earendil-works/pi-coding-agent';
 
+/**
+ * openAuth opens the supplied credential store without starting login or a model request.
+ * The returned login and logout methods update that store. The provider reads credentials
+ * through the same runtime when it needs them. The process entry point must clean up any
+ * provider sessions it starts after opening the store.
+ */
 export async function openAuth({ authPath }: { authPath: string }) {
   const runtime = await ModelRuntime.create({
     authPath,

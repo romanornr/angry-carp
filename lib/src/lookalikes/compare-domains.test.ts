@@ -173,3 +173,40 @@ test('rejects non-domain tool inputs and distinguishes failed domain interpretat
     assert.deepEqual(result.observed, { escapedInput: observedDomain, formatCharacters: [], kind: 'invalid', reason });
   }
 });
+
+test('distinguishes character swaps and Latin diacritics from broader edits', () => {
+  for (const [referenceDomain, observedDomain, expected] of [
+    ['coinbase.com', 'coinbsae.com', [{ kind: 'character_swap', form: 'folded' }]],
+    ['al1pha.com', 'a1lpha.com', [{ kind: 'confusable_label' }, { kind: 'character_swap', form: 'folded' }]],
+    ['microsoft.com', 'imcrosoft.com', [{ kind: 'character_swap', form: 'folded' }]],
+    ['example.com', 'exapmle.com', [{ kind: 'character_swap', form: 'folded' }]],
+    ['coinbase.com', 'coіnbsae.com', [{ kind: 'character_swap', form: 'skeleton' }]],
+    ['𐐨bcdef.com', 'b𐐨cdef.com', [{ kind: 'character_swap', form: 'folded' }]],
+    ['café.fr', 'cafe.fr', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'päypal.com', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'xn--pypal-gra.com', [{ kind: 'folded_label' }]],
+    ['caféine.fr', 'cafeine.fr', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'paypäl.net', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'paypal.com', null],
+    ['paypal.com', 'mail.paypal.com', null],
+    ['münchen.de', 'münchen.de', null],
+    ['coinbase.com', 'coibnsae.com', []],
+    ['paypal.com', 'paypol.com', []],
+    ['paypal.com', 'paypl.com', []],
+    ['paypal.com', 'pay-pal.com', []],
+    ['meta.com', 'mtea.com', []],
+    ['paypal12.com', 'paypal21.com', [{ kind: 'character_swap', form: 'folded' }]],
+    ['münchen.de', 'munster.de', []],
+    ['παραδειγμα.com', 'παράδειγμα.com', []],
+  ] satisfies [string, string, unknown[] | null][]) {
+    const input = v.parse(domainComparisonSchema, { referenceDomain, observedDomain });
+    const result = compareDomains(input);
+    if (result.kind !== 'compared') assert.fail('Expected compared domains');
+    if (expected === null) {
+      assert.equal('resemblance' in result, false);
+    } else {
+      if (result.relationship !== 'different_domain') assert.fail('Expected different domains');
+      assert.deepEqual(result.resemblance, expected, `${referenceDomain} / ${observedDomain}`);
+    }
+  }
+});

@@ -127,3 +127,21 @@ test('no-concerns and input failures stay distinct, with guidance available outs
     return true;
   });
 });
+
+test('repeatable operator references expose typo concerns through the CLI', async (t) => {
+  const folder = await mkdtemp(join(tmpdir(), 'angry-carp-references-'));
+  t.after(() => rm(folder, { recursive: true, force: true }));
+  const input = join(folder, 'original.eml');
+  await writeFile(input, 'From: Sender <sender@example.com>\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nhttps://coinbsae.com/ https://päypal.com/');
+  const invoke = (...references: string[]) => run(process.execPath,
+    ['--import', new URL('./fixtures/analysis-preload.ts', import.meta.url).href, entry, 'analyze', input, '--format', 'json', ...references], { cwd: folder });
+  const baseline = JSON.parse((await invoke()).stdout);
+  assert.equal(baseline.analysis.routing.reason, 'incomplete_checks');
+  assert.deepEqual(baseline.analysis.findings, []);
+  const selected = JSON.parse((await invoke('--reference-domain', 'coinbase.com', '--reference-domain', 'paypal.com')).stdout);
+  assert.equal(selected.analysis.routing.reason, 'concerns_detected');
+  assert.deepEqual(selected.analysis.findings.map(({ kind, code }: { kind: string; code: string }) => ({ kind, code })),
+    [{ kind: 'concern', code: 'domain_resemblance' }, { kind: 'concern', code: 'domain_resemblance' }]);
+  assert.match(selected.analysis.findings[0].text, /adjacent character swap.*Reference source: operator/);
+  assert.match(selected.analysis.findings[1].text, /Latin diacritic folding.*Reference source: operator/);
+});

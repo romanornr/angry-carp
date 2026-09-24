@@ -1,14 +1,14 @@
 # Domain-impersonation mechanisms and remaining gaps
 
-Reviewed 2026-09-24 against repository baseline `6b00947`. The [current contract](../domain-lookalikes.md) implements the result migration and full-domain embedding. Edit matching, extra diacritic folding, and new reference discovery remain proposals. [Reproducible experiments](../../experiments/domain-lookalikes/README.md) retain the generator and evaluation code; generated artifacts stay outside Git.
+Reviewed 2026-09-24 against repository baseline `6b00947`. The [current contract](../domain-lookalikes.md) implements the result migration and full-domain embedding. The subsequent [operator-reference increment](../planning/issues/26-evaluate-typo-and-accent-observations.md) adds swaps and Latin-folded equality. General edits and new reference discovery remain proposals. The measurements below describe the earlier prototype; the [raw-mail benchmark](../../experiments/domain-lookalikes/MAIL-BENCHMARK.md) evaluates the later increment. [Reproducible experiments](../../experiments/domain-lookalikes/README.md) retain the generator and evaluation code; generated artifacts stay outside Git.
 
 ## What the investigation established
 
-The baseline comparator detects Unicode skeleton equality and label containment. It misses `coinbsae.com` against `coinbase.com`, `paypal.com.attacker.net` against `paypal.com`, and accented forms such as `päypal.com`. Completed synthetic lookups do not compensate: comparator silence can result in `no_concerns_detected`, which skips AI assessment. This verifies current behavior, not a measured phishing false-negative rate or proof of a historical design mistake.
+The baseline comparator detects Unicode skeleton equality and label containment. It misses `coinbsae.com` against `coinbase.com`, `paypal.com.attacker.net` against `paypal.com`, and accented forms such as `päypal.com`. Completed synthetic lookups do not compensate: comparator silence can result in `no_concerns_detected`, which skips AI assessment. This verifies baseline behavior, not a measured phishing false-negative rate or proof of a historical design mistake.
 
 The first increment replaces five redundant or algorithm-specific fields with named observations, migrates consumers, and adds full reference-domain embedding. It preserves registration boundaries, provenance, lookup budgets, and routing policy. Same-registration siblings cannot gain embedding observations. Existing sibling-label concerns remain a [separate policy question](../planning/issues/28-evaluate-sibling-reference-policy.md).
 
-New analysis exports and assessment packets use version 2. Saved version 1 evidence remains renderable without recomputation. The final implementation passed 125 tests, typechecking, and lint. A differential run over the 19,626 generated variants retained all 865 baseline concern matches. That corpus does not generate full-domain embedding in unrelated hosts; dedicated regressions cover it.
+New analysis exports and assessment packets use version 2. Saved version 1 evidence remains renderable without recomputation. The embedding increment passed 125 tests, typechecking, and lint. A differential run over the 19,626 generated variants retained all 865 baseline concern matches. That corpus does not generate full-domain embedding in unrelated hosts; dedicated regressions cover it.
 
 ## Reuse and source precedents
 

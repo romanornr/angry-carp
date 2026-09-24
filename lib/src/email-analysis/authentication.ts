@@ -1,3 +1,17 @@
+/**
+ * Parses supplied Authentication-Results claims and DKIM-Signature tags.
+ * The grammars come from RFC 8601 section 2.2 and RFC 6376 section 3.2:
+ * https://www.rfc-editor.org/rfc/rfc8601.html#section-2.2
+ * https://www.rfc-editor.org/rfc/rfc6376.html#section-3.2
+ *
+ * Parsing rules:
+ * - Track quoted values and nested comments so their separators do not become field boundaries.
+ * - Preserve repeated claims as separate entries.
+ * - Bound header size, entry count, and comment depth to limit work on malformed input.
+ *
+ * The result describes what the headers claim.
+ * Signature verification and trust in the receiving server require separate checks.
+ */
 export const MAX_AUTH_HEADER_BYTES = 64 * 1024;
 const MAX_ENTRIES = 128;
 const MAX_COMMENT_DEPTH = 32;
@@ -135,8 +149,8 @@ class HeaderSyntaxError extends Error {
 }
 
 // https://www.rfc-editor.org/rfc/rfc8601#section-2.2
-// RFC 8601 uses RFC 5322 CFWS and MIME quoted values. A cursor keeps separators inside
-// comments/quotes out of the grammar; arrays preserve repeated methods and properties.
+// RFC 8601 allows comments, folding whitespace, and quoted values.
+// The cursor distinguishes separators inside those values from separators between fields.
 class HeaderReader {
   private offset = 0;
   private input: string;
@@ -195,7 +209,7 @@ class HeaderReader {
       decoded = this.take(/^[!#$%&'*+\-.0-9A-Z^_`a-z{|}~]+/);
     }
     if (!address) return decoded;
-    // Property text is opaque: retain quoted local parts and CFWS for a field-specific parser.
+    // Keep quoted local parts, comments, and whitespace for the parser that interprets this identity.
     // RFC 8601 pvalue includes RFC 5322 local-part extended by RFC 6531 (SMTPUTF8).
     const end = this.offset;
     this.space();

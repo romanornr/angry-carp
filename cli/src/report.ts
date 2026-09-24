@@ -22,7 +22,7 @@ export async function runReport(args: string[]) {
     const request: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readInput(first, MAX_REPORT_BYTES)));
     const preparation = await startReportPreparation(request, analysis);
     const bytes = new TextEncoder().encode(JSON.stringify(preparation, null, 2) + '\n');
-    // The start branch above requires output; avoid a cast across the CLI boundary.
+    // Recheck output here because TypeScript does not preserve the earlier branch condition.
     if (!values.output) return;
     await writeFile(values.output, bytes, { flag: 'wx', mode: 0o600 });
     process.stdout.write(`Preparation created. SHA-256: ${await reportDigest(bytes)}\n` +

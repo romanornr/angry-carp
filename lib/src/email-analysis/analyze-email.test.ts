@@ -400,3 +400,41 @@ test('a failed retry preserves partial DNS evidence and its qualified investigat
     mock.mock.restore();
   }
 });
+
+test('typo matches require operator references to create concerns and reporting leads', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  for (const [reference, observed, brand, kind] of [
+    ['coinbase.com', 'coinbsae.com', 'Coinbase', 'character_swap'],
+    ['microsoft.com', 'imcrosoft.com', 'Microsoft', 'character_swap'],
+    ['coinbase.com', 'xn--oinbase-txa.com', 'Coinbase', 'folded_label'],
+    ['paypal.com', 'xn--pypal-gra.com', 'PayPal', 'folded_label'],
+  ]) {
+    for (const source of ['operator', 'directory_candidate', 'message_image']) {
+      let name = 'Sender';
+      let html = '';
+      if (source === 'directory_candidate') name = brand;
+      if (source === 'message_image') html = `<img src="https://${reference}/logo.png">`;
+      const bytes = new TextEncoder().encode(`From: ${name} <sender@${observed}>\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`);
+      const result = await analyzeEmail(bytes, { directory, referenceDomains: source === 'operator' ? [reference] : [] });
+      if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+      const comparison = result.comparisons.find((entry) => entry.referenceSource === source);
+      assert.ok(comparison);
+      if (comparison.result.kind !== 'compared' || comparison.result.relationship !== 'different_domain') assert.fail('Expected different domains');
+      assert.equal(comparison.result.resemblance[0]?.kind, kind, `${source}: ${observed} / ${reference}`);
+      const finding = result.findings.find(({ evidenceIds }) => evidenceIds.includes(comparison.id));
+      assert.ok(finding);
+      assert.match(finding.text, /This does not establish ownership or deception/);
+      assert.ok(assessmentEvidence(result).some(({ text }) => text === finding.text));
+      if (source === 'operator') {
+        assert.equal(finding.kind, 'concern');
+        assert.deepEqual(result.routing, { kind: 'assessment_required', reason: 'concerns_detected', gaps: [] });
+        assert.equal(result.reportingCandidates[0]?.provider, 'Example registrar');
+      } else {
+        assert.equal(finding.kind, 'observation');
+        assert.match(finding.text, /informational because the reference was selected using message evidence/);
+        assert.deepEqual(result.routing, { kind: 'no_concerns_detected' });
+        assert.deepEqual(result.reportingCandidates, []);
+      }
+    }
+  }
+});

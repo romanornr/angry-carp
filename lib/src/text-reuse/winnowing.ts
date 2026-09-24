@@ -1,3 +1,39 @@
+/**
+ * Finds passages two email bodies share, even when their openings and endings differ.
+ * Follows plain winnowing from Schleimer, Wilkerson, and Aiken (SIGMOD 2003).
+ * Paper: https://sschleimer.warwick.ac.uk/Maths/winnowing.pdf
+ *
+ * Steps:
+ * 1. Split each body on whitespace, normalize tokens to NFC, and lowercase them.
+ * 2. Hash every run of five consecutive tokens (k = 5).
+ * 3. Slide a window of four hashes (w = 4) and select the smallest, rightmost on ties.
+ *    Record each selected position once.
+ * 4. Find selected hashes shared by both bodies.
+ * 5. Verify the matching grams against the tokens, then extend both ways to recover the passage.
+ *
+ * Behavior and guarantees:
+ * - A shared run of at least eight normalized tokens yields a common fingerprint (t = w + k - 1).
+ *   Candidate and match limits can stop the comparison before all shared passages are found.
+ * - Matches shorter than eight tokens after extension are omitted.
+ * - Hash collisions alone never produce a match.
+ * - Positions index the supplied strings in UTF-16 units, not tokens or original MIME bytes.
+ * - A result marked "limited" retains the matches found before the search stopped and is partial.
+ *
+ * Implementation choices:
+ * - Whitespace tokens replace character grams so the threshold measures runs of words.
+ *   Normalization ignores differences in whitespace and capitalization.
+ *   Reconsider character grams if evaluation finds reused passages hidden by edits within words.
+ * - Each gram uses 32-bit FNV-1a over UTF-16 units instead of a rolling Karp-Rabin hash.
+ *   With five tokens per gram and bodies capped at 16,000 UTF-16 units, a direct hash loop
+ *   keeps the implementation small without needing incremental updates.
+ *   Reconsider if profiling shows gram hashing dominates comparison time.
+ * - Plain winnowing can produce many fingerprints for repetitive text. Candidate and match
+ *   limits bound the comparison work, rather than using the paper's robust variant.
+ *   Evaluate robust winnowing if representative inputs repeatedly exhaust the candidate limit.
+ *
+ * Parameters and limits are initial choices for bounded email comparison.
+ * See docs/text-reuse.md for interpretation and the input contract.
+ */
 import * as v from 'valibot';
 
 const bodySchema = v.pipe(v.string(), v.maxLength(16_000), v.brand('MessageBody'));
@@ -30,9 +66,7 @@ type Comparison = {
 } & ({ kind: 'complete' } | { kind: 'limited'; reason: LimitReason });
 
 /**
- * Winnowing (Schleimer et al., SIGMOD 2003): https://sschleimer.warwick.ac.uk/Maths/winnowing.pdf
- * Uses five-token grams and four-gram windows, then verifies and extends hash matches.
- * Positions address the supplied strings, not original MIME bytes. Limited results are partial.
+ * findSharedPassages accepts bodies validated by passageComparisonSchema and performs no I/O.
  */
 export function findSharedPassages(input: v.InferOutput<typeof passageComparisonSchema>): Comparison {
   const first = tokenize(input.firstBody);
@@ -60,7 +94,7 @@ export function findSharedPassages(input: v.InferOutput<typeof passageComparison
         firstStart >= match.firstStart && firstStart + algorithm.gramTokens <= match.firstStart + match.length &&
         firstStart - match.firstStart === secondStart - match.secondStart)) continue;
 
-      // Hashes select candidates only; token equality decides whether text matches.
+      // Token equality confirms the match because different grams can have the same hash.
       let equal = true;
       for (let offset = 0; offset < algorithm.gramTokens; offset++) {
         if (first[firstStart + offset].value !== second[secondStart + offset].value) {
@@ -105,7 +139,7 @@ function fingerprints(tokens: Token[]) {
   const hashes: number[] = [];
   for (let start = 0; start + algorithm.gramTokens <= tokens.length; start++) {
     const gram = tokens.slice(start, start + algorithm.gramTokens).map((token) => token.value).join(' ');
-    // FNV-1a over UTF-16 units gives a stable ordering; collisions are checked by the caller.
+    // FNV-1a over UTF-16 units gives a stable ordering for fingerprint selection.
     let hash = 2166136261;
     for (let index = 0; index < gram.length; index++) {
       hash = Math.imul(hash ^ gram.charCodeAt(index), 16777619) >>> 0;
@@ -118,7 +152,6 @@ function fingerprints(tokens: Token[]) {
   for (let start = 0; start + algorithm.windowGrams <= hashes.length; start++) {
     let minimum = start;
     for (let index = start + 1; index < start + algorithm.windowGrams; index++) {
-      // The rightmost minimum on ties makes selection independent of preceding text.
       if (hashes[index] <= hashes[minimum]) minimum = index;
     }
     if (minimum !== previous) selected.push({ hash: hashes[minimum], start: minimum });

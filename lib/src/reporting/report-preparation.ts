@@ -62,7 +62,7 @@ export const reportResearchSchema = v.strictObject({
   checks: v.strictObject({ allegation: researchCheck, providerRelationship: researchCheck, reportingChannel: researchCheck }),
 });
 
-// One reviewed payload. Additional recipients and attachments require a future disclosure contract.
+// Limit each reviewed draft to one destination and body so it cannot disclose unreviewed attachments or recipients.
 export const reportDraftSchema = v.strictObject({
   destination: destinationSchema,
   subject: v.pipe(v.string(), v.minLength(1), v.maxLength(200), v.regex(/^[^\r\n]+$/)),
@@ -81,10 +81,10 @@ export type ReportReview = { kind: 'held'; reasons: ReportHoldReason[] } | {
   checkedAt: string; provenance: 'host_supplied'; host: string;
 };
 
-/** Hash exact retained bytes, not the original message's digest or a reserialized JSON object. */
+/** Hashes the exact retained bytes so changes to a saved file also change its digest. */
 export async function reportDigest(bytes: Uint8Array): Promise<string> {
-  // Subject binding is inspired by in-toto; this is neither an attestation nor proof of research.
-  // https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md
+  // Inspired by in-toto's subject digests, this binds a record to specific bytes without attesting to its claims.
+  // https://github.com/in-toto/attestation/blob/fd2609c16bcb0ac53443e2b4612977f997e8f9a5/spec/v1/statement.md
   const hash = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
@@ -105,7 +105,7 @@ export async function startReportPreparation(request: unknown, analysis: Uint8Ar
     analysisSha256: await reportDigest(analysis), request: parsed.output };
 }
 
-/** Checks supplied research and byte bindings. No I/O, model call, independent verification or sending. */
+/** Checks supplied research and file digests locally without fetching sources or sending a report. */
 export async function checkReportPreparation(input: {
   preparation: Uint8Array; analysis: Uint8Array; research: Uint8Array; draft: Uint8Array;
 }): Promise<ReportReview> {
@@ -163,7 +163,7 @@ function isCandidate(host: string, request: v.InferOutput<typeof reportRequestSc
 }
 
 function actionHosts(analysis: v.InferOutput<typeof analysisSchema>): string[] {
-  // Keep these private: automatically copying observed hosts into the request could disclose tracking identifiers.
+  // Keep observed hosts out of the request because they may contain private tracking identifiers.
   return analysis.observations.hosts.filter((host) => host.role === 'action' || host.role === 'text-reference')
     .map(({ host }) => host.toLowerCase().replace(/\.$/, ''));
 }

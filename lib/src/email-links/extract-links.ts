@@ -1,3 +1,20 @@
+/**
+ * Extracts image and link occurrences while preserving which anchor encloses an image.
+ * Uses parse5's recovered HTML tree, including its repairs to malformed markup.
+ *
+ * Steps:
+ * 1. Parse the supplied HTML without rendering it or fetching resources.
+ * 2. Walk the tree once, carrying the enclosing anchor and quote context.
+ * 3. Record each occurrence's source spans, reference, and relationship to its enclosing link.
+ * 4. Count unsupported features and limits so unexamined content remains visible.
+ *
+ * Implementation choices:
+ * - Relationships follow the recovered tree, which can differ from a mail client's display.
+ * - Talon also recognizes div.gmail_quote, as linked below.
+ *   Here the marker labels content for inspection instead of removing it.
+ *
+ * See docs/email-links.md for the extraction contract.
+ */
 import { parse, type DefaultTreeAdapterMap } from 'parse5';
 import * as v from 'valibot';
 
@@ -52,7 +69,7 @@ export function extractEmailLinks(input: string) {
       parseErrors.set(error.code, (parseErrors.get(error.code) ?? 0) + 1);
     },
   });
-  // One depth-first walk carries the enclosing link; no image-by-link pairwise comparison.
+  // Carry the enclosing link through one depth-first walk to avoid comparing every image with every link.
   const stack: { node: Node; anchor: Anchor | null; quoted: boolean }[] = [{ node: document, anchor: null, quoted: false }];
   let visitedNodes = 0;
 
@@ -78,7 +95,7 @@ export function extractEmailLinks(input: string) {
     if ('tagName' in node) {
       const attrs = new Map(node.attrs.map(({ name, value }) => [name, value]));
       // gmail_quote is a client marker, not proof of authorship. Keep its contents as observations.
-      // Precedent: https://github.com/mailgun/talon/blob/master/talon/html_quotations.py#L142
+      // Talon's cut_gmail_quote: https://github.com/mailgun/talon/blob/9703f59b197846a624bc96ca3c0dbe00ccb51047/talon/html_quotations.py#L155-L165
       if (node.tagName === 'blockquote' || (node.tagName === 'div' &&
           attrs.get('class')?.split(/[\t\n\f\r ]+/).includes('gmail_quote'))) quoted = true;
       if (attrs.has('srcset')) unsupported.srcset++;
@@ -89,7 +106,7 @@ export function extractEmailLinks(input: string) {
           (node.tagName === 'meta' && attrs.get('http-equiv')?.toLowerCase() === 'refresh')) {
         unsupported.otherUrlAttribute++;
       }
-      // These subtrees are not ordinary displayed HTML; their contents remain unexamined.
+      // Skip subtrees outside the supported HTML content and record that they remain unexamined.
       if (node.tagName === 'svg') { unsupported.svg++; continue; }
       if (node.tagName === 'template') { unsupported.template++; continue; }
       if (node.tagName === 'script') { unsupported.script++; continue; }
@@ -166,7 +183,7 @@ function clip(text: string, length: number): string {
 }
 
 function parseReference(value: string): Reference {
-  // Classify the bounded HTML's full attribute before limiting retained details: padding must not hide a host.
+  // Classify the full attribute before shortening retained text so padding cannot hide a hostname.
   const retained = retain(value);
   const schemeRelative = value.trim().startsWith('//');
   if (!value.trim()) {
@@ -176,7 +193,7 @@ function parseReference(value: string): Reference {
   let url: URL;
   try {
     if (schemeRelative) {
-      // HTTP-family URL parsing extracts an authority; the result does not claim an observed scheme or base.
+      // Supply a temporary scheme to parse the hostname while retaining the scheme-relative classification.
       url = new URL('https:' + value.trim());
     } else {
       url = new URL(value);
