@@ -11,7 +11,7 @@ test('assessment renders only selected records and rejects invented prose or ref
   assert.equal(formatAssessment(selection, evidence), 'Concern: high; confidence: moderate.\n'
     + 'AI hypothesis: impersonation.\nSelected evidence:\n'
     + '- supports [finding0]: Recorded domain difference; ownership unknown.\\u{a}\\u{1b}[31m\n'
-    + 'The AI selected the conclusion and evidence. Recorded findings and coverage remain above.\n');
+    + 'The AI selected the conclusion and evidence. Refer to the recorded findings and coverage for the complete analysis.\n');
   for (const invalid of [undefined, 'An unrelated sender.', { ...selection, explanation: 'An unrelated sender.' },
     { ...selection, evidence: [{ id: 'unrelated sender', role: 'supports' }] }]) {
     assert.throws(() => formatAssessment(invalid, evidence));

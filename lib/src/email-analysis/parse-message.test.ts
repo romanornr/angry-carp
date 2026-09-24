@@ -94,6 +94,7 @@ test('an empty reverse path is retained without a malformed-address claim', asyn
 
 test('cancelling inside embedded parsing stays observable and settles owned streams', async (t) => {
   const { Splitter } = await import('@zone-eu/mailsplit');
+  // oxlint-disable-next-line typescript/unbound-method -- The mock restores the receiver with apply(this, ...).
   const originalEmit = Splitter.prototype.emit;
   const controller = new AbortController();
   let roots = 0;

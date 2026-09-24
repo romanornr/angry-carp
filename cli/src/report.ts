@@ -4,16 +4,16 @@ import { readInput } from '@angry-carp/checks/node/read-input';
 import { startReportPreparation, checkReportPreparation, reportDigest,
   MAX_REPORT_BYTES, MAX_ANALYSIS_BYTES } from '@angry-carp/checks/reporting/preparation';
 
-async function main() {
-  const { positionals, values } = parseArgs({ allowPositionals: true, options: {
+export async function runReport(args: string[]) {
+  const { positionals, values } = parseArgs({ args, allowPositionals: true, options: {
     analysis: { type: 'string' }, output: { type: 'string' },
   } });
   const [command, first, researchPath, draftPath] = positionals;
   if (!values.analysis || !first || !['start', 'check'].includes(command) ||
       (command === 'start' && (positionals.length !== 2 || !values.output)) ||
       (command === 'check' && (positionals.length !== 4 || !researchPath || !draftPath))) {
-    process.stderr.write('Usage: npm run report -- start <reviewed-request.json> --analysis <analysis.json> --output <new-preparation.json>\n' +
-      '       npm run report -- check <preparation.json> <host-research.json> <draft.json> --analysis <analysis.json> [--output <new-review.json>]\n');
+    process.stderr.write('Usage: angry-carp report start <reviewed-request.json> --analysis <analysis.json> --output <new-preparation.json>\n' +
+      '       angry-carp report check <preparation.json> <host-research.json> <draft.json> --analysis <analysis.json> [--output <new-review.json>]\n');
     process.exitCode = 2;
     return;
   }
@@ -26,7 +26,7 @@ async function main() {
     if (!values.output) return;
     await writeFile(values.output, bytes, { flag: 'wx', mode: 0o600 });
     process.stdout.write(`Preparation created. SHA-256: ${await reportDigest(bytes)}\n` +
-      'Give the preparation to your AI host and follow docs/report-preparation.md. Research has not run.\n');
+      'Give the preparation to your AI host and run angry-carp instructions reporting. Research has not run.\n');
     return;
   }
   const result = await checkReportPreparation({ analysis,
@@ -42,8 +42,3 @@ async function main() {
     process.stdout.write('Ready for operator review, based on host-supplied research. Retrievals, claims and draft wording are not independently verified. Nothing is approved or sent.\n');
   }
 }
-
-main().catch(() => {
-  process.stderr.write('Report preparation failed. Check input shapes, source-host policy and paths. Existing output files are not replaced.\n');
-  process.exitCode = 1;
-});

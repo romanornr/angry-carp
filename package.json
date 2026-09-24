@@ -13,17 +13,22 @@
 	"scripts": {
 		"build": "npm run build --workspace @angry-carp/checks && npm run build --workspace @angry-carp/cli",
 		"prepare": "npm run build",
-		"test": "npm run build && npm run test --workspaces",
+		"test": "npm run build && npm run test --workspaces && node --test scripts/conventions.test.mjs",
 		"check:types": "npm run build && npm run check:types --workspaces",
+		"lint": "npm run build && oxlint lib/src cli/src agent/src cli/build-resources.mjs scripts --deny-warnings --report-unused-disable-directives && npm run lint:structure",
 		"brands:check": "npm run build && npm run brands:check --workspace @angry-carp/checks",
 		"reporting:generate": "node lib/src/reporting/write-channels.ts",
 		"reporting:check": "node --test lib/src/reporting/channels.test.ts",
-		"analyze": "npm run build && node cli/dist/analyze.js",
-		"extract:links": "npm run build && node cli/dist/extract-links.js",
-		"report": "npm run build && node cli/dist/report.js"
+		"analyze": "npm run build && node cli/dist/main.js analyze",
+		"extract:links": "npm run build && node cli/dist/main.js extract-links",
+		"report": "npm run build && node cli/dist/main.js report",
+		"lint:structure": "konsistent validate && konsistent check --error-on-warnings"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.10",
+		"konsistent": "1.0.0-beta.9",
+		"oxlint": "1.82.0",
+		"oxlint-tsgolint": "7.0.2001",
 		"typescript": "^7.0.2"
 	}
 }

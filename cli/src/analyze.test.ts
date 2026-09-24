@@ -21,7 +21,7 @@ test('CLI displays findings without content, writes only on request, and refuses
   const output = join(folder, 'private.json');
   await writeFile(input, original);
   const args = ['--import', new URL('./fixtures/analysis-preload.ts', import.meta.url).href,
-    fileURLToPath(new URL('../dist/analyze.js', import.meta.url)), input];
+    fileURLToPath(new URL('../dist/main.js', import.meta.url)), 'analyze', input];
   const displayed = await run(process.execPath, args, { timeout: 10_000 });
   assert.match(displayed.stdout, /Image host image\.example\.org and action host action\.example\.com/);
   assert.doesNotMatch(displayed.stdout + displayed.stderr, /private-/);
@@ -32,8 +32,8 @@ test('CLI displays findings without content, writes only on request, and refuses
   assert.equal((await stat(output)).mode & 0o777, 0o600);
   await assert.rejects(run(process.execPath, [...args, '--json', output]), (error: unknown) => {
     assert.ok(error instanceof Error && 'code' in error && 'stdout' in error);
-    assert.equal(error.code, 1);
-    assert.match(String(error.stdout), /Deterministic email analysis/);
+    assert.equal(error.code, 2);
+    assert.equal(error.stdout, '');
     return true;
   });
   assert.equal(await readFile(output, 'utf8'), saved);

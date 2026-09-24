@@ -147,30 +147,29 @@ You can stop here with the terminal findings, or continue with AI assessment and
 
 ## Use it from Codex or Claude Code
 
-**You can use Angry Carp from Claude Code CLI or Codex CLI.** Give the agent access to this repository. It can run the checks, interpret the findings and help prepare reports using the included playbooks.
+**You can use Angry Carp from Claude Code CLI or Codex CLI.** [Set up the executable and skill](cli/README.md#use-an-existing-agent), then let the host run the checks and consume the reduced structured result. The executable also works outside this checkout.
 
 <img src="assets/icons/gmail.svg" width="22" height="22" alt="" /> If your agent already has access to Gmail through a connector, MCP server or extension, that connection can supply the email. The analyzer needs the original message bytes, usually saved as an `.eml` file. If the connector exposes only message text, the agent can use the portable assessment playbook with that text and identify the missing evidence. Mailbox access belongs to your configured host. Angry Carp does not include a Gmail connector.
 
 | Host | How it plugs in | Lookups | Model calls |
 | --- | --- | --- | --- |
-| Claude Code CLI, Codex CLI, opencode, any agent with a shell | Runs the CLI, reads the playbooks | Yes, from the CLI | Whatever the host already does |
+| Claude Code CLI, Codex CLI, opencode, any agent with a shell | Runs the CLI through a skill or bundled instructions | Yes, from the CLI | Whatever the host already does |
 | Flue agent (bundled) | `npm --prefix agent run triage` | Yes | On concerns or important gaps, through a ChatGPT subscription |
 | A chat assistant that only reads documents | Attach the two playbooks and a redacted email | No, paste what you know | Every turn |
 | No AI at all | `analyze`, `extract:links`, `report` | DNS/RDAP in `analyze`; other commands are offline | None in these commands |
 
-Point Codex, Claude Code or a similar tool at the repository and the flow is:
+With the executable installed, the flow is:
 
-1. The agent runs `npm --silent run analyze -- <original.eml> --json <analysis.json>`. The JSON contains private message content. Let the host read it only if you intend that disclosure; otherwise start with terminal findings and reviewed text.
-2. The agent reads [phishing-triage.md](phishing-triage.md), the assessment playbook: what the observations mean, why concern and confidence are different things, what the next action is.
-3. If a report is warranted, the agent reads [provider-abuse-reporting.md](provider-abuse-reporting.md), does targeted research about the allegation and the recipient, and writes two files: its research with sources, and the exact draft. `npm run report -- check` checks their structure, references and byte bindings against the preparation. You review the claims and exact draft.
+1. The agent runs `angry-carp analyze <original.eml> --format json`. This returns selected evidence and coverage, without the email body or raw headers. The separate `--json <path>` option retains a full private analysis for local operations.
+2. Completed no-concerns checks need no further assessment. For concerns or gaps, the host loads `angry-carp instructions assessment`, selects a structured conclusion, and uses `angry-carp assess` to validate and display recorded evidence.
+3. When you request reporting, the agent loads `angry-carp instructions reporting`. It follows the preparation procedure, researches the allegation and recipient, and supplies attributed research and an exact draft. `angry-carp report check` checks their structure, references and byte bindings. You review the claims and exact draft.
 
 A prompt that works:
 
 ```text
-Run `npm --silent run analyze -- evidence/emails/example.eml`.
-Read phishing-triage.md and assess the terminal findings using the reviewed
-message text I supply. Keep the original and full analysis JSON out of model
-context. Do not visit any URL from the email.
+Use the angry-carp skill to check /absolute/path/example.eml.
+Follow the routing in its structured output. Keep original bytes and full
+private analysis out of model context. Do not visit URLs from the email.
 ```
 
 The two Markdown playbooks also work on their own. Attach `phishing-triage.md` and a redacted email to any assistant that can read documents and ask for an assessment. Use the host's lookup tools or supply recorded results alongside the email. The playbooks work independently of Flue and do not assume that the host has our TypeScript checks.

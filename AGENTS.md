@@ -1,8 +1,10 @@
 # Repository instructions
 
+For authorized email analysis, use the installed `angry-carp instructions` workflow. Repository development instructions below do not replace that user workflow. Setup is documented in [the CLI guide](cli/README.md).
+
 ## Portable assessment instructions
 
-Keep `phishing-triage.md` usable as a standalone download by people and agents without Flue or this repository's TypeScript code. Put Flue-specific tool instructions and runtime integration under `agent/`, loaded separately from the shared assessment instructions.
+Keep `phishing-triage.md` usable as a standalone download by people and agents without Flue or this repository's TypeScript code. Shared structured-assessment rules live in `lib/instructions/`. Put Flue-specific tool instructions and runtime integration under `agent/`, loaded separately from those rules.
 
 When changing workflow distribution or runtime boundaries, follow [ADR 0004](docs/adr/0004-distribute-workflow-independently.md).
 

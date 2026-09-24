@@ -58,11 +58,13 @@
 		"./reporting/preparation": {
 			"types": "./dist/reporting/report-preparation.d.ts",
 			"default": "./dist/reporting/report-preparation.js"
-		}
+		},
+		"./assessment-instructions": "./instructions/phishing-assessment.md"
 	},
 	"files": [
 		"dist",
-		"reference-data"
+		"reference-data",
+		"instructions"
 	],
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",

@@ -190,7 +190,7 @@ class HeaderReader {
       }
       this.offset++;
     } else if (address) {
-      decoded = this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/\[\]?=]+/u);
+      decoded = this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/[\]?=]+/u);
     } else {
       decoded = this.take(/^[!#$%&'*+\-.0-9A-Z^_`a-z{|}~]+/);
     }
@@ -202,7 +202,7 @@ class HeaderReader {
     if (this.at('@')) {
       this.expect('@');
       this.space();
-      this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/\[\]?=@]+/u);
+      this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/[\]?=@]+/u);
     }
     else this.offset = end;
     return this.input.slice(start, this.offset);

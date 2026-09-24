@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/konsistent/konsistent.schema.json",
+  "version": "v1",
+  "conventions": [
+    {
+      "name": "workspace-usage-guides",
+      "description": "Each workspace keeps its usage guide; builds do not require README files.",
+      "paths": ["lib", "cli", "agent"],
+      "must": {
+        "haveType": "directory",
+        "haveFiles": ["README.md"]
+      }
+    },
+    {
+      "name": "boundary-regression-files",
+      "description": "Keep the assessment and report-preparation regression files; the test runner does not detect their deletion.",
+      "paths": "lib",
+      "must": {
+        "haveFiles": [
+          "src/email-analysis/analysis-output.test.ts",
+          "src/reporting/report-preparation.test.ts"
+        ]
+      }
+    }
+  ]
+}

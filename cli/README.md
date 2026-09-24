@@ -2,6 +2,49 @@
 
 This workspace runs email analysis, HTML extraction and host-assisted report preparation without Flue, Pi or a model. Its only runtime dependency is `@angry-carp/checks`. Node.js 24 is required.
 
+## Use an existing agent
+
+After `npm ci` at the repository root, put the local executable on your shell's PATH:
+
+```sh
+export PATH="$(pwd)/node_modules/.bin:$PATH"
+angry-carp --help
+```
+
+The executable works from other directories. Paths to message and output files resolve against your current directory. It uses the existing build; run `npm run build` after source changes.
+
+Save the output of `angry-carp instructions skill` as `SKILL.md` inside the chosen host's `angry-carp` skill directory. Codex uses `~/.agents/skills/angry-carp/`; Claude Code uses `~/.claude/skills/angry-carp/`. Review an existing file before replacing it. The short skill loads its workflow from the installed executable, so detailed instructions are not copied into each host. Installing the skill alone does not install the executable. See the [source-backed discovery comparison](../docs/research/agent-entry-points.md#discovery-across-hosts).
+
+Invoke `$angry-carp` in Codex or `/angry-carp` in Claude Code with an authorized original email. Automatic selection depends on the host. No mailbox connector or monitoring is installed by this command. The skill does not pre-approve shell commands with `allowed-tools`; execution remains subject to the host's permissions.
+
+```sh
+angry-carp analyze /private/original.eml --format json --output /private/new-packet.json
+angry-carp instructions assessment
+angry-carp assess /private/new-packet.json /private/selection.json
+```
+
+`--format json` writes one versioned packet to stdout. It contains `analysis` from the existing reduced assessment projection and `assessmentEvidence` with selectable IDs. Diagnostics stay on stderr. `--output` optionally saves this same packet with mode `0600` and refuses overwrite. `--json` remains the separate full private analysis export. Neither file is created by default.
+
+An existing output path exits 2 before lookups. A later save failure exits 4 after emitting the result on stdout; reuse that result instead of repeating analysis. A crash during a file write can leave incomplete JSON. Validate saved files before reuse, and retain or remove incomplete output explicitly. No automatic overwriting or cleanup of user files occurs.
+
+On completed no-concerns routing, return the result without further assessment. On concerns or material gaps, the host supplies a structured selection following `instructions assessment`. `assess` validates and renders recorded evidence without network requests or another model call. It rejects unknown IDs, extra selection fields, unsupported packet versions, duplicate record IDs and packets whose routing does not require assessment. Packet files are caller-retained evidence, not authenticated receipts. Keep them unchanged. This path does not include a `reviewed_text` selection because the packet contains no message body.
+
+`angry-carp instructions reporting` loads reporting instructions only when requested. It includes the preparation-file procedure. The existing `report start` and `report check` commands require retained private analysis and explicitly reviewed request/research/draft files. They do not send reports.
+
+## Install the built packages outside the repository
+
+The packages are private and are not claimed to be published on npm. Build and pack both workspaces locally:
+
+```sh
+npm run build
+npm pack --workspace @angry-carp/checks --ignore-scripts
+npm pack --workspace @angry-carp/cli --ignore-scripts
+```
+
+In a separate installation directory, pass both generated tarball paths to `npm install --ignore-scripts`. The CLI's dependency resolves to the supplied checks package. Put that directory's `node_modules/.bin` on PATH. No Flue or Pi dependency is required. All instruction files and the reference snapshot travel with these packages. Rebuild before packing; `--ignore-scripts` intentionally does not build for you.
+
+## Develop in the checkout
+
 From the repository root after `npm ci`:
 
 ```sh

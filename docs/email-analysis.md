@@ -2,6 +2,8 @@
 
 The analyzer reads complete message bytes, runs bounded checks, and returns structured observations, findings, reporting candidates and coverage. It does not need Flue, a login or a model. DNS and RDAP run automatically. Candidate websites and email resources are never fetched.
 
+The library accepts message bytes directly. `.eml` is the CLI's current file convention, not a required library storage format. A future connector can pass original bytes to `analyzeEmail` without writing a file or exposing those bytes to a model. Parsed connector fields and snippets need a separate partial-evidence contract; reconstructing them does not restore the original or its provenance. Connector adapters and stdin input are not implemented by this increment.
+
 ## Run without a model
 
 From the repository root, with Node.js 24 and the workspaces installed. Relative paths in the standalone commands start at the repository root:
@@ -19,6 +21,8 @@ npm --silent run analyze -- evidence/emails/example.eml --json evidence/emails/e
 ```
 
 The output includes decoded bodies, original header values, full extracted references and attachment metadata. The CLI creates it with mode `0600` and refuses an existing output path. Keep private output under the ignored `evidence/` directory. File permissions do not restrict other processes running as the same user. Original bytes remain in your input file and are not duplicated in JSON.
+
+For an existing agent, use the installed `angry-carp analyze ... --format json` entry point. It prints a reduced assessment packet with a version, selected analysis and evidence IDs. `--output` optionally saves that packet. `--json` still means the full private export above. The offline `angry-carp assess` command validates the host's conclusion and renders selected records without repeating lookups. See [setup and the host workflow](../cli/README.md#use-an-existing-agent) and [ADR 0018](adr/0018-distribute-cli-agent-entry.md).
 
 ## Route an AI assessment
 

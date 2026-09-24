@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
-const command = fileURLToPath(new URL('../dist/report.js', import.meta.url));
+const command = fileURLToPath(new URL('../dist/main.js', import.meta.url));
 const denyNetwork = 'data:text/javascript,' + encodeURIComponent(`
   import assert from 'node:assert/strict';
   let attempts = 0;
@@ -27,7 +27,7 @@ test('host-assisted CLI prepares, holds failures, checks bindings and never fetc
   const research = join(folder, 'research.json');
   const draft = join(folder, 'draft.json');
   const review = join(folder, 'review.json');
-  const cli = (...args: string[]) => run(process.execPath, ['--import', denyNetwork, command, ...args], { timeout: 10_000 });
+  const cli = (...args: string[]) => run(process.execPath, ['--import', denyNetwork, command, 'report', ...args], { timeout: 10_000 });
   await writeFile(analysis, JSON.stringify({ kind: 'analyzed', observations: { hosts: [] }, message: 'private-original' }));
   await writeFile(request, JSON.stringify({ target: { provider: 'example', serviceRole: 'hosting' },
     destination: { kind: 'form', url: 'https://provider.example/abuse' },

@@ -2,10 +2,10 @@ import { writeFile } from 'node:fs/promises';
 import { extractEmailLinks, summarizeEmailLinks, MAX_HTML_BYTES } from '@angry-carp/checks/email-links';
 import { readInput } from '@angry-carp/checks/node/read-input';
 
-async function main(): Promise<void> {
-  const [input, output, ...extra] = process.argv.slice(2);
+export async function runExtractLinks(args: string[]): Promise<void> {
+  const [input, output, ...extra] = args;
   if (!input || !output || extra.length > 0) {
-    process.stderr.write('Usage: npm run extract:links -- <body.html> <evidence.json>\n');
+    process.stderr.write('Usage: angry-carp extract-links <body.html> <evidence.json>\n');
     process.exitCode = 2;
     return;
   }
@@ -15,8 +15,3 @@ async function main(): Promise<void> {
     { flag: 'wx', mode: 0o600 });
   process.stderr.write('Wrote private link evidence and its model summary. No network requests made.\n');
 }
-
-main().catch(() => {
-  process.stderr.write('Link extraction failed. Check the UTF-8 HTML input, size limit and unused output path.\n');
-  process.exitCode = 1;
-});

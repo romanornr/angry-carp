@@ -8,7 +8,7 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 
 | Import | Function and input schema | I/O |
 | --- | --- | --- |
-| `@angry-carp/checks/email-analysis/output` | `formatAnalysis(result)`, `analysisForModel(result)` | None |
+| `@angry-carp/checks/email-analysis/output` | `formatAnalysis(result)`, `analysisForModel(result)`, `assessmentPacket(result)`, `formatSavedAssessment(packet, selection)` | None |
 | `@angry-carp/checks/node/read-input` | `readInput(path, maxBytes)` | Bounded regular-file read in Node |
 | `@angry-carp/checks/email-analysis` | `analyzeEmail(bytes, { directory, referenceDomains, sourceNotes, signal })` | Bounded Node MIME analysis plus public DNS/RDAP |
 | `@angry-carp/checks/brands` | `buildBrandDirectory(json, metadata)`, then `directory.lookup(query)`; `brandQuerySchema` | None |
@@ -23,6 +23,8 @@ Install from the repository root with Node.js 24 and `npm ci`. This builds JavaS
 | `@angry-carp/checks/email-links` | `extractEmailLinks(html)`, `summarizeEmailLinks(result)`; extraction validates string and byte limit internally | None |
 
 `analysisForModel` selects deception evidence and coverage for assessment. Provider candidates, channel references and IP network records remain in the complete result and deterministic display, outside that projection. It is not a report-preparation interface or general-purpose anonymizer.
+
+`assessmentPacket` adds a format version and selectable recorded evidence to that same projection. It supplies no body or `reviewed_text` record. `formatSavedAssessment` validates the consumed packet fields and selection, then reuses the shared renderer. It neither repeats analysis nor authenticates caller-retained files. Shared assessment instructions are packaged at `@angry-carp/checks/assessment-instructions`, a Markdown asset resolved with `import.meta.resolve` and read by the host. [The CLI guide](../cli/README.md#use-an-existing-agent) describes the external-agent path.
 
 Report preparation validates caller-supplied records at its function boundary. It binds exact bytes and returns readiness for operator review or explicit hold reasons. Host research remains attributed and unverified; the functions neither fetch sources nor authorize sending. See [the workflow and limits](../docs/report-preparation.md).
 

@@ -7,7 +7,7 @@ import { assessmentSchema } from '@angry-carp/checks/email-analysis/output';
 import { openAuth } from '../auth.ts';
 import { findSharedPassagesTool } from '../tools/text-reuse.ts';
 
-const assessment = await readFile(new URL('../../phishing-assessment.md', import.meta.url), 'utf8');
+export const assessmentInstructions = 'Call submit_assessment once with the structured conclusion, then finish.\n\n' + await readFile(new URL(import.meta.resolve('@angry-carp/checks/assessment-instructions')), 'utf8');
 export const assessmentModel = 'openai-codex/gpt-5.6-sol';
 
 const auth = await openAuth({
@@ -33,5 +33,5 @@ export function PhishingTriage() {
     },
   });
 
-  return assessment;
+  return assessmentInstructions;
 }

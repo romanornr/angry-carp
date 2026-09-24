@@ -7,6 +7,7 @@ Angry Carp provides deterministic original-email analysis with optional AI asses
 - [Analyze an original without a model](email-analysis.md): input, optional private JSON, lookup budgets and AI disclosure.
 
 - [Standalone CLI](../cli/README.md): commands and file paths without Flue dependencies.
+- [Use an existing agent](../cli/README.md#use-an-existing-agent): install the discovery skill, consume reduced JSON, and validate host assessments through the CLI.
 - [Prepare a provider report](report-preparation.md): start a reviewed request, use your existing AI host for research, and check the attributed research and draft. No sending.
 - [Run a local assessment](../agent/README.md#assess-analyzed-email-evidence): sign in, prepare the input, run the command, and interpret the output.
 - [Sign in and disconnect](../agent/README.md#sign-in-and-disconnect): browser authentication and local logout.
@@ -29,10 +30,11 @@ Angry Carp provides deterministic original-email analysis with optional AI asses
 - [Standards and reporting guidance](standards-and-reporting.md): relevant RFCs, ICANN guidance, provider instructions, and the limits of their application.
 
 - [Shared TypeScript library](../lib/README.md): package exports, direct use, dependency ownership, and local builds.
+- [TypeScript checks and conventions](typescript-style.md): Oxlint, Konsistent, commands, scope and exceptions.
 
 ## Agent instructions
 
-- [Phishing triage](../phishing-triage.md) is portable investigation and assessment guidance, usable without Flue or the TypeScript tools. [Local assessment instructions](../agent/phishing-assessment.md) give Flue the narrower evidence-interpretation task.
+- [Phishing triage](../phishing-triage.md) is portable investigation and assessment guidance, usable without Flue or the TypeScript tools. [Local assessment instructions](../lib/instructions/phishing-assessment.md) give runtime-backed hosts the narrower evidence-interpretation task.
 - [Reporting channels](../reporting-channels.md) is the generated, portable channel reference. The deterministic analyzer selects matching routes before Flue assessment.
 - [Provider abuse reporting](../provider-abuse-reporting.md) is for separately directed report preparation and review. It is not loaded into the local assessment prompt.
 
@@ -66,6 +68,8 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 - [Email image and action-link extraction](research/email-link-extraction.md): established scanner behavior, HTML and MIME standards, parser candidates, dependency review and a proposed offline extractor.
 - [Model-independent email analysis](research/model-independent-email-analysis.md): proposed structured analysis before optional AI assessment, library reuse, missing capabilities and migration.
 - [Email analysis precedents](research/email-analysis-precedents.md): Rspamd and SpamAssassin result/lifecycle patterns, completeness limits, and possible future export conventions.
+- [Agent entry points](research/agent-entry-points.md): Playwright CLI, agent-browser, and GitHub CLI implementations, with a proposed skill and structured CLI interface for existing agents.
+- [Structural lint precedents](research/structural-lint-precedents.md): pinned AI SDK and Vue Router configurations, Konsistent's beta.9 limits, and the contracts adopted here.
 - [Phishing takedowns and disruption](research/phishing-takedown-disruption.md): evidence for reducing exposure and interrupting campaigns, limits of deterrence claims, and the distinction between provider acknowledgements and action.
 - [Phishing recompromise and public disclosure](research/phishing-recompromise-and-disclosure.md): the 17% historical finding, the earlier 2009 study and what public-list comparisons establish.
 - [PILFER reading ticket](planning/issues/23-read-pilfer-and-evaluate-email-features.md): a local follow-up on the WWW 2007 paper, its URL features and possible experiments.
@@ -80,3 +84,5 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 [ADR 0016: Render recorded assessment evidence](adr/0016-render-recorded-assessment-evidence.md) replaces free-form local assessment facts with structured selections and runtime rendering.
 
 [ADR 0017: Track provider outcomes and recurrence per resource](adr/0017-track-resource-outcomes-and-recurrence.md) records the reporting follow-up direction. [Ticket 24](planning/issues/24-implement-provider-outcomes-and-recurrence.md) tracks the unimplemented local case operations and acceptance scenarios.
+
+[ADR 0018: Give existing agents a CLI entry point](adr/0018-distribute-cli-agent-entry.md) records executable distribution, reduced assessment packets, shared instructions, and offline rendering for external hosts.

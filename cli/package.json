@@ -7,16 +7,20 @@
 		"node": ">=24"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"resources"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
-		"analyze": "node dist/analyze.js",
-		"extract:links": "node dist/extract-links.js",
+		"build": "tsc -p tsconfig.build.json && node build-resources.mjs",
+		"analyze": "node dist/main.js analyze",
+		"extract:links": "node dist/main.js extract-links",
 		"test": "node --test",
 		"check:types": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@angry-carp/checks": "0.1.0"
+	},
+	"bin": {
+		"angry-carp": "dist/main.js"
 	}
 }

@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "categories": { "correctness": "error" },
+  "options": { "typeAware": true },
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**"],
+  "rules": {
+    "no-unused-vars": ["error", { "ignoreRestSiblings": true, "ignoreUsingDeclarations": true }],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-floating-promises": ["error", {
+      "allowForKnownSafeCalls": [{ "from": "package", "name": "test", "package": "node" }]
+    }]
+  },
+  "overrides": [
+    {
+      "files": ["lib/src/**/*.ts", "cli/src/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "group": ["@flue/**", "@earendil-works/**", "**/agent/**"],
+            "message": "Flue and Pi belong in agent/, not the reusable library or standalone CLI."
+          }]
+        }]
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/fixtures/*.ts"],
+      "rules": {
+        "typescript/no-base-to-string": "off",
+        "typescript/require-array-sort-compare": "off"
+      }
+    },
+    {
+      "files": ["lib/src/email-analysis/authentication.ts", "lib/src/email-analysis/analysis-output.ts"],
+      "rules": { "no-control-regex": "off" }
+    }
+  ]
+}

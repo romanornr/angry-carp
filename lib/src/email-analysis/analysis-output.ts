@@ -25,6 +25,11 @@ export function assessmentEvidence(result: EmailAnalysis) {
   }
   for (const note of result.sourceNotes) evidence.push({ id: note.id,
     text: `Supplied source claim: ${note.claim} Source: ${note.url}; retrieved ${note.retrievedAt}. Applicability to the message date: ${note.messageDateApplicability}. Not independently verified.` });
+  if (result.routing.kind === 'assessment_required' && result.routing.gaps.length > 0) {
+    const gaps = result.routing.gaps;
+    evidence.push({ id: 'coverage', text: `${gaps.length} material coverage gaps. First ${Math.min(gaps.length, 32)}: ` +
+      gaps.slice(0, 32).map(({ sourceId, reason }) => `${sourceId}: ${reason}`).join('; ') + '. Missing checks do not establish deception or safety.' });
+  }
   return evidence;
 }
 
@@ -41,7 +46,7 @@ export function formatAssessment(value: unknown, evidence: ReturnType<typeof ass
     if (text === undefined) throw new Error('Assessment selected an unknown evidence record.');
     lines.push(`- ${selection.role} [${selection.id}]: ${text}`);
   }
-  lines.push('The AI selected the conclusion and evidence. Recorded findings and coverage remain above.');
+  lines.push('The AI selected the conclusion and evidence. Refer to the recorded findings and coverage for the complete analysis.');
   return terminalLines(lines);
 }
 
@@ -114,6 +119,30 @@ export function analysisForModel(result: EmailAnalysis) {
     coverageOmitted: Math.max(0, result.coverage.length - 64),
     textReuse: result.textReuse,
   };
+}
+
+/** Reduced host input. No reviewed-text record is offered because this command does not disclose a body. */
+export function assessmentPacket(result: EmailAnalysis) {
+  return { version: assessmentPacketVersion, analysis: analysisForModel(result),
+    assessmentEvidence: assessmentEvidence(result).filter(({ id }) => id !== 'reviewed_text') };
+}
+
+// Validate only the fields consumed by the renderer. The rest of the analysis stays opaque here.
+const assessmentPacketVersion = 1;
+const savedAssessmentSchema = v.object({
+  version: v.literal(assessmentPacketVersion),
+  analysis: v.object({ kind: v.literal('analyzed'), routing: v.object({ kind: v.literal('assessment_required') }) }),
+  assessmentEvidence: v.pipe(v.array(v.strictObject({
+    id: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),
+    text: v.pipe(v.string(), v.maxLength(128_000)),
+  })), v.check((records) => new Set(records.map(({ id }) => id)).size === records.length)),
+});
+
+/** Renders a host selection against caller-retained records; does not authenticate the file or repeat lookups. */
+export function formatSavedAssessment(packet: unknown, selection: unknown): string {
+  const parsed = v.safeParse(savedAssessmentSchema, packet);
+  if (!parsed.success) throw new Error('Invalid packet or assessment not required.');
+  return formatAssessment(selection, parsed.output.assessmentEvidence);
 }
 
 export function formatAnalysis(result: EmailAnalysis): string {

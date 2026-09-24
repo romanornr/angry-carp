@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { readFile, open } from 'node:fs/promises';
+import { open } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { cleanupSessionResources } from '@earendil-works/pi-ai';
 import { init } from '@flue/runtime';
 import { sqlite, start } from '@flue/runtime/node';
-import { PhishingTriage, assessmentModel } from '../agents/phishing-triage.ts';
+import { PhishingTriage, assessmentModel, assessmentInstructions } from '../agents/phishing-triage.ts';
 import { formatAssessment } from '@angry-carp/checks/email-analysis/output';
 
 const cases = [
@@ -22,7 +22,6 @@ async function main() {
   const { values } = parseArgs({ options: { output: { type: 'string' } } });
   if (!values.output) throw new Error('Missing evaluation output path.');
   const records = [{ id: 'reviewed_text', text: 'Supplied synthetic reviewed evidence.' }];
-  const currentInstructions = await readFile(new URL('../../phishing-assessment.md', import.meta.url), 'utf8');
   // Use Flue's ordinary dispatch/read eval pattern, with fresh conversations and no persistent DB.
   // https://github.com/withastro/flue/blob/main/apps/docs/src/content/docs/guide/evals.md
   await using output = await open(values.output, 'wx', 0o600);
@@ -37,7 +36,7 @@ async function main() {
     if (!selections || selections.length !== 1) throw new Error('Missing structured assessment.');
     const rendered = formatAssessment(selections[0], records);
     await output.write(JSON.stringify({ model: assessmentModel,
-      promptSha256: createHash('sha256').update(currentInstructions).digest('hex'),
+      promptSha256: createHash('sha256').update(assessmentInstructions).digest('hex'),
       ...example, assessment: selections[0], rendered }) + '\n');
   }
 }

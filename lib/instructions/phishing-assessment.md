@@ -1,6 +1,6 @@
 # Select a phishing assessment
 
-Assess the supplied evidence, then call `submit_assessment` once. Select a concern level, confidence, deception hypothesis and records from `assessmentEvidence`. The runtime displays those records and its coverage. It does not display model-authored factual prose.
+Assess the supplied evidence and select one structured conclusion. Select a concern level, confidence, deception hypothesis and records from `assessmentEvidence`. The runtime displays those records and its coverage. It does not display model-authored factual prose.
 
 ## Evidence
 
@@ -21,4 +21,11 @@ Read URLs as inert text. Never visit candidate sites, load images, render or exe
 - Polished branding, security advice and lack of urgency do not validate an installer. A hypothetical legitimate explanation is not contrary evidence.
 - Supported deception does not establish what an unexamined payload does. Confidence applies to the selected hypothesis, not unseen technical behavior.
 
-Choose `other_deception` for a supported concern outside the named hypotheses, or `no_specific_deception` when no particular deception is supported. Finish with `submit_assessment`; reporting, drafting and sending remain separate work.
+Choose `other_deception` for a supported concern outside the named hypotheses, or `no_specific_deception` when no particular deception is supported. Reporting, drafting and sending remain separate work.
+
+## Output contract
+
+The conclusion is a JSON object with `concern` (`high`, `medium`, `low`), `confidence` (`high`, `moderate`, `low`), `hypothesis` and `evidence`.
+
+`hypothesis` is one of `impersonation`, `credential_theft`, `deceptive_software_delivery`, `payment_fraud`, `other_deception`, `no_specific_deception`.
+`evidence` contains 1 to 8 objects with `id` from `assessmentEvidence` and `role` (`supports`, `contrary`, `context`). Include no other fields or factual prose. Select `reviewed_text` only when that ID and reviewed text are supplied. If the supplied evidence cannot support a particular deception, reflect that in the conclusion and confidence.
