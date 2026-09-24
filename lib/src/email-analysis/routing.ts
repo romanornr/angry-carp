@@ -13,10 +13,13 @@ export function routeAnalysis(evidence: AnalysisEvidence, findings: ReturnType<t
     'no_comparison_reference', 'registrar_contact_without_resource_concern',
     'unresolved_reference:cid:image', 'unresolved_reference:data:image',
   ]);
+
   const gaps = evidence.coverage.filter(({ reason }) => !informative.has(reason));
+
   // Passive image lookups are supplementary. Limits hiding unclassified content remain material above.
   const important = new Set(evidence.observations.hosts.filter((host) =>
     host.context === 'unmarked' && host.role !== 'image').map(({ id }) => id));
+
   for (const check of [...evidence.dns, ...evidence.rdap, ...evidence.ipRdap]) {
     if (!check.sourceIds.some((id) => important.has(id))) continue;
     important.add(check.id);
@@ -27,7 +30,9 @@ export function routeAnalysis(evidence: AnalysisEvidence, findings: ReturnType<t
     if ('reason' in result) reason += `:${result.reason}`;
     gaps.push({ sourceId: check.id, reason });
   }
+
   if (findings.some(({ kind }) => kind === 'concern')) return { kind: 'assessment_required', reason: 'concerns_detected', gaps };
   if (gaps.length) return { kind: 'assessment_required', reason: 'incomplete_checks', gaps };
+
   return { kind: 'no_concerns_detected' };
 }

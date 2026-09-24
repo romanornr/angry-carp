@@ -88,6 +88,14 @@ scripts disabled, review new artifacts, and rerun the negative fixtures.
 
 ## Readability and size
 
+- Keep expressions, guards, and small objects compact. Use blank lines to
+  separate logical sections, independently of statement length. See
+  [`routeAnalysis`](../lib/src/email-analysis/routing.ts) for the intended spacing.
+- Separate functions with one blank line. Inside a function, use blank lines
+  between distinct operations, not between every statement or after every block.
+- Put multiple statements in a conditional block on separate lines.
+- Useful comments and whitespace do not count against simplicity. Reduce
+  concepts and duplication rather than squeezing more statements onto a line.
 - Prefer explicit `if` statements and early returns over ternary
   expressions. Use `else` when it makes the alternatives easier to follow.
 - Use an exhaustive `switch` when handling a discriminated union.
