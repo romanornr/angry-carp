@@ -103,6 +103,8 @@ The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisitio
 
 ## Analyzer follow-up
 
+The 2026-09-24 [domain-impersonation review](../research/domain-impersonation.md) led to full reference-domain embedding and a named-observation comparison contract. Remaining decisions are [typo and accent matching](issues/26-evaluate-typo-and-accent-observations.md), [missing references](issues/27-evaluate-reference-coverage.md), and [same-registration siblings](issues/28-evaluate-sibling-reference-policy.md). These are evaluation tickets, not authorization to enable broader detection rules.
+
 The first real-email comparison confirmed collection and exposed the following gaps. The package migration was followed by the implemented fixes below, verified with synthetic messages and offline transports. No automatic reporting is authorized.
 
 | Issue | Status | Delivered scope |

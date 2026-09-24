@@ -19,6 +19,8 @@ credentials.json
 *.key
 /private/
 /evidence/
+/scratch/
+/experiments/domain-lookalikes/generated/
 
 node_modules/
 /lib/dist/

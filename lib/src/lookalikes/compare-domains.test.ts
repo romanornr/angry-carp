@@ -3,6 +3,48 @@ import { test } from 'node:test';
 import * as v from 'valibot';
 import { compareDomains, domainComparisonSchema } from './compare-domains.ts';
 
+test('records embedded reference domains at dot and hyphen boundaries', () => {
+  for (const [referenceDomain, observedDomain, text, utf16Index] of [
+    ['paypal.com', 'paypal.com.attacker.net', 'paypal.com', 0],
+    ['paypal.com', 'secure.paypal-com.attacker.net', 'paypal-com', 7],
+    ['paypal.com', '𐐨.paypal.com.attacker.net', 'paypal.com', 3],
+    ['paypal.com', 'paypal-com.paypal.com.attacker.net', 'paypal-com', 0],
+    ['paypal.com', 'paypal.com-login.net', 'paypal.com', 0],
+    ['paypal.com', 'pаypal.com.attacker.net', 'pаypal.com', 0],
+    ['paypal.com', 'xn--pypal-4ve.com.attacker.net', 'pаypal.com', 0],
+    ['PayPal.COM.', 'PAYPAL.COM.ATTACKER.NET.', 'paypal.com', 0],
+    ['ing.com', 'ing.com.attacker.net', 'ing.com', 0],
+    ['example.co.uk', 'example-co-uk.attacker.net', 'example-co-uk', 0],
+    ['my-brand.com', 'my-brand.com.attacker.net', 'my-brand.com', 0],
+    ['my-brand.com', 'my.brand-com.attacker.net', 'my.brand-com', 0],
+    ['paypal.github.io', 'paypal-github-io.attacker.net', 'paypal-github-io', 0],
+  ] satisfies [string, string, string, number][]) {
+    const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
+    if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
+    assert.deepEqual(result.resemblance, [{ kind: 'registrable_domain_embedded', text, utf16Index }]);
+  }
+});
+
+test('embedding requires the whole reference domain and preserves genuine relationships', () => {
+  for (const observedDomain of ['paypal.attacker.net', 'paypal.zendesk.com', 'paypal.okta.com',
+    'paypal.my.salesforce.com', 'paypal.atlassian.net', 'notpaypal.com.attacker.net',
+    'paypal.company.attacker.net', 'paypal--com.attacker.net', 'com.paypal.attacker.net',
+    'paypal.com', 'mail.paypal.com']) {
+    const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain: 'paypal.com', observedDomain }));
+    if (result.kind !== 'compared') assert.fail('Expected a comparison');
+    if (result.relationship === 'different_domain') assert.deepEqual(result.resemblance, [], observedDomain);
+    else assert.equal('resemblance' in result, false);
+  }
+});
+
+test('same-registration siblings and parents do not gain embedding observations', () => {
+  for (const observedDomain of ['www.paypal.com', 'paypal.com']) {
+    const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain: 'images.paypal.com', observedDomain }));
+    if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different hostnames');
+    assert.deepEqual(result.resemblance, [{ kind: 'confusable_label' }]);
+  }
+});
+
 test('identifies reference labels with extra text without assigning a verdict', () => {
   for (const [referenceDomain, observedDomain, prefix, suffix] of [
     ['bifrostwallet.com', 'bifrostwalletapps.download', '', 'apps'],
@@ -11,15 +53,9 @@ test('identifies reference labels with extra text without assigning a verdict', 
     ['hp.com', 'php.com', 'p', ''],
   ]) {
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
-    if (result.kind !== 'compared') assert.fail('Expected a domain comparison');
-    assert.deepEqual({
-      relationship: result.relationship,
-      skeletonEqual: result.skeletonEqual,
-      referenceLabelContained: result.referenceLabelContained,
-    }, {
-      relationship: 'different_domain', skeletonEqual: false,
-      referenceLabelContained: { prefix, suffix },
-    });
+    if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
+    assert.deepEqual(result.resemblance.filter((match) => match.kind === 'label_contained' && match.form === 'literal'),
+      [{ kind: 'label_contained', form: 'literal', prefix, suffix }]);
   }
 });
 
@@ -31,9 +67,8 @@ test('recognizes Unicode, whole-script and ASCII lookalikes using the real mappi
     ['paypal.com', 'paypa1.com', 'paypa1', ['Common', 'Latin']],
   ] satisfies [string, string, string, string[]][]) {
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
-    if (result.kind !== 'compared') assert.fail('Expected a domain comparison');
-    assert.equal(result.skeletonEqual, true);
-    assert.equal(result.relationship, 'different_domain');
+    if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
+    assert.deepEqual(result.resemblance, [{ kind: 'confusable_label' }]);
     assert.deepEqual(result.observed.labels[0], { text: label, scripts });
     assert.equal(result.confusablesUnicodeVersion, '17.0.0');
   }
@@ -43,12 +78,8 @@ test('distinguishes literal and confusable containment in a combined lookalike',
   const result = compareDomains(v.parse(domainComparisonSchema, {
     referenceDomain: 'bifrostwallet.com', observedDomain: 'b\u0456frostwalletapps.download',
   }));
-  if (result.kind !== 'compared') assert.fail('Expected combined lookalike comparison');
-  assert.deepEqual({
-    skeletonEqual: result.skeletonEqual,
-    literal: result.referenceLabelContained,
-    skeleton: result.referenceSkeletonContained,
-  }, { skeletonEqual: false, literal: null, skeleton: { prefix: '', suffix: 'apps' } });
+  if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
+  assert.deepEqual(result.resemblance, [{ kind: 'label_contained', form: 'skeleton', prefix: '', suffix: 'apps' }]);
 });
 
 test('distinguishes IDNA mapping from ordinary domain representations', () => {
@@ -75,7 +106,7 @@ test('uses public and private suffix boundaries without confusing embedded offic
   ]) {
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
     if (result.kind !== 'compared') assert.fail('Expected a domain comparison');
-    assert.deepEqual({ domain: result.observed.registrableDomain, label: result.observedLabel, relationship: result.relationship }, {
+    assert.deepEqual({ domain: result.observed.registrableDomain, label: result.observed.label, relationship: result.relationship }, {
       domain, label, relationship,
     });
   }
@@ -115,9 +146,8 @@ test('retains legitimate multilingual names and unknown scripts without a mixed-
     ['example.com', '\u{1e4d0}.com', '\u{1e4d0}', ['Unknown']],
   ] satisfies [string, string, string, string[]][]) {
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
-    if (result.kind !== 'compared') assert.fail('Expected multilingual domain comparison');
-    assert.equal(result.skeletonEqual, false);
-    assert.equal(result.referenceLabelContained, null);
+    if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
+    assert.deepEqual(result.resemblance, []);
     assert.deepEqual(result.observed.labels[0], { text: label, scripts });
   }
 });

@@ -204,7 +204,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     check.result = await lookupIpRdap(check.address, rdapOptions);
   }));
   const derived = deriveFindings(evidence);
-  return { kind: 'analyzed', version: 1, source, ...evidence, ...derived, routing: routeAnalysis(evidence, derived.findings),
+  return { kind: 'analyzed', version: 2, source, ...evidence, ...derived, routing: routeAnalysis(evidence, derived.findings),
     textReuse: { kind: 'skipped', reason: 'missing_comparison_message' } satisfies Skipped,
     limits: { dns: DNS_LIMIT, domainRdap: DOMAIN_LIMIT, ipRdap: IP_LIMIT,
       attemptsPerCheck: 2, httpRequests: 2 * (DNS_LIMIT + 2 * (DOMAIN_LIMIT + IP_LIMIT)), deadlineMs: DEADLINE_MS },

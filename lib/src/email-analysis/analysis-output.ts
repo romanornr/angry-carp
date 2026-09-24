@@ -90,8 +90,8 @@ export function analysisForModel(result: EmailAnalysis) {
       if (result.kind !== 'compared') return { id: comparison.id, kind: result.kind, referenceSource: comparison.referenceSource };
       return { id: comparison.id, kind: result.kind, sourceIds: comparison.sourceIds, referenceSource: comparison.referenceSource,
         observed: result.observed.ascii, reference: result.reference.ascii, relationship: result.relationship,
-        skeletonEqual: result.skeletonEqual, referenceLabelContained: result.referenceLabelContained,
-        referenceSkeletonContained: result.referenceSkeletonContained, confusablesUnicodeVersion: result.confusablesUnicodeVersion };
+        ...result.relationship === 'different_domain' && { resemblance: result.resemblance },
+        confusablesUnicodeVersion: result.confusablesUnicodeVersion };
     }),
     directory: result.directory.map(({ id, result }) => ({ id, source: result.source, matchedBy: result.matchedBy,
       totalMatches: result.totalMatches, truncated: result.truncated,
@@ -128,9 +128,10 @@ export function assessmentPacket(result: EmailAnalysis) {
 }
 
 // Validate only the fields consumed by the renderer. The rest of the analysis stays opaque here.
-const assessmentPacketVersion = 1;
+// Version 1 packets differ in comparison fields, which rendering does not read.
+const assessmentPacketVersion = 2;
 const savedAssessmentSchema = v.object({
-  version: v.literal(assessmentPacketVersion),
+  version: v.picklist([1, assessmentPacketVersion]),
   analysis: v.object({ kind: v.literal('analyzed'), routing: v.object({ kind: v.literal('assessment_required') }) }),
   assessmentEvidence: v.pipe(v.array(v.strictObject({
     id: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),

@@ -48,11 +48,19 @@ export function deriveFindings(evidence: AnalysisEvidence) {
   for (const comparison of evidence.comparisons) {
     const result = comparison.result;
     if (result.kind !== 'compared' || result.relationship !== 'different_domain') continue;
-    if (result.skeletonEqual || result.referenceLabelContained || result.referenceSkeletonContained) {
+    if (result.resemblance.length > 0) {
       const subject = comparison.sourceIds[0];
       if (subject) supportedHosts.set(subject, [comparison.id]);
+      const reasons = result.resemblance.map((match) => {
+        switch (match.kind) {
+          case 'confusable_label': return 'matching Unicode label skeletons';
+          case 'label_contained': return 'reference label inside a longer label';
+          case 'registrable_domain_embedded': return 'reference domain embedded in the hostname';
+          default: { const unhandled: never = match; return unhandled; }
+        }
+      });
       findings.push({ kind: 'concern', code: 'domain_resemblance',
-        text: `${result.observed.ascii} resembles or contains the identifying label of ${result.reference.ascii}. Reference source: ${comparison.referenceSource}.`,
+        text: `${result.observed.ascii} resembles ${result.reference.ascii}: ${[...new Set(reasons)].join('; ')}. Reference source: ${comparison.referenceSource}. This does not establish ownership or deception.`,
         evidenceIds: [comparison.id] });
     }
   }

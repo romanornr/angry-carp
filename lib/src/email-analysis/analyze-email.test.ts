@@ -2,8 +2,47 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadBrandDirectory } from '../brands/load-directory.ts';
 import { analyzeEmail } from './analyze-email.ts';
+import { analysisForModel, assessmentEvidence } from './analysis-output.ts';
 
 const directory = await loadBrandDirectory();
+
+test('embedded directory references trigger assessment with completed lookups and attributed evidence', async (t) => {
+  const healthy = fixtureFetch([]);
+  t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    if (String(input) === 'https://data.iana.org/rdap/dns.json') {
+      return Response.json({ services: [[['com', 'net'], ['https://registry.example/']]] });
+    }
+    return healthy(input);
+  });
+  for (const [host, expected] of [
+    ['paypal.com.attacker.net', 'assessment_required'],
+    ['paypal-com.attacker.net', 'assessment_required'],
+    ['paypal.zendesk.com', 'no_concerns_detected'],
+    ['mail.paypal.com', 'no_concerns_detected'],
+  ]) {
+    const message = `From: PayPal <sender@example.com>\r\n\r\nhttps://${host}/login`;
+    const result = await analyzeEmail(new TextEncoder().encode(message), { directory });
+    if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+    assert.equal(result.routing.kind, expected, host);
+    if (result.routing.kind !== 'assessment_required') {
+      assert.deepEqual(result.findings, []);
+      continue;
+    }
+    assert.deepEqual(result.routing, { kind: 'assessment_required', reason: 'concerns_detected', gaps: [] });
+    const finding = result.findings.find(({ code }) => code === 'domain_resemblance');
+    assert.ok(finding);
+    assert.match(finding.text, /reference domain embedded in the hostname.*Reference source: directory_candidate/);
+    const comparison = result.comparisons.find(({ id }) => finding.evidenceIds.includes(id));
+    assert.equal(comparison?.referenceSource, 'directory_candidate');
+    const projection = analysisForModel(result);
+    if (projection.kind !== 'analyzed') assert.fail('Expected model projection');
+    const disclosed = projection.comparisons.find(({ id }) => id === comparison?.id);
+    assert.partialDeepStrictEqual(disclosed, { relationship: 'different_domain',
+      resemblance: [{ kind: 'registrable_domain_embedded', text: host.slice(0, -'.attacker.net'.length), utf16Index: 0 }] });
+    assert.ok(assessmentEvidence(result).some(({ text }) => text === finding.text));
+    assert.ok(result.reportingCandidates.some(({ resource }) => resource.kind === 'domain' && resource.name === 'attacker.net'));
+  }
+});
 const bytes = new TextEncoder().encode(`From: Bifrost Wallet <sender@songbirdsoftware.ltd>\r
 Return-Path: <private@send.songbirdsoftware.ltd>\r
 Received: from a9.smtp-out.amazonses.com (a9.smtp-out.amazonses.com [54.240.9.67]) by mx.example; Tue, 22 Sep 2026 10:00:00 +0000\r
@@ -51,7 +90,9 @@ test('one analysis retains image/action findings, qualified recipients and every
   assert.equal(result.kind, 'analyzed');
   if (result.kind !== 'analyzed') return;
   assert.ok(result.findings.some(({ code }) => code === 'image_action_domain_difference'));
-  assert.ok(result.comparisons.some(({ referenceSource, result }) => referenceSource === 'operator' && result.kind === 'compared' && result.referenceLabelContained));
+  assert.ok(result.comparisons.some(({ referenceSource, result }) => referenceSource === 'operator'
+    && result.kind === 'compared' && result.relationship === 'different_domain'
+    && result.resemblance.some((match) => match.kind === 'label_contained' && match.form === 'literal')));
   assert.deepEqual([...new Set(result.reportingCandidates.map(({ provider }) => provider))], ['Example registrar', 'cloudflare', 'amazon-ses', 'resend']);
   assert.equal(result.reportingCandidates.find(({ provider }) => provider === 'cloudflare')?.serviceRole, 'dns');
   assert.match(result.reportingCandidates.find(({ provider }) => provider === 'resend')?.limitation ?? '', /not proof/);

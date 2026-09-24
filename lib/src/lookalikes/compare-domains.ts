@@ -31,19 +31,21 @@ type DomainInspection = ReturnType<typeof inspectInput> & (
 
 type ParsedDomain = Extract<DomainInspection, { kind: 'parsed' }>;
 type Relationship = 'same_domain' | 'subdomain_of_reference' | 'different_domain';
+type Resemblance =
+  | { kind: 'confusable_label' }
+  | { kind: 'label_contained'; form: 'literal' | 'skeleton'; prefix: string; suffix: string }
+  | { kind: 'registrable_domain_embedded'; text: string; utf16Index: number };
+
 type DomainComparison = { confusablesUnicodeVersion: string } & (
   | { kind: 'unavailable'; reference: DomainInspection; observed: DomainInspection }
   | {
     kind: 'compared';
     reference: ParsedDomain;
     observed: ParsedDomain;
-    relationship: Relationship;
-    referenceLabel: string;
-    observedLabel: string;
-    skeletonEqual: boolean;
-    referenceLabelContained: ReturnType<typeof findExtraText>;
-    referenceSkeletonContained: ReturnType<typeof findExtraText>;
-  }
+  } & (
+    | { relationship: 'same_domain' | 'subdomain_of_reference' }
+    | { relationship: 'different_domain'; resemblance: Resemblance[] }
+  )
 );
 
 /** Compares names locally. The caller supplies the reference; this does not verify brand ownership. */
@@ -58,23 +60,41 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   if (observed.ascii === reference.ascii) relationship = 'same_domain';
   else if (observed.ascii.endsWith(`.${reference.ascii}`)) relationship = 'subdomain_of_reference';
 
-  const referenceLabel = reference.label;
-  const observedLabel = observed.label;
-  const referenceSkeleton = skeleton(referenceLabel);
-  const observedSkeleton = skeleton(observedLabel);
+  const comparison = { reference, observed, confusablesUnicodeVersion: UNICODE_VERSION };
+  if (relationship !== 'different_domain') return { ...comparison, kind: 'compared', relationship };
 
-  return {
-    reference,
-    observed,
-    confusablesUnicodeVersion: UNICODE_VERSION,
-    kind: 'compared',
-    relationship,
-    referenceLabel,
-    observedLabel,
-    skeletonEqual: referenceSkeleton === observedSkeleton,
-    referenceLabelContained: findExtraText({ reference: referenceLabel, observed: observedLabel }),
-    referenceSkeletonContained: findExtraText({ reference: referenceSkeleton, observed: observedSkeleton }),
-  };
+  const resemblance: Resemblance[] = [];
+  const referenceSkeleton = skeleton(reference.label);
+  const observedSkeleton = skeleton(observed.label);
+  if (referenceSkeleton === observedSkeleton) resemblance.push({ kind: 'confusable_label' });
+  const literal = findExtraText({ reference: reference.label, observed: observed.label });
+  const confusable = findExtraText({ reference: referenceSkeleton, observed: observedSkeleton });
+  if (literal) resemblance.push({ kind: 'label_contained', form: 'literal', ...literal });
+  if (confusable) resemblance.push({ kind: 'label_contained', form: 'skeleton', ...confusable });
+  // References can be hosts, so a sibling under the same registrable domain is not an embedding.
+  if (reference.registrableDomain !== observed.registrableDomain) {
+    const embedded = embeddedDomain({ reference: reference.registrableDomain, observed: observed.unicode });
+    if (embedded) resemblance.push({ kind: 'registrable_domain_embedded', ...embedded });
+  }
+
+  return { ...comparison, kind: 'compared', relationship, resemblance };
+}
+
+function embeddedDomain({ reference, observed }: { reference: string; observed: string }) {
+  // Match the whole reference domain: bare brand labels also appear in tenant hosts such as paypal.zendesk.com.
+  const target = domainToUnicode(reference).split(/[.-]/u).map(skeleton);
+  const tokens = observed.split(/[.-]/u);
+  const skeletons = tokens.map(skeleton);
+  let utf16Index = 0;
+  for (let start = 0; start + target.length <= tokens.length; start++) {
+    if (target.every((token, offset) => token === skeletons[start + offset])) {
+      const length = tokens.slice(start, start + target.length).join('.').length;
+      if (length === observed.length) return null;
+      return { text: observed.slice(utf16Index, utf16Index + length), utf16Index };
+    }
+    utf16Index += tokens[start].length + 1;
+  }
+  return null;
 }
 
 function inspectDomain(input: string): DomainInspection {

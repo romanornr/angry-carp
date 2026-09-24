@@ -62,6 +62,7 @@ The local agent now uses a pinned 2FA Directory snapshot for candidate reference
 - [Email similarity and campaign linking](research/email-similarity-and-campaign-linking.md): Eclat, Winnowing, MinHash, and CUSUM for repeated phishing or unwanted mail, with proposed comparisons and their limits.
 - [Offline brand lookup](research/offline-brand-lookup.md): reusable reference data, matching algorithms, source quality, and a proposed Flue lookup that keeps the catalogue outside the prompt.
 - [Brand-directory implementation research](research/brand-directory-implementation.md): measured Map/binary-search/scan comparisons, name-word retrieval, proposed files, and reference provenance.
+- [Domain-impersonation mechanisms](research/domain-impersonation.md): Chromium and dnstwist precedents, corrected offline experiments, implemented embedding, and remaining evaluation decisions.
 - [DNS catalogues and threat lists](research/dns-reference-and-threat-lists.md): AdGuard, NextDNS, Control D, and public feeds compared with 2FA Directory, including offline access, licences, and distinct evidence roles.
 - [MetaMask phishing list](research/metamask-phishing-list.md): crypto-threat observations, data versus detector reuse, matching scope, and HaGeZi overlap.
 - [Spamhaus options](research/spamhaus-options.md): initial checks of threat data and evidence submission, with a [local evaluation ticket](planning/issues/25-evaluate-spamhaus-data-and-submissions.md).

@@ -23,7 +23,9 @@ angry-carp instructions assessment
 angry-carp assess /private/new-packet.json /private/selection.json
 ```
 
-`--format json` writes one versioned packet to stdout. It contains `analysis` from the existing reduced assessment projection and `assessmentEvidence` with selectable IDs. Diagnostics stay on stderr. `--output` optionally saves this same packet with mode `0600` and refuses overwrite. `--json` remains the separate full private analysis export. Neither file is created by default.
+`--format json` writes one version 2 packet to stdout. It contains `analysis` from the existing reduced assessment projection and `assessmentEvidence` with selectable IDs. Domain comparisons use named `resemblance` observations instead of the version 1 comparison fields. Diagnostics stay on stderr. `--output` optionally saves this same packet with mode `0600` and refuses overwrite. `--json` remains the separate full private analysis export, also version 2. Neither file is created by default.
+
+`assess` accepts saved version 1 and version 2 packets and renders their recorded evidence without rerunning detection. It does not reinterpret old comparisons or migrate stored files. Other packet versions are rejected.
 
 An existing output path exits 2 before lookups. A later save failure exits 4 after emitting the result on stdout; reuse that result instead of repeating analysis. A crash during a file write can leave incomplete JSON. Validate saved files before reuse, and retain or remove incomplete output explicitly. No automatic overwriting or cleanup of user files occurs.
 

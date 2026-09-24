@@ -8,7 +8,7 @@ import { formatAnalysis, assessmentPacket } from '@angry-carp/checks/email-analy
 export const analyzeHelp = `Usage: angry-carp analyze <original.eml> [--format text|json] [--output <packet.json>]
        [--source-notes <reviewed-notes.json>] [--json <private-analysis.json>]
 
-JSON stdout: {version: 1, analysis, assessmentEvidence}. Analysis is the reduced assessment view.
+JSON stdout: {version: 2, analysis, assessmentEvidence}. Analysis is the reduced assessment view.
 --output saves that same packet privately, without overwriting. --json saves the FULL private analysis.
 No body or raw headers in the packet. Reviewed source notes retain their URLs and claims.
 Exit: 0 completed (consult analysis.routing), 1 input/read failure, 2 usage/output conflict,

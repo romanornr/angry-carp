@@ -29,7 +29,7 @@ test('JSON entry discloses selected evidence and offline assessment reuses the s
     'analyze', input, '--format', 'json', '--output', packetPath, '--json', full];
   const result = await run(process.execPath, args, { cwd: folder, timeout: 10_000 });
   const packet = JSON.parse(result.stdout);
-  assert.equal(packet.version, 1);
+  assert.equal(packet.version, 2);
   assert.equal(packet.analysis.routing.kind, 'assessment_required');
   assert.deepEqual(Object.keys(packet).sort(), ['analysis', 'assessmentEvidence', 'version']);
   assert.doesNotMatch(result.stdout, /private-|reportingCandidates|networkRegistrations|reviewed_text/);
@@ -46,6 +46,11 @@ test('JSON entry discloses selected evidence and offline assessment reuses the s
   assert.ok(rendered.stdout.includes(record.text));
   assert.equal(rendered.stderr, '');
   assert.deepEqual(await render(), rendered);
+  await writeFile(packetPath, JSON.stringify({ ...packet, version: 1 }));
+  assert.deepEqual(await render(), rendered);
+  await writeFile(packetPath, JSON.stringify({ ...packet, version: 3 }));
+  await assert.rejects(render());
+  await writeFile(packetPath, result.stdout);
   await writeFile(selection, JSON.stringify({ concern: 'high', confidence: 'high', hypothesis: 'impersonation',
     evidence: [{ id: 'invented', role: 'supports' }] }));
   await assert.rejects(render(), (error: unknown) => {
@@ -102,7 +107,7 @@ test('no-concerns and input failures stay distinct, with guidance available outs
   await assert.rejects(invoke('analyze', input, '--format', 'json'), (error: unknown) => {
     assert.ok(error instanceof Error && 'stdout' in error && 'code' in error);
     assert.equal(error.code, 1);
-    assert.deepEqual(JSON.parse(String(error.stdout)), { version: 1,
+    assert.deepEqual(JSON.parse(String(error.stdout)), { version: 2,
       analysis: { kind: 'input_failure', reason: 'input_limit' }, assessmentEvidence: [] });
     return true;
   });
