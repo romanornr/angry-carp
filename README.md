@@ -6,7 +6,7 @@
 
 <strong>They cast the bait. The carp snaps the rod.</strong>
 
-<p>Check your mail for phishing without opening its links. Get the evidence to clear your inbox, or build the reports that help shut scammers down.</p>
+<p>Find signs of phishing in your inbox. Get the evidence to decide what to delete, or go further and help dismantle the operation behind it.</p>
 <p>Use it directly in your terminal or let Claude Code CLI, Codex CLI or the bundled Flue agent run the checks for you. The checks themselves need no AI.</p>
 
 <p>
@@ -56,13 +56,25 @@ The breach is real. The login page is fake.
 Recognizing the trap is one thing. Getting the operation investigated means inspecting email headers, tracing domains and finding the providers who can act on your evidence.
 
 - **Check your mail.** Let your connected agent work through the messages you authorize, or check one from the terminal. Get findings to help decide what to keep, delete or report. You don't have to spot the suspicious message first.
-- **Go after the infrastructure.** Trace lookalike domains and provider roles, then prepare reports to help get phishing pages removed, domains suspended and sending accounts disabled. Make phishers spend their time rebuilding.
+- **Help dismantle the campaign.** Trace the domains, hosting and email services involved. Prepare evidence-backed reports for the providers who can remove pages, suspend domains and disable abusive accounts. The aim is to interrupt the operation and make phishers rebuild.
 
 The checks need no AI account and never open the suspicious site. [AI assessment](#what-wakes-the-model-up) and [report preparation](#reporting) come afterwards, when needed.
 
 The carp's revenge is paperwork, addressed to the people who can pull the plug.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/eye-dark.svg" /><img src="assets/icons/eye.svg" width="24" height="24" alt="" /></picture> What it looks like
+## What you can do
+
+- **Check email for phishing.** Inspect senders, links and borrowed branding without opening the suspicious site.
+- **Spot disguised domains.** Catch Unicode lookalikes and brand names hidden inside longer domain names.
+- **Use your existing agent.** Let Codex, Claude Code or another shell-capable agent run the checks.
+- **Run it yourself.** Use the standalone CLI. No AI account or business email gateway required.
+- **Skip inference costs for routine checks.** Code handles parsing, lookups and comparisons. Optional AI interprets concerns or gaps.
+- **Help dismantle phishing campaigns.** Build reports asking providers to remove pages, suspend domains and disable abusive sending accounts.
+- **Planned: mailbox labels and cleanup.** Label suspected phishing and opt into removal. Today, you decide what to delete.
+
+The checks use established methods such as Unicode confusable comparisons and, when you supply two messages, Winnowing text fingerprints. [See the algorithms and their limits](#checks-and-algorithms).
+
+## What it looks like
 
 An email promoting a fake crypto-wallet app used the real brand's image domain while its download button led to a different, lookalike domain. Here is an excerpt from the no-AI analysis, with hostnames replaced by reserved example names. The installer was never downloaded or examined.
 
@@ -103,19 +115,8 @@ Coverage:
 
 One email, several leads: the borrowed branding, the lookalike download, registration dates and provider roles. Lookup records retain source URLs and retrieval times; local findings point to their recorded observations. The terminal does not print the body or raw headers.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/checklist-dark.svg" /><img src="assets/icons/checklist.svg" width="24" height="24" alt="" /></picture> Highlights
 
-- **Evidence first.** Parse, look up, compare and derive in plain TypeScript. Findings point to recorded evidence; network observations carry sources and retrieval times.
-- **Never touches the link.** DNS and registry lookups only. The suspicious page is never fetched, not even for a screenshot.
-- **Knows who to write to.** Registrar contacts from RDAP, DNS roles from nameservers, delivery and platform leads from header/DNS evidence. Each candidate comes with the basis for contacting it.
-- **Looks past the spelling.** Unicode confusables and brand-plus-word comparisons expose resemblance that a plain string comparison misses.
-- **Use the checks in your own tools.** The standalone CLI and Flue call the same library. Import it directly without installing Flue or running a service.
-- **Says what it did not check.** Timeouts, budget limits and unreadable parts show up as named gaps, never as silence.
-- **AI is optional and on a leash.** Runs on concerns or important gaps, sees selected evidence plus text you reviewed, and answers with evidence IDs that the terminal renders. Its prose never reaches the screen.
-- **Built for coding agents.** Codex, Claude Code or any agent with a shell runs the commands and reads the playbooks. The portable playbooks need no skill installer.
-- **No reports sent behind your back.** Report preparation checks the draft byte for byte and stops. Sending is a human's job.
-
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/terminal-dark.svg" /><img src="assets/icons/terminal.svg" width="24" height="24" alt="" /></picture> Quick start
+## Quick start
 
 You need Node.js 24.
 
@@ -146,11 +147,25 @@ Analysis saves no output file unless you request `--json`. That file is the comp
 
 You can stop here with the terminal findings, or continue with AI assessment and report preparation below.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/terminal-dark.svg" /><img src="assets/icons/terminal.svg" width="24" height="24" alt="" /></picture> Use it from Codex or Claude Code
+## Use it from Codex or Claude Code
 
 <img src="assets/icons/codex.svg" width="26" height="26" alt="" /> **Codex** &nbsp; · &nbsp; <img src="assets/icons/claude-code.svg" width="26" height="26" alt="" /> **Claude Code** &nbsp; · &nbsp; **Other agents with a shell**
 
-Your agent runs the checks through the CLI and reads structured evidence. You do not need Flue or an MCP server.
+**Let your agent handle the setup.** Paste this into your coding agent:
+
+```text
+Set up Angry Carp from https://github.com/romanornr/angry-carp.
+Follow cli/README.md to install the CLI and skill for this host.
+Then ask which emails I want checked and follow the bundled workflow.
+Do not open links from the emails.
+```
+
+Your agent needs shell access and Node.js 24. Installation follows its usual approval process. You do not need Flue or an MCP server.
+
+<img src="assets/icons/gmail.svg" width="22" height="22" alt="" /> **Use your Codex or Claude Gmail connector.** Ask your agent to check a message or batch from Gmail through its existing connection. The checks need original messages, not just previews. If the connector cannot provide them, supply an original `.eml` file.
+
+<details>
+<summary><b>Prefer to set it up yourself?</b></summary>
 
 ### 1. Make the command available
 
@@ -174,37 +189,13 @@ Run `angry-carp instructions skill` and save its output as `SKILL.md` in your ho
 
 For another shell-capable agent, ask it to run `angry-carp instructions` and follow the returned workflow. No skill installer is required.
 
-### 3. Ask it to check an email
+Once configured, ask your agent to check `/absolute/path/example.eml`. The [agent workflow](cli/agent-workflow.md) covers structured results, assessment and report preparation. Mailbox access comes from your host; Angry Carp does not install a connector.
 
-```text
-Use Angry Carp to check /absolute/path/example.eml.
-Follow the routing in its structured output. Keep original bytes and full
-private analysis out of model context. Do not visit URLs from the email.
-```
-
-<img src="assets/icons/gmail.svg" width="22" height="22" alt="" /> **Already connected to Gmail?** Your host's connector can supply authorized original messages. Ask your agent to check the messages you choose, or a defined batch. Angry Carp needs original message bytes, usually saved as `.eml`; a body preview is not enough. Mailbox access comes from your host, not an Angry Carp connector.
-
-The CLI collects evidence without a model call. Completed checks with no concerns need no further assessment. Concerns or important gaps lead to a structured assessment by your host. Reporting instructions load only when you ask to prepare a report.
-
-<details>
-<summary>Commands your agent uses</summary>
-
-1. `angry-carp analyze <original.eml> --format json` returns selected evidence and coverage without the body or raw headers. `--output <path>` saves that packet for reuse. The separate `--json <path>` option saves the full private analysis for local operations such as reporting.
-2. `angry-carp instructions assessment` supplies the assessment contract. The host selects a structured conclusion, then `angry-carp assess` validates the selection and displays recorded evidence.
-3. `angry-carp instructions reporting` supplies the report-preparation workflow. The host researches the allegation and recipient and supplies attributed research and an exact draft. `angry-carp report check` checks their structure, references and byte bindings. You review the claims and exact draft. The command sends nothing.
-
-See the [full agent workflow](cli/agent-workflow.md) for failure handling and disclosure limits.
+An assistant without shell access can use the [portable assessment playbook](phishing-triage.md) with a redacted email and explicitly supplied lookup evidence instead.
 
 </details>
 
-<details>
-<summary>Using an assistant without shell access?</summary>
-
-Attach `phishing-triage.md` and a redacted email to an assistant that can read documents. Use the host's lookup tools or supply recorded results alongside the email. If only message text is available, identify the missing headers and other evidence. These portable playbooks work without Flue, a skill installer or the TypeScript checks.
-
-</details>
-
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/workflow-dark.svg" /><img src="assets/icons/workflow.svg" width="24" height="24" alt="" /></picture> How it works
+## How it works
 
 ```text
  original.eml
@@ -236,14 +227,17 @@ Everything above the fork is plain TypeScript with no model, no account and no A
 
 RDAP, if you have not met it, is the modern replacement for WHOIS: a JSON API for registration dates, available registrant details and abuse contacts. Identity fields can be absent or redacted. Angry Carp uses it for domains and for IP addresses.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/workflow-dark.svg" /><img src="assets/icons/workflow.svg" width="24" height="24" alt="" /></picture> Why not let the agent do all of it?
+## Why not let the agent do all of it?
 
-Let code collect the evidence. Use the model when that evidence needs interpretation.
+Angry Carp runs established algorithms directly, without spending model time or tokens on each check.
 
-- **No model tokens for routine checks.** Parsing, DNS/RDAP lookups and domain comparisons run in code.
-- **Findings survive a failed AI call.** The terminal prints them first, along with failed or skipped checks.
-- **Recorded facts stay recorded.** The model selects evidence IDs; code displays the facts behind them.
-- **Flue gets selected input.** It receives selected evidence and reviewed text, not the original email. [Disclosure details](#what-leaves-your-machine).
+- **Unicode UTS #39 confusable skeletons** compare lookalike domain spellings, including characters from different alphabets.
+- **Winnowing** finds shared passages when you supply two messages to compare.
+- **DNS/RDAP, parsing and brand lookup** run in TypeScript too. No model round trip is needed to execute them.
+- **Apply the same checking logic to every email.** Code selects and runs the checks, records their results and reports missing coverage. A model does not choose which routine steps to remember.
+- **Use AI for interpretation.** Optional assessment examines concerns or important gaps. Flue skips that model call when applicable checks finish without either.
+
+Your connected agent can use the same CLI for one message or an authorized batch. Each email gets its checks without a model conversation directing every lookup and comparison.
 
 This is not a measured accuracy claim. "No concerns" is not a safety verdict, and the model can still reach the wrong conclusion.
 
@@ -270,12 +264,12 @@ A domain also does not need to appear on a blocklist before these checks can exa
 
 </details>
 
-## When you should not use it
+## Current limits
 
-- **You want a spam filter.** Angry Carp looks at one email you chose, deeply. It does not sit in front of a mailbox and it does not score volume.
-- **You need a safety guarantee.** No concerns means the implemented checks found no signal, not that the email is safe. AI can assess deception, but the system has not been calibrated against a labelled corpus.
-- **You need to see the page.** It will not open the link, ever. Page scanning is not implemented.
-- **You want one-click reporting.** Sending is not built yet. Today it prepares and checks; you send.
+- **Automatic spam filtering is planned.** Mailbox monitoring, filtering and cleanup could run through Flue or another integration. Today, use the CLI or let your connected agent check the messages you authorize.
+- **Detection is not a safety guarantee.** No concerns means the implemented checks found no signal, not that the email is safe. The system has not been calibrated against a labelled corpus.
+- **No page scanning.** The analyzer does not open suspicious links or load their images.
+- **Reports are not sent automatically.** Today it prepares and checks the draft. You review and send it.
 
 ## <img src="assets/icons/flue.svg" width="24" height="24" alt="" /> Use it with the Flue agent
 
@@ -306,7 +300,7 @@ The bundled Flue assessment model has exactly two tools: one that compares two s
 
 Credentials live in `agent/auth.json` (plaintext, owner-only permissions, ignored by Git). Conversations live in `agent/data/flue.db`. Sign out locally with `npm --prefix agent run auth:logout`. The [agent guide](agent/README.md) covers storage and what the runtime can and cannot isolate.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/shield-lock-dark.svg" /><img src="assets/icons/shield-lock.svg" width="24" height="24" alt="" /></picture> What leaves your machine
+## What leaves your machine
 
 - **Email parsing happens locally.** The analyzer reads the original on your machine. It does not upload the email to run its checks.
 - **Lookups send selected names and addresses.** Cloudflare receives DNS queries. IANA supplies registry discovery data, then the selected registries receive domain or public-IP queries. The suspicious page and its images are never fetched.
@@ -345,7 +339,7 @@ DNS and RDAP run during evidence collection, before the assessment decision. The
 
 A concern triggers interpretation. A reporting candidate identifies somewhere to investigate. Neither automatically sends a report.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/beaker-dark.svg" /><img src="assets/icons/beaker.svg" width="24" height="24" alt="" /></picture> Checks and algorithms
+## Checks and algorithms
 
 These are working algorithms and parsers, not tasks handed to a chatbot. The [`@angry-carp/checks` library](lib/README.md) exposes them independently of Flue.
 
@@ -399,39 +393,37 @@ RFCs solve practical problems here. IANA bootstrap locates the registry for a do
 
 </details>
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/book-dark.svg" /><img src="assets/icons/book.svg" width="24" height="24" alt="" /></picture> Borrowed from software that came before
+## Borrowed from software that came before
 
-Spam filters, browser security and phishing research shaped how Angry Carp reads emails, spots lookalikes and records evidence.
+- <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/paper-dark.svg" /><img src="assets/icons/paper.svg" width="22" height="22" alt="" /></picture> **[PILFER, WWW 2007](https://www.cs.cmu.edu/~tomasic/doc/2007/FetteSadehTomasicWWW2007.pdf):** Extract explicit email and URL features before classification. This informed the evidence-first approach; Angry Carp does not include PILFER’s trained classifier.
 
-- **Collect evidence before deciding what to do.** <img src="assets/icons/rspamd.png" width="22" height="22" alt="" /> Rspamd and <img src="assets/icons/apache.svg" width="22" height="22" alt="" /> Apache SpamAssassin informed the separation between findings, actions and check coverage.
-- **Read authentication claims without turning them into proof.** Inspection of <img src="assets/icons/thunderbird.svg" width="22" height="22" alt="" /> Thunderbird's DKIM Verifier extension, mailauth and Mox informed header parsing and failure handling.
-- **Compare the domain in the email.** <img src="assets/icons/googlechrome.svg" width="22" height="22" alt="" /> Chrome's IDN policy, dnstwist and combosquatting research informed lookalike checks that do not depend on a blocklist hit.
-- **Keep the report tied to its evidence.** in-toto inspired the use of exact artifact digests to bind analysis, preparation records and drafts.
+- <img src="assets/icons/rspamd.png" width="22" height="22" alt="" /> **Rspamd:** Separate findings from recommended actions, order prerequisite checks explicitly, and retain image and link roles. Track checks that did not run as well as those that produced findings.
 
-<details>
-<summary><b>What we learned from each project and paper</b></summary>
+- <img src="assets/icons/apache.svg" width="22" height="22" alt="" /> **Apache SpamAssassin:** Return results without rewriting the message, keep each analysis's state separate, and retain the HTML tag types behind URLs.
 
-| Source | Taken | Left behind |
-| --- | --- | --- |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/paper-dark.svg" /><img src="assets/icons/paper.svg" width="22" height="22" alt="" /></picture> [PILFER, WWW 2007](https://www.cs.cmu.edu/~tomasic/doc/2007/FetteSadehTomasicWWW2007.pdf) | A research precedent for extracting explicit email and URL features before classification. | Its trained random forest and dot-count feature are not implemented. Its benchmark results do not describe Angry Carp. |
-| <img src="assets/icons/rspamd.png" width="22" height="22" alt="" /> Rspamd | Structured findings kept apart from the recommended action. Explicit prerequisite ordering. Image and displayed-URL roles with anchor walking. The lesson that a list of fired checks cannot prove the other checks ran. | Its verdict rules, redirector exemptions and weighted score. |
-| <img src="assets/icons/apache.svg" width="22" height="22" alt="" /> Apache SpamAssassin | A check returns results without rewriting the message. One analysis owns its state. URI details keep their tag types. | The plugin system and rules language. |
-| <img src="assets/icons/thunderbird.svg" width="22" height="22" alt="" /> Thunderbird DKIM Verifier extension, mailauth, Mox | Per-header failure isolation and the strict-versus-relaxed test cases. The 19 upstream test headers Angry Carp rejects are also rejected by the extension's default strict mode. | The extension's newest-authserv fallback as a trust policy for arbitrary uploaded `.eml` files. No parser was copied. |
-| <img src="assets/icons/mailgun.svg" width="22" height="22" alt="" /> Mailgun Talon | The `gmail_quote` marker as a quote heuristic. | Deleting quoted text. Angry Carp keeps it and reports it as not queried. |
-| <img src="assets/icons/googlechrome.svg" width="22" height="22" alt="" /> Chrome's IDN display policy | Published script and confusable-name checks as a reference for the comparison design. | Treated as a policy, not an evaluated detector. |
-| <a href="https://github.com/elceef/dnstwist"><img src="assets/icons/dnstwist.png" width="110" alt="dnstwist" /></a> and the combosquatting research | Comparing suspicious spellings and brand-plus-word names directly, without waiting for a blocklist entry. | Permutation generation. Angry Carp judges the domain in front of it. |
-| <img src="assets/icons/metamask.svg" width="22" height="22" alt="" /> MetaMask eth-phishing-detect | Studied local list matching and the distinction between threat lists and brand references. | Its detector and lists are not installed. Allowlist precedence and its fuzzy verdict were not adopted. |
-| <img src="assets/icons/cortex.png" width="22" height="22" alt="" /> Cortex (TheHive) | Structured judgments rendered separately from the model's reasoning. | Its level names and silent fallback to `info`. |
-| in-toto | Binding a report to exact artifact digests. | Attestation format, signatures and trust claims. |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/anthropic-dark.svg" /><img src="assets/icons/anthropic.svg" width="22" height="22" alt="" /></picture> Anthropic, "Building effective agents" | Fixed workflow for routing and rendering, model judgment only where judgment is needed. | |
+- <img src="assets/icons/thunderbird.svg" width="22" height="22" alt="" /> **Thunderbird DKIM Verifier extension, mailauth and Mox:** Isolate failures per header and test strict versus relaxed parsing. The 19 upstream test headers Angry Carp rejects also fail the extension's default strict mode.
 
-</details>
+- <img src="assets/icons/mailgun.svg" width="22" height="22" alt="" /> **Mailgun Talon:** Use the `gmail_quote` marker to help identify quoted replies. Retain the quoted text and report which lookups covered it.
 
-The [scanner precedents](docs/research/email-analysis-precedents.md), [header-reader inspection](docs/research/model-independent-email-analysis.md), [structured assessment decision](docs/adr/0016-render-recorded-assessment-evidence.md) and [report-binding decision](docs/adr/0015-attribute-host-report-research.md) record the sources and trade-offs. The [research index](docs/README.md) also preserves rejected approaches, including a homoglyph regex whose empty alternatives matched ordinary invoice addresses.
+- <img src="assets/icons/googlechrome.svg" width="22" height="22" alt="" /> **Chrome's IDN display policy:** Use published script and confusable-name checks as a reference for domain comparisons.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/mail-dark.svg" /><img src="assets/icons/mail.svg" width="24" height="24" alt="" /></picture> Reporting
+- <a href="https://github.com/elceef/dnstwist"><img src="assets/icons/dnstwist.png" width="110" alt="dnstwist" /></a> **and combosquatting research:** Compare suspicious spellings and brand-plus-word names without waiting for a blocklist entry. Apply those comparisons to the domain supplied in the email.
 
-This is the revenge part, and it is partly built.
+- <img src="assets/icons/metamask.svg" width="22" height="22" alt="" /> **MetaMask eth-phishing-detect:** Research into local list matching helped distinguish reported threats from brand references. The detector and lists remain research references, not installed dependencies.
+
+- <img src="assets/icons/cortex.png" width="22" height="22" alt="" /> **Cortex (TheHive):** Render structured judgments separately from the model's reasoning.
+
+- <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/paper-dark.svg" /><img src="assets/icons/paper.svg" width="22" height="22" alt="" /></picture> **in-toto:** Use file hashes to bind a report to the exact analysis, preparation record and draft. A changed artifact must not silently inherit an earlier check.
+
+- <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/anthropic-dark.svg" /><img src="assets/icons/anthropic.svg" width="22" height="22" alt="" /></picture> **Anthropic, “Building effective agents”:** Use a fixed workflow for routing and rendering, with model judgment where interpretation is needed.
+
+The [scanner precedents](docs/research/email-analysis-precedents.md), [header-reader inspection](docs/research/model-independent-email-analysis.md), [structured assessment decision](docs/adr/0016-render-recorded-assessment-evidence.md) and [report-binding decision](docs/adr/0015-attribute-host-report-research.md) record the sources and trade-offs. Further comparisons and experiments are in the [research index](docs/README.md).
+
+## Reporting
+
+**Dismantle the campaign, one provider at a time.**
+
+A phishing operation depends on domains, hosted pages and sending accounts. Angry Carp helps build a case for the providers who control those resources. The goal is to get the infrastructure taken down and disrupt the campaign. You review and send the reports. Providers decide what to remove or suspend.
 
 **Working today.** A reviewed [channel catalogue](reporting-channels.md) lists verified intake routes by role: Amazon SES for email delivery, Resend as a sending platform, Cloudflare for reverse proxy, DNS and registrar, and the registrars Trustname and Hostinger. Other registrars are reached through the abuse contact in their RDAP record. For everything else the analysis records a gap rather than guessing an address.
 
@@ -456,21 +448,18 @@ npm --silent run report -- check preparation.json research.json draft.json --ana
 
 The outcome to look for is a provider confirming that it removed a phishing page, suspended a domain or disabled an abusive sending account. Keep that reply and the specific action it describes. A receipt acknowledgement records delivery only. Providers decide what action to take, and the current commands prepare and check reports without sending them or tracking replies automatically.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/checklist-dark.svg" /><img src="assets/icons/checklist.svg" width="24" height="24" alt="" /></picture> Rules the carp lives by
+## Rules the carp lives by
 
-| Rule | Why |
-| --- | --- |
-| Never fetch a candidate phishing URL or its assets | A visit can disclose tracking identifiers and expose the visiting client to hostile content. The analyzer keeps candidate URLs as data. |
-| Keep the complete original unchanged, outside Git | A summary omits information. Preserve the bytes for later verification and provider requests. |
-| Analyze before any model runs | An earlier model-driven version silently forgot a supplied HTML observation and a reporting lead. The analyzer now records those observations independently of the model's answer. |
-| No concern or material gap, no Flue assessment | Material gaps are unfinished work, not reassurance. |
-| The model interprets deception, code picks recipients | Provider roles and reporting candidates are displayed from recorded evidence, outside the Flue assessment task. |
-| The model selects, the runtime renders | The display separates the model's hypothesis from the recorded evidence it selected. |
-| Assessment, readiness and approval are three different things | High confidence is not a reason to send. |
-| Reporting channels are data, the Markdown is generated | Each channel has a review date. Drift is a failing test. |
-| The playbooks work without the code | `phishing-triage.md` is a standalone download for any agent. |
+- **Leave suspicious links unopened.** Inspect the references without visiting the page or loading its images.
+- **Preserve the original.** Keep the complete email unchanged, private and outside Git.
+- **Run checks before AI assessment.** Record the evidence and missing checks before asking a model to interpret them.
+- **Skip unnecessary inference.** Flue stops when applicable checks finish without concerns or important gaps.
+- **Keep facts separate from judgment.** Display recorded evidence separately from the model's conclusion. Derive provider roles from evidence.
+- **Keep sending under your control.** A phishing assessment is not approval to send a report.
+- **Use published reporting routes.** Keep contacts dated and source-backed. Never invent an abuse address.
+- **Keep the playbooks portable.** Use them with any agent, independently of Flue and the TypeScript code.
 
-Each rule is written down as a decision record with the alternatives that were considered.
+The [decision records](docs/adr/) explain the implementation choices and alternatives.
 
 <details>
 <summary><b>Reference data and licences</b></summary>
@@ -489,7 +478,7 @@ Threat feeds (HaGeZi, OpenPhish, URLhaus) and the MetaMask phishing list were ev
 ## What is not built yet
 
 - Mailbox cleanup: label suspected phishing and offer opt-in automatic removal from your inbox. Automatic deletion is planned, with deletion rules and evidence retention still to be designed.
-- Built-in mailbox connection and monitoring through Flue. For now, export the `.eml` yourself or use your AI host's existing connector.
+- Automatic spam filtering and mailbox monitoring through Flue or other integrations. Detection rules and mailbox actions still need design and evaluation. For now, export the `.eml` yourself or use your AI host's existing connector.
 - Sending reports and the approval step.
 - The SQLite case store. Today the state is `evidence/emails/` plus the Flue conversation database.
 - Fresh SPF, DKIM or DMARC verification. Claims are read, not checked.
@@ -498,7 +487,7 @@ Threat feeds (HaGeZi, OpenPhish, URLhaus) and the MetaMask phishing list were ev
 - ARF and IODEF export.
 - A detection benchmark. The routing policy has not been calibrated against a real corpus.
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/question-dark.svg" /><img src="assets/icons/question.svg" width="24" height="24" alt="" /></picture> FAQ
+## FAQ
 
 **Why is it called Angry Carp?**
 Because "anti-phishing tool" is what everyone else is called, and because the carp has had enough. Carp are also famously hard to kill, which is the right attitude for chasing registrars.
@@ -532,7 +521,7 @@ Yes. `phishing-triage.md` and `provider-abuse-reporting.md` work as plain instru
 
 </details>
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/tools-dark.svg" /><img src="assets/icons/tools.svg" width="24" height="24" alt="" /></picture> Development tools
+## Development tools
 
 <p>
   <a href="https://www.typescriptlang.org/"><img src="assets/icons/typescript.svg" width="26" height="26" alt="" /> TypeScript</a>
@@ -561,7 +550,7 @@ TypeScript follows the [style guide](docs/typescript-style.md). [AGENTS.md](AGEN
 
 </details>
 
-## <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/book-dark.svg" /><img src="assets/icons/book.svg" width="24" height="24" alt="" /></picture> Read more
+## Read more
 
 - [Documentation index](docs/README.md)
 - [Email analysis contract](docs/email-analysis.md) and the [CLI guide](cli/README.md)
