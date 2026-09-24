@@ -88,11 +88,14 @@ scripts disabled, review new artifacts, and rerun the negative fixtures.
 
 ## Readability and size
 
-- Keep expressions, guards, and small objects compact. Use blank lines to
-  separate logical sections, independently of statement length. See
+- Prefer one line for a cohesive expression, including a returned object or
+  array, when it reads clearly. Length alone is not a reason to split it.
+  Use blank lines between logical sections while keeping expressions compact. See
   [`routeAnalysis`](../lib/src/email-analysis/routing.ts) for the intended spacing.
 - Separate functions with one blank line. Inside a function, use blank lines
   between distinct operations, not between every statement or after every block.
+- Keep related one-line type aliases together; separate multiline type
+  declarations with blank lines. Separate setup from a following `try` block.
 - Put multiple statements in a conditional block on separate lines.
 - Useful comments and whitespace do not count against simplicity. Reduce
   concepts and duplication rather than squeezing more statements onto a line.
@@ -107,6 +110,32 @@ scripts disabled, review new artifacts, and rerun the negative fixtures.
   between files.
 - Keep mutable state in the smallest practical scope.
 - Follow existing formatting. Avoid unrelated formatting changes.
+
+Blank lines group code by purpose, without expanding its expressions.
+
+Bad: setup, processing, and result run together.
+
+```ts
+function decodeParts(parts: Uint8Array[]) {
+	const decoder = new TextDecoder();
+	const decoded: string[] = [];
+	for (const part of parts) decoded.push(decoder.decode(part));
+	return decoded;
+}
+```
+
+Good: the statements stay compact, with space between the three stages.
+
+```ts
+function decodeParts(parts: Uint8Array[]) {
+	const decoder = new TextDecoder();
+	const decoded: string[] = [];
+
+	for (const part of parts) decoded.push(decoder.decode(part));
+
+	return decoded;
+}
+```
 
 ## Types and errors
 

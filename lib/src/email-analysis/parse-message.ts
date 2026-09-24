@@ -11,6 +11,7 @@ const MAX_HEADERS_BYTES = 512 * 1024;
 
 type MimeNode = Extract<SplitterChunk, { type: 'node' }>;
 type Header = { name: string; value: string };
+
 type AddressFields = {
   headerIndex: number;
   field: string;
@@ -18,12 +19,14 @@ type AddressFields = {
     | { kind: 'null_reverse_path' }
     | { kind: 'unparsed'; reason: 'header_limit' | 'invalid_address' };
 }[];
+
 type PartContent =
   | { kind: 'multipart' }
   | { kind: 'text'; text: string; decodedBytes: number; flowed: boolean }
   | { kind: 'attachment'; decodedBytes: number }
   | { kind: 'embedded'; messageId: string; decodedBytes: number }
   | { kind: 'unavailable'; reason: string };
+
 export type MessagePart = {
   id: string;
   messageId: string;
@@ -34,6 +37,7 @@ export type MessagePart = {
   headers: Header[];
   content: PartContent;
 };
+
 export type ParsedMessage = {
   parts: MessagePart[];
   messages: {
@@ -80,44 +84,54 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
         item.chunks.push(chunk.value);
       }
     });
+
     // The complete input is already bounded. Collect first, then own and settle one decoder at a time.
     // Mailsplit public node/body contract: https://github.com/zone-eu/mailsplit/tree/23e2d737ba59017bd9c8bc46aecf68ef551658e5
     await pipeline(Readable.from([Buffer.from(bytes)]), splitter, { signal });
     const root = collected[0];
     if (!root || !root.node.headers || !root.node.headers.getList().length) throw new Error('Missing message headers.');
+
     for (const { node, id, chunks } of collected) {
       const headers = ((node.headers && node.headers.getList()) || []).map(({ key, line }) => ({
         name: key, value: line.slice(line.indexOf(':') + 1).trimStart(),
       }));
+
       const part: MessagePart = { id, messageId, parentId: null, headers,
         contentType: node.contentType || 'application/octet-stream', disposition: node.disposition || null,
         filename: node.filename || null, content: { kind: 'multipart' } };
+
       if (node.parentNode) part.parentId = byNode.get(node.parentNode)?.id ?? null;
       message.parts.push(part);
+
       if (node.root) message.messages.push({ id: messageId, rootPartId: id, addresses: readAddresses(headers),
         authentication: headers.flatMap((header, headerIndex) => {
           if (header.name !== 'authentication-results') return [];
           return [{ headerIndex, result: parseAuthenticationResults(header.value) }];
         }),
+
         signatures: headers.flatMap((header, headerIndex) => {
           if (header.name !== 'dkim-signature') return [];
           return [{ headerIndex, result: parseDkimSignature(header.value) }];
         }),
       });
+
       if (node.multipart) continue;
       if (signal.aborted) { part.content = { kind: 'unavailable', reason: 'cancelled' }; continue; }
       if (node.encoding && !['7bit', '8bit', 'binary', 'base64', 'quoted-printable'].includes(node.encoding)) {
         part.content = { kind: 'unavailable', reason: 'unsupported_transfer_encoding' };
         continue;
       }
+
       const embedded = part.contentType === 'message/rfc822';
       if (embedded && depth >= 2) {
         part.content = { kind: 'unavailable', reason: 'embedded_depth_limit' };
         continue;
       }
+
       const text = ['text/plain', 'text/html'].includes(part.contentType) && part.disposition !== 'attachment' && !part.filename;
       let size = 0;
       const decoded: Buffer[] = [];
+
       try {
         await pipeline(Readable.from(chunks), node.getDecoder(), new Writable({
           write(chunk: Buffer, _encoding, done) {
@@ -137,10 +151,12 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
         part.content = { kind: 'unavailable', reason };
         continue;
       }
+
       if (embedded) {
         const nestedId = `${id}/message`;
         const partStart = message.parts.length;
         const messageStart = message.messages.length;
+
         try {
           await parse(Buffer.concat(decoded), nestedId, depth + 1);
           part.content = { kind: 'embedded', messageId: nestedId, decodedBytes: size };
@@ -169,10 +185,12 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
     if (signal.aborted) return { kind: 'input_failure', reason: 'cancelled' };
     return { kind: 'input_failure', reason: 'malformed_message_or_limit' };
   }
+
   for (const part of message.parts) {
     if (part.content.kind === 'unavailable') message.limitations.push({ sourceId: part.id, reason: part.content.reason });
     if (part.content.kind === 'text' && part.content.flowed) message.limitations.push({ sourceId: part.id, reason: 'flowed_text_not_reassembled' });
   }
+
   return { kind: 'parsed', message };
 }
 
@@ -185,6 +203,7 @@ function readAddresses(headers: Header[]): AddressFields {
     if (header.name === 'return-path' && header.value.trim() === '<>') {
       return [{ headerIndex, field: header.name, result: { kind: 'null_reverse_path' } }];
     }
+
     try {
       let parsed: ReturnType<typeof addresses.parseFrom>;
       if (header.name === 'from') parsed = addresses.parseFrom(header.value);
@@ -194,13 +213,15 @@ function readAddresses(headers: Header[]): AddressFields {
         parsed = null;
         if (mailbox) parsed = [mailbox];
       }
+
       if (!parsed) return [{ headerIndex, field: header.name, result: { kind: 'unparsed', reason: 'invalid_address' } }];
+
       const mailboxes = parsed.flatMap((entry) => {
         if (entry.type === 'group') return entry.addresses;
         return [entry];
       });
-      return [{ headerIndex, field: header.name, result: { kind: 'parsed',
-        addresses: mailboxes.map(({ name, domain, address }) => ({ name, domain, address })) } }];
+
+      return [{ headerIndex, field: header.name, result: { kind: 'parsed', addresses: mailboxes.map(({ name, domain, address }) => ({ name, domain, address })) } }];
     } catch {
       return [{ headerIndex, field: header.name, result: { kind: 'unparsed', reason: 'invalid_address' } }];
     }
