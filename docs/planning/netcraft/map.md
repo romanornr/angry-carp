@@ -44,6 +44,7 @@ A frozen, buildable specification, under [ADR 0019](../../adr/0019-submit-urls-t
 
 - How automatic submission divides between `lib/` and `cli/` under [ADR 0012](../../adr/0012-separate-cli-from-flue.md), and how it reaches the case operations it depends on.
 - A test plan against Netcraft's `/api/v3/test` sandbox and recorded responses.
+- README updates when submission ships: the FAQ answers "Will it send a report or delete mail without me?" and "Does it send anything anywhere?" must name automatic URL submission to Netcraft, and the Reporting section's planned line moves to working today.
 
 ## Out of scope
 

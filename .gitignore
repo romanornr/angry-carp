@@ -28,6 +28,7 @@ node_modules/
 *.tgz
 
 .agents/
+.claude/
 skills-lock.json
 
 /cli/resources/

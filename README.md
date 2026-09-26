@@ -7,7 +7,7 @@
 <strong>They cast the bait. The carp snaps the rod.</strong>
 
 <p>Find signs of phishing in your inbox. Get the evidence to decide what to delete, or go further and help dismantle the operation behind it.</p>
-<p>Use it directly in your terminal or let Claude Code CLI, Codex CLI or the bundled Flue agent run the checks for you. The checks themselves need no AI.</p>
+<p><b>Free. The checks need no AI.</b> Run them in your terminal, or let Claude Code, Codex or Flue run them for you.</p>
 
 <p>
 <a href="#use-it-from-codex-or-claude-code"><img src="assets/icons/claude-code.svg" width="28" height="28" alt="" /> Claude Code CLI</a> &nbsp;&nbsp;
@@ -32,8 +32,17 @@
 
 </div>
 
+An AI agent is optional. Today it is the easiest way to reach your Gmail, through the agent's own connector instead of Google's API setup. Without one, save the email as a file and check it from the terminal.
+
 > [!TIP]
-> **Already using Codex, Claude Code or another coding agent?** [Set up Angry Carp for your agent](#use-it-from-codex-or-claude-code), then ask it to check your mail. Use your existing host and model account.
+> **Try it with Codex, Claude Code or another coding agent.** Paste this, using your existing account:
+>
+> ```text
+> Set up Angry Carp from https://github.com/romanornr/angry-carp.
+> Follow cli/README.md to install the CLI and skill for this host.
+> Then ask which emails I want checked and follow the bundled workflow.
+> Do not open links from the emails.
+> ```
 
 ---
 
@@ -58,27 +67,29 @@ Recognizing the trap is one thing. Getting the operation investigated means insp
 - **Check your mail.** Let your connected agent work through the messages you authorize, or check one from the terminal. Get findings to help decide what to keep, delete or report. You don't have to spot the suspicious message first.
 - **Help dismantle the campaign.** Trace the domains, hosting and email services involved. Prepare evidence-backed reports for the providers who can remove pages, suspend domains and disable abusive accounts. The aim is to interrupt the operation and make phishers rebuild.
 
-The checks need no AI account and never open the suspicious site. [AI assessment](#what-wakes-the-model-up) and [report preparation](#reporting) come afterwards, when needed.
+The checks need no AI account and never open the suspicious site. They apply published standards and research instead of a model's guess: Unicode confusable detection for lookalike spelling, RDAP for registration records and, when you supply two messages, Winnowing text fingerprints. [See the algorithms and their limits](#checks-and-algorithms).
+
+[AI assessment](#what-wakes-the-model-up) and [report preparation](#reporting) come afterwards, when needed.
 
 The carp's revenge is paperwork, addressed to the people who can pull the plug.
 
-## What you can do
+## What it catches
 
-- **Check email for phishing.** Inspect senders, links and borrowed branding without opening the suspicious site.
-- **Spot disguised domains.** Catch Unicode lookalikes and brand names hidden inside longer domain names.
-- **Use your existing agent.** Let Codex, Claude Code or another shell-capable agent run the checks.
-- **Run it yourself.** Use the standalone CLI. No AI account or business email gateway required.
-- **Skip inference costs for routine checks.** Code handles parsing, lookups and comparisons. Optional AI interprets concerns or gaps.
-- **Help dismantle phishing campaigns.** Build reports asking providers to remove pages, suspend domains and disable abusive sending accounts.
-- **Planned: mailbox labels and cleanup.** Label suspected phishing and opt into removal. Today, you decide what to delete.
-
-Use repeatable `--reference-domain <domain>` with `angry-carp analyze` or Flue triage only for references explicitly supplied by the operator. Never populate it from message content. Those unverified targets enable adjacent-swap and Latin-folded-label concerns and are disclosed in comparisons.
-
-The checks use established methods such as Unicode confusable comparisons and, when you supply two messages, Winnowing text fingerprints. [See the algorithms and their limits](#checks-and-algorithms).
+- **Lookalike domains**, including letters borrowed from other alphabets and brand names hidden inside longer names.
+- **A logo from one site with a button to another.** Borrowed branding doesn't hide where the click goes.
+- **Registration dates** for the domains involved, so a lookalike registered last month stands out next to the brand's years-old domain.
+- **Who to ask:** the registrar, DNS provider and sending service, with their abuse contacts where available.
+- **Planned: mailbox labels and cleanup.** Today, you decide what to delete.
 
 ## What it looks like
 
-An email promoting a fake crypto-wallet app used the real brand's image domain while its download button led to a different, lookalike domain. Here is an excerpt from the no-AI analysis, with hostnames replaced by reserved example names. The installer was never downloaded or examined.
+An email promoted a crypto-wallet app. In the mail client it looked like the brand's own newsletter: the real logo, and headers reporting SPF and DKIM passes. The analysis, with no AI, found:
+
+- **The logo and the button go to different places.** The images load from the real brand's domain. The download button leads to a lookalike domain.
+- **The lookalike is new.** It was registered in August 2026. The real brand's domain dates from 2021.
+- **There is someone to ask.** The lookalike's registrar, its DNS provider and the services that sent the email can each be asked to investigate.
+
+Here is an excerpt of that analysis, with hostnames replaced by reserved example names. The installer was never downloaded or examined.
 
 ```text
 $ npm --silent run analyze -- evidence/emails/example.eml
@@ -118,37 +129,6 @@ Coverage:
 One email, several leads: the borrowed branding, the lookalike download, registration dates and provider roles. Lookup records retain source URLs and retrieval times; local findings point to their recorded observations. The terminal does not print the body or raw headers.
 
 
-## Quick start
-
-You need Node.js 24.
-
-```sh
-git clone https://github.com/romanornr/angry-carp
-cd angry-carp
-npm ci     # installs all workspaces and builds the library and CLI
-npm test   # optional, runs every workspace's tests
-```
-
-Export the suspicious email as an original `.eml` with full headers and put it in `evidence/emails/`, which Git ignores.
-
-> [!TIP]
-> Most mail clients call this "Show original", "View source" or "Save as .eml". Export the message itself. Inline forwards can lose headers. Attaching the original preserves more structure, but the analyzer treats that attachment as embedded content and reports its coverage separately.
-
-```sh
-# analyze it, print findings, print nothing from the body
-npm --silent run analyze -- evidence/emails/example.eml
-
-# same, plus the complete private record as JSON (mode 0600, never overwrites)
-npm --silent run analyze -- evidence/emails/example.eml --json evidence/emails/example.analysis.json
-
-# inspect an HTML fragment on its own, no network, no MIME
-npm --silent run extract:links -- evidence/example/body.html evidence/example/links.json
-```
-
-Analysis saves no output file unless you request `--json`. That file is the complete private record: decoded bodies, headers, full URLs and attachment metadata. Keep it under `evidence/`; it is not the reduced input used by Flue.
-
-You can stop here with the terminal findings, or continue with AI assessment and report preparation below.
-
 ## Use it from Codex or Claude Code
 
 <img src="assets/icons/codex.svg" width="26" height="26" alt="" /> **Codex** &nbsp; · &nbsp; <img src="assets/icons/claude-code.svg" width="26" height="26" alt="" /> **Claude Code** &nbsp; · &nbsp; **Other agents with a shell**
@@ -165,6 +145,8 @@ Do not open links from the emails.
 Your agent needs shell access and Node.js 24. Installation follows its usual approval process. You do not need Flue or an MCP server.
 
 <img src="assets/icons/gmail.svg" width="22" height="22" alt="" /> **Use your Codex or Claude Gmail connector.** Ask your agent to check a message or batch from Gmail through its existing connection. The checks need original messages, not just previews. If the connector cannot provide them, supply an original `.eml` file.
+
+**No shell access?** The [portable assessment playbook](phishing-triage.md) works in any AI chat, with nothing to install. Give it a redacted email and any lookup evidence you gathered yourself.
 
 <details>
 <summary><b>Prefer to set it up yourself?</b></summary>
@@ -193,9 +175,40 @@ For another shell-capable agent, ask it to run `angry-carp instructions` and fol
 
 Once configured, ask your agent to check `/absolute/path/example.eml`. The [agent workflow](cli/agent-workflow.md) covers structured results, assessment and report preparation. Mailbox access comes from your host; Angry Carp does not install a connector.
 
-An assistant without shell access can use the [portable assessment playbook](phishing-triage.md) with a redacted email and explicitly supplied lookup evidence instead.
-
 </details>
+
+## Quick start
+
+You need Node.js 24.
+
+```sh
+git clone https://github.com/romanornr/angry-carp
+cd angry-carp
+npm ci     # installs all workspaces and builds the library and CLI
+npm test   # optional, runs every workspace's tests
+```
+
+Export the suspicious email as an original `.eml` with full headers and put it in `evidence/emails/`, which Git ignores.
+
+> [!TIP]
+> Most mail clients call this "Show original", "View source" or "Save as .eml". Export the message itself. Inline forwards can lose headers. Attaching the original preserves more structure, but the analyzer treats that attachment as embedded content and reports its coverage separately.
+
+```sh
+# analyze it, print findings, print nothing from the body
+npm --silent run analyze -- evidence/emails/example.eml
+
+# same, plus the complete private record as JSON (mode 0600, never overwrites)
+npm --silent run analyze -- evidence/emails/example.eml --json evidence/emails/example.analysis.json
+
+# inspect an HTML fragment on its own, no network, no MIME
+npm --silent run extract:links -- evidence/example/body.html evidence/example/links.json
+```
+
+To compare against a domain you know is genuine, add `--reference-domain <domain>` once per domain. Flue triage accepts it too. Supply only domains you chose yourself, never ones taken from the message. They enable adjacent-swap and Latin-folded-label concerns and are disclosed in comparisons.
+
+Analysis saves no output file unless you request `--json`. That file is the complete private record: decoded bodies, headers, full URLs and attachment metadata. Keep it under `evidence/`; it is not the reduced input used by Flue.
+
+You can stop here with the terminal findings, or continue with AI assessment and report preparation below.
 
 ## How it works
 
@@ -231,15 +244,11 @@ RDAP, if you have not met it, is the modern replacement for WHOIS: a JSON API fo
 
 ## Why not let the agent do all of it?
 
-Angry Carp runs established algorithms directly, without spending model time or tokens on each check.
+**Every email gets the same checks.** Code selects and runs the checks and records what didn't run. A model doesn't decide which steps to skip.
 
-- **Unicode UTS #39 confusable skeletons** compare lookalike domain spellings, including characters from different alphabets.
-- **Winnowing** finds shared passages when you supply two messages to compare.
-- **DNS/RDAP, parsing and brand lookup** run in TypeScript too. No model round trip is needed to execute them.
-- **Apply the same checking logic to every email.** Code selects and runs the checks, records their results and reports missing coverage. A model does not choose which routine steps to remember.
-- **Use AI for interpretation.** Optional assessment examines concerns or important gaps. Flue skips that model call when applicable checks finish without either.
+**The facts can't be made up.** The model picks a hypothesis and points at evidence. Code prints the recorded facts behind it. During development a model called infrastructure a proxy with no evidence. That can no longer reach the output.
 
-Your connected agent can use the same CLI for one message or an authorized batch. Each email gets its checks without a model conversation directing every lookup and comparison.
+**Routine checks cost nothing.** Parsing, lookups and comparisons run as code, with no tokens. AI is only asked when something looks wrong or a check couldn't finish.
 
 This is not a measured accuracy claim. "No concerns" is not a safety verdict, and the model can still reach the wrong conclusion.
 
@@ -292,15 +301,15 @@ Run an assessment. Flue sends selected analysis fields, selectable evidence reco
 npm --silent --prefix agent run triage -- ../evidence/emails/example.eml --reviewed-text ../evidence/emails/example.prepared.txt
 ```
 
-| Routing result | What happens |
-| --- | --- |
-| No concerns or material gaps | Prints the deterministic result and exits. It never loads credentials, never opens the conversation database, never calls a model. |
-| Concern or gap, reviewed text supplied | Sends selected evidence plus your reviewed text to the model. Prints the findings first, then the rendered assessment. |
-| Concern or gap, no reviewed text | Prints the deterministic result and exits with code 2. It never substitutes the original email for the text you did not review. |
+What happens next depends on the checks:
 
-The bundled Flue assessment model has exactly two tools: one that compares two supplied texts for reused passages, and one that submits its structured assessment and ends the conversation. It has no filesystem, shell, browser, search or mailbox access.
+- **Nothing looks wrong:** no concerns, and no important check left unfinished. It prints the findings and stops. No sign-in, no model call.
+- **Something needs a look, and you supplied your reviewed text:** it prints the findings, asks the model, then prints its assessment.
+- **Something needs a look, but you supplied no reviewed text:** it prints the findings and stops with exit code 2. It never sends the original email in its place.
 
-Credentials live in `agent/auth.json` (plaintext, owner-only permissions, ignored by Git). Conversations live in `agent/data/flue.db`. Sign out locally with `npm --prefix agent run auth:logout`. The [agent guide](agent/README.md) covers storage and what the runtime can and cannot isolate.
+The model cannot browse, run commands, or read your files or mailbox. Its only tools compare two texts for reused passages and submit its answer.
+
+Your login is stored in `agent/auth.json` (plaintext, readable only by you, ignored by Git) and conversations in `agent/data/flue.db`. Sign out with `npm --prefix agent run auth:logout`. The [agent guide](agent/README.md) covers storage and what the runtime can and cannot isolate.
 
 ## What leaves your machine
 
@@ -329,51 +338,74 @@ Those restrictions belong to the Flue integration. A separate coding agent that 
 
 DNS and RDAP run during evidence collection, before the assessment decision. They do not wait for a phishing verdict. The analyzer deduplicates eligible targets and bounds the requests. If applicable checks finish without concerns or important gaps, Flue skips the AI assessment. Targeted web research happens when you choose to prepare a report.
 
-| Triggers an assessment | Does not |
-| --- | --- |
-| A hostname looks like a reference or brand domain (Unicode skeleton match or label containment) | An SPF, DKIM or DMARC pass |
-| Images and action links live on different registrable domains | A registrar abuse contact with no concern on that resource |
-| A reported SPF, DKIM or DMARC fail, softfail or policy result | Checks that were intentionally not applicable |
-| A supplied note that disputes or supports abuse | Known heuristic limits, such as where a quoted reply starts |
-| Unparsed sender identities or content that could not be read | Image lookups that failed |
-| Important DNS or registration checks still incomplete after bounded recovery | A missing optional comparison reference |
-| Hosts inside quoted or forwarded messages that were not queried | |
+**Asks the model to look:**
+
+- A hostname looks like a reference or brand domain (Unicode skeleton match or label containment).
+- Images and action links live on different registrable domains.
+- A reported SPF, DKIM or DMARC fail, softfail or policy result.
+- A supplied note that disputes or supports abuse.
+- Unparsed sender identities or content that could not be read.
+- Important DNS or registration checks still incomplete after bounded recovery.
+- Hosts inside quoted or forwarded messages that were not queried.
+
+An SPF, DKIM or DMARC pass does not wake the model, and it does not make an email safe. Phishers pass them easily from domains they registered themselves.
 
 A concern triggers interpretation. A reporting candidate identifies somewhere to investigate. Neither automatically sends a report.
 
 ## Checks and algorithms
 
-These are working algorithms and parsers, not tasks handed to a chatbot. The [`@angry-carp/checks` library](lib/README.md) exposes them independently of Flue.
+These are working algorithms and parsers, not tasks handed to a chatbot. The [`@angry-carp/checks` library](lib/README.md) exposes them independently of Flue. They follow the stages in [How it works](#how-it-works).
 
-- **See through lookalike spelling.** Unicode comparison can match visually confusable letters, while label containment catches names such as `bifrostwalletapps.download` against `bifrostwallet.com`. Suffix-aware parsing also keeps `paypal.com.attacker.net` from being mistaken for a PayPal subdomain.
-- **Keep the logo and the click separate.** HTML extraction records image sources, action destinations and which anchor encloses an image. Borrowed branding does not conceal where the button points.
-- **Find reused passages.** Given two bodies, Winnowing returns shared text and its positions. Five-token grams and four-gram windows give an eight-token detection threshold before resource limits apply. Matches are verified against tokens, so a hash collision alone is not evidence of reuse.
+**Parse**
 
-The analyzer runs the applicable checks below. Passage comparison is separately available for two explicitly supplied texts.
+- **MIME:** splits the original into ordered headers and independently decoded parts, so one broken part does not hide the rest. Uses `@zone-eu/mailsplit`.
+- **Addresses:** reads From, Sender, Reply-To and Return-Path. Uses `email-addresses`.
+- **Authentication claims:** reads Authentication-Results and DKIM-Signature as claims someone made, not facts. Strict RFC 8601 reader with per-header isolation, RFC 6376 tag reader.
+- **Links and images:** records image sources, action destinations and which link wraps each image, so borrowed branding does not hide where the button points. Uses `parse5` and WHATWG URL.
+- **Quoted replies:** marks `blockquote`, Gmail quote wrappers and `>` lines, so hosts in a quoted reply are not treated as current. A heuristic shared with Mailgun Talon.
 
-| Check | What it does | How | Limits |
-| --- | --- | --- | --- |
-| MIME parsing | Splits the original into ordered headers and independently decoded parts, so one broken part does not hide the rest | `@zone-eu/mailsplit` | 10 MiB, 128 parts, embedded messages two deep. Malformed boundaries are accepted silently. |
-| Address parsing | Reads From, Sender, Reply-To and Return-Path | `email-addresses` | No encoded-word decoding, no internationalized domain conversion. |
-| Authentication claims | Reads Authentication-Results and DKIM-Signature as claims someone made, not facts | Strict RFC 8601 reader with per-header isolation, RFC 6376 tag reader | Never verifies SPF, DKIM or DMARC. Rejects vendor extensions such as Outlook `action=none`, so some Microsoft headers are recorded as unparsed. |
-| Link and image roles | Walks parsed HTML and records supported anchor/image references, including which link wraps each image | `parse5`, WHATWG URL | 512 KiB, 20,000 nodes, 200 occurrences. No CSS, SVG, forms, QR codes or `cid:` images. |
-| Quote detection | Marks `blockquote`, Gmail quote wrappers and `>` lines, so hosts in a quoted reply are not treated as current | Heuristic shared with Mailgun Talon | A heuristic. Skipped content is reported, not deleted. |
-| DNS | A, AAAA and NS queries for link/image observations, MX and TXT for mail identities; returned CNAME records are retained | Cloudflare DNS over HTTPS | 12 initial queries, plus bounded recovery. NXDOMAIN, empty, truncated, failed and never-attempted are five different outcomes. |
-| Domain registration | Registrar, registration dates and available abuse contacts for selected registration domains | RDAP with IANA bootstrap (RFC 9224), registrable domain from the Public Suffix List via `tldts` | 3 initial domains, plus bounded recovery. No WHOIS fallback, no redirects. |
-| IP registration | Network registration records for selected public addresses | IP RDAP, longest-prefix bootstrap | 3 initial addresses, plus bounded recovery. Private ranges excluded. Network records do not identify origin hosting or a service product. |
-| Brand references | Matches hostnames and display names against a pinned snapshot of the 2FA Directory, crowdsourced service/domain associations | Exact hostname, exact name, or all-words name | Incomplete and not a blocklist. No match means nothing. |
-| Domain lookalikes | Compares selected hosts with supplied references, directory candidates and image domains in the same message | Unicode UTS #39 skeletons, containment, full-domain embedding, adjacent swaps, Latin folding, IDNA via Node | Unicode 17 data. New swap/folding matches require operator references to raise concerns. No general edit distance. Invisible characters are escaped and their positions recorded. |
-| Shared passages | Finds reused text between two messages, the way plagiarism checkers do | [Winnowing](docs/text-reuse.md#algorithm-and-returned-evidence) (Schleimer, Wilkerson and Aiken, 2003): 5-word grams, windows of 4, FNV-1a hashes | 16,000 UTF-16 units per body, 10 matches. Two texts only, no corpus. Footers match legitimately. |
-| Recovery | Retries transient failures inside a shared budget | At most two attempts per check; transient failures, partial DNS answers and deferred checks share recovery budgets | Rate limits and deterministic failures are not retried. |
-| Reporting candidates | Works out who could receive a report and in what role | Rules: registrar when that resource has a concern, Cloudflare nameservers, Amazon SES in a Received header, Resend's DKIM selector plus SES mail records | A candidate is somewhere to ask. It is not attribution and not permission to send. |
-| Report preparation | Checks SHA-256 bindings between analysis, preparation and draft records; an optional receipt records reviewed file digests | Digest binding, an idea from in-toto | Checks consistency and source policy. Does not verify the research and does not send. |
+**Look up**
+
+- **DNS:** A, AAAA and NS for links and images, MX and TXT for mail identities, keeping returned CNAME records. Uses Cloudflare DNS over HTTPS.
+- **Domain registration:** registrar, registration dates and available abuse contacts. RDAP with IANA bootstrap (RFC 9224), registrable domain from the Public Suffix List via `tldts`.
+- **IP registration:** network registration records for selected public addresses. IP RDAP with longest-prefix bootstrap.
+- **Recovery:** retries transient failures, at most twice per check, inside a shared budget.
+
+**Compare**
+
+- **Brand references:** matches hostnames and display names against a pinned snapshot of the 2FA Directory, crowdsourced service and domain associations.
+- **Lookalike domains:** Unicode UTS #39 skeletons, label containment, full-domain embedding, adjacent swaps and Latin folding. Containment catches `bifrostwalletapps.download` against `bifrostwallet.com`. Suffix-aware parsing keeps `paypal.com.attacker.net` from passing as a PayPal subdomain.
+- **Reused passages:** [Winnowing](docs/text-reuse.md#algorithm-and-returned-evidence) (Schleimer, Wilkerson and Aiken, 2003) finds shared text between two supplied messages, the way plagiarism checkers do. Five-word grams and windows of four give an eight-token detection threshold. Matches are verified against tokens, so a hash collision alone is not evidence of reuse.
+
+**Derive**
+
+- **Reporting candidates:** works out who could receive a report and in what role: the registrar when that resource has a concern, Cloudflare nameservers, Amazon SES in a Received header, Resend's DKIM selector plus SES mail records. A candidate is somewhere to ask. It is not attribution and not permission to send.
+- **Report preparation:** checks SHA-256 bindings between analysis, preparation and draft records, an idea from in-toto. An optional receipt records reviewed file digests. It checks consistency and source policy. It does not verify the research and does not send.
+
+<details>
+<summary><b>Limits of each check</b></summary>
+
+- **MIME:** 10 MiB, 128 parts, embedded messages two deep. Malformed boundaries are accepted silently.
+- **Addresses:** no encoded-word decoding, no internationalized domain conversion.
+- **Authentication claims:** never verifies SPF, DKIM or DMARC. Rejects vendor extensions such as Outlook `action=none`, so some Microsoft headers are recorded as unparsed.
+- **Links and images:** 512 KiB, 20,000 nodes, 200 occurrences. No CSS, SVG, forms, QR codes or `cid:` images.
+- **Quoted replies:** a heuristic. Skipped content is reported, not deleted.
+- **DNS:** 12 initial queries, plus bounded recovery. NXDOMAIN, empty, truncated, failed and never-attempted are five different outcomes.
+- **Domain registration:** 3 initial domains, plus bounded recovery. No WHOIS fallback, no redirects.
+- **IP registration:** 3 initial addresses, plus bounded recovery. Private ranges excluded. Network records do not identify origin hosting or a service product.
+- **Recovery:** rate limits and deterministic failures are not retried.
+- **Brand references:** incomplete and not a blocklist. No match means nothing.
+- **Lookalike domains:** Unicode 17 data. New swap and folding matches require operator references to raise concerns. No general edit distance. Invisible characters are escaped and their positions recorded.
+- **Reused passages:** 16,000 UTF-16 units per body, 10 matches. Two texts only, no corpus. Footers match legitimately. FNV-1a hashes.
+
+</details>
 
 Resource limits and omitted work are recorded in coverage. The [analysis contract](docs/email-analysis.md#selection-and-limits) lists the budgets, priorities and recovery behavior.
 
 <details>
 <summary><b>The standards behind the checks</b></summary>
 
-RFCs solve practical problems here. IANA bootstrap locates the registry for a domain or IP range. RDAP makes registration dates and available abuse contacts machine-readable. Authentication-Results gives us a grammar for reading receiver claims without confusing parsing with verification. HTTP cache rules let concurrent lookups reuse fresh discovery data. These are specific contracts we use, not a claim of complete protocol conformance.
+The specific standards each check relies on. This is not a claim of complete protocol conformance.
 
 | Standard | Where it applies |
 | --- | --- |
@@ -389,7 +421,6 @@ RFCs solve practical problems here. IANA bootstrap locates the registry for a do
 | [Unicode UTS #39](https://www.unicode.org/reports/tr39/), [UAX #15](https://www.unicode.org/reports/tr15/) | Confusable skeletons and normalization |
 | ICANN gTLD RDAP Response Profile | Registrar abuse contact fields |
 | [RFC 2142](https://www.rfc-editor.org/rfc/rfc2142.html) | Role mailboxes. The channel catalogue never invents an `abuse@` address. |
-| [RFC 5965](https://www.rfc-editor.org/rfc/rfc5965.html), [RFC 6650](https://www.rfc-editor.org/rfc/rfc6650.html), [RFC 6590](https://www.rfc-editor.org/rfc/rfc6590.html), [RFC 5901](https://www.rfc-editor.org/rfc/rfc5901.html), [RFC 7970](https://www.rfc-editor.org/rfc/rfc7970.html) | Abuse-report and incident formats, studied for later export. Not implemented yet. |
 
 [Standards and reporting guidance](docs/standards-and-reporting.md) explains where each one stops applying.
 
@@ -437,18 +468,23 @@ A phishing operation depends on domains, hosted pages and sending accounts. Angr
 <a href="reporting-channels.md">Trustname</a>
 </p>
 
-The `report` command prepares a report without sending it:
+The `report` command prepares a report in four steps. It never sends anything.
+
+1. **Describe the report.** Say who you are reporting to, in what role, about which resource, alleging what and asking for what. `report start` checks it and links it to the analysis.
+2. **Research and draft.** Your AI researches the allegation, the provider's relationship to the resource and its current intake route, then writes the draft.
+3. **Check.** `report check` holds the report if the files don't match the analysis, the destination is one of the suspicious hosts, a source is off the permitted list, or a check is unsupported. It then prints "Nothing is approved or sent." and exits with code 3.
+4. **Review and send.** The checker confirms consistency, not truth. You judge whether the research and allegations hold, and you send it.
 
 ```sh
 npm --silent run report -- start request.json --analysis example.analysis.json --output preparation.json
 npm --silent run report -- check preparation.json research.json draft.json --analysis example.analysis.json
 ```
 
-`start` validates your reviewed request (who, in what role, about which resource, alleging what, asking for what) and ties it to the analysis by digest. Your AI then researches the allegation, the provider relationship and the current intake, and writes the draft. `check` holds the report if byte bindings disagree, the destination is one of the suspicious hosts, a source is off the permitted list, or a check is unsupported. It exits 3 when held and prints "Nothing is approved or sent." The checker validates consistency; you review whether the research and allegations are true. The [preparation guide](docs/report-preparation.md) documents every field.
+The [preparation guide](docs/report-preparation.md) documents every field.
 
-**Planned.** The broader reporting workflow includes sending with per-report approval, follow-up after seven days, stalled-destination tracking, an escalation dossier for ICANN Compliance, and a SQLite case store for originals, assessments and provider outcomes.
+**Planned.** <picture><source media="(prefers-color-scheme: dark)" srcset="assets/icons/netcraft-dark.svg" /><img src="assets/icons/netcraft.svg" width="20" height="20" alt="" /></picture> Submitting phishing URLs to Netcraft's threat feed automatically, with personal data stripped from each URL first. The broader reporting workflow also includes sending with per-report approval, follow-up after seven days, stalled-destination tracking, an escalation dossier for ICANN Compliance, and a SQLite case store for originals, assessments and provider outcomes.
 
-The outcome to look for is a provider confirming that it removed a phishing page, suspended a domain or disabled an abusive sending account. Keep that reply and the specific action it describes. A receipt acknowledgement records delivery only. Providers decide what action to take, and the current commands prepare and check reports without sending them or tracking replies automatically.
+The outcome to look for is a provider confirming that it removed a phishing page, suspended a domain or disabled an abusive sending account. Keep that reply and the specific action it describes. A receipt acknowledgement records delivery only.
 
 ## Rules the carp lives by
 
@@ -486,25 +522,40 @@ Threat feeds (HaGeZi, OpenPhish, URLhaus) and the MetaMask phishing list were ev
 - Fresh SPF, DKIM or DMARC verification. Claims are read, not checked.
 - Attachment scanning, page scanning and official-site verification.
 - Campaign linking across stored mail. Eclat, MinHash and CUSUM are researched, not implemented.
-- ARF and IODEF export.
+- ARF and IODEF export. The abuse-report formats ([RFC 5965](https://www.rfc-editor.org/rfc/rfc5965.html), [RFC 6650](https://www.rfc-editor.org/rfc/rfc6650.html), [RFC 6590](https://www.rfc-editor.org/rfc/rfc6590.html)) and incident formats ([RFC 7970](https://www.rfc-editor.org/rfc/rfc7970.html), with phishing extensions in [RFC 5901](https://www.rfc-editor.org/rfc/rfc5901.html)) are studied, not implemented.
 - A detection benchmark. The routing policy has not been calibrated against a real corpus.
 
 ## FAQ
 
-**Why is it called Angry Carp?**
-Because "anti-phishing tool" is what everyone else is called, and because the carp has had enough. Carp are also famously hard to kill, which is the right attitude for chasing registrars.
-
 **Do I need an OpenAI or Anthropic account?**
-No. `analyze`, `extract:links` and `report` never call a model. Only the separate Flue triage command does, and it uses a ChatGPT subscription through browser login rather than an API key.
+No, and it's free. The checks never call a model. Only the optional Flue command does, and it uses your ChatGPT subscription through a browser login, not an API key.
 
-**Can it clean up my inbox automatically?**
-That is planned. Mailbox labels and opt-in automatic deletion will let you act on phishing without preparing a provider report. Today, Angry Carp analyzes the email and leaves mailbox changes to you or your configured host.
+**Will it open the phishing link?**
+No. Links are read as text. Angry Carp asks DNS and domain registries about the names in them, but never loads the page or its images.
+
+**Does "no concerns" mean the email is safe?**
+No. It means none of the implemented checks found a warning sign. A well-made phishing email can pass every one of them, so treat it as the absence of evidence, not a verdict.
+
+**Will it send a report or delete mail without me?**
+No. It prepares and checks reports to providers, and you send them. Mailbox changes stay with you or your agent.
+
+**How long does a check take?**
+Under a minute for the checks themselves. Parsing is instant, and DNS and registry lookups share a 45-second limit. The optional AI step adds the model's time.
+
+**Does it work with Outlook or other mail?**
+Yes, if your mail app can save the original message as an `.eml` file: Outlook on the web, Apple Mail, Thunderbird and Fastmail all can. Outlook desktop's `.msg` format is not supported. Gmail also works through your coding agent's connector.
 
 **Does it send anything anywhere?**
-Analysis sends selected names and addresses for DNS/RDAP lookups. Flue assessment sends selected evidence, reviewed text and supplied source notes. See [what leaves your machine](#what-leaves-your-machine) for the full distinction, including other AI hosts.
+Only what the checks need: domain names and IP addresses go to DNS and domain registries. If you use the optional AI step, the evidence you selected and the email text you cleaned up go to the model. See [what leaves your machine](#what-leaves-your-machine) for details, including other AI hosts.
 
 **Can I use it without the code?**
-Yes. `phishing-triage.md` and `provider-abuse-reporting.md` work as plain instructions for any assistant that reads documents. Use the host's own tools or supply recorded lookup results alongside the message.
+Yes. `phishing-triage.md` and `provider-abuse-reporting.md` work as plain instructions for any assistant that reads documents. Use the host's own tools, or supply recorded lookup results alongside the message.
+
+**Can it clean up my inbox automatically?**
+Not yet. Mailbox labels and opt-in automatic deletion are planned. Today, Angry Carp analyzes the email and leaves mailbox changes to you or your agent.
+
+**Why is it called Angry Carp?**
+Because "anti-phishing tool" is what everyone else is called, and because the carp has had enough. Carp are also famously hard to kill, which is the right attitude for chasing registrars.
 
 <details>
 <summary><b>Repository layout</b></summary>

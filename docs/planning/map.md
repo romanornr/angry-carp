@@ -91,6 +91,7 @@ The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisitio
 - Whether to add a threat-list snapshot alongside the implemented 2FA Directory lookup. Preserve source, date, exact match scope, and relation type; catalogue association must not suppress threat evidence. These additional sources still require agreement.
 - Validation of the proposed operator experience for reviewing ambiguous cases, correcting mistakes, and resuming interrupted work.
 - Whether public urlscan scans could supply extra page evidence and screenshots without Angry Carp visiting the site. [ADR 0002](../adr/0002-limit-scanner-disclosure.md) currently permits only private scans, so public visibility would need a new disclosure decision. A challenge page such as a Cloudflare CAPTCHA can hide the phishing content from any scanner.
+- Mailbox access without AI and without Google's API setup. Today an agent's Gmail connector is the easy route, and a Google Cloud project with OAuth is too complex for most people. Candidates: IMAP with an app password, which also covers Outlook, Fastmail and other providers ([`imapflow`](https://github.com/postalsys/imapflow), from the author of `@zone-eu/mailsplit`; check Google's current app-password policy first); a Google Takeout mbox export for offline bulk checks; and a desktop client's local store, such as Thunderbird's mbox files.
 - The smallest specification and validation artifacts needed once the architecture is chosen.
 
 ## Out of scope

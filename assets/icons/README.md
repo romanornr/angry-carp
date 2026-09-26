@@ -15,10 +15,13 @@ These local images identify agent hosts, Gmail access through a configured host,
 | `cortex.png` | [Cortex application icon](https://github.com/TheHive-Project/Cortex/blob/9f1bc90ae92d4ba5e843439389f234e25489db1e/www/src/favicon-96x96.png) | [Repository AGPL-3.0 license](LICENSE.cortex-assets) | None. |
 | `dnstwist.png` | [dnstwist README wordmark](https://github.com/elceef/dnstwist/blob/341395377f40761fe4152f43fd18eea757b6069a/docs/dnstwist.png) | [Repository Apache-2.0 license](LICENSE.dnstwist-assets) | None; displayed at a smaller size. |
 | `metamask.svg` | [Official MetaMask brand page](https://metamask.io/assets), [logo pack](https://assets.ctfassets.net/clixtyxoaeas/1d7h0Cnm1RaQ0TspxaTS0H/57418d60d3a13fbee748be1ca560235a/MetaMask-Logo-Pack__4_.zip), `MetaMask/MetaMask-icon-fox.svg` | Consensys/MetaMask brand asset; no separate open-source license supplied in the pack. | None. Included to identify the research source, not an installed detector or endorsement. |
+| `netcraft.svg`, `netcraft-dark.svg` | [Netcraft website](https://www.netcraft.com/) favicons for light and dark color schemes, served from `framerusercontent.com/images/jTT3DVyWY8Eg3oonFRKl3mljHVM.svg` and `v32sl2rp9EFeOfwLZFF1tO8QAY.svg` | Netcraft brand asset; no separate license supplied. | None. Identifies a planned reporting destination, not an endorsement. |
 | `paper.svg`, `paper-dark.svg` | [GitHub Octicons file icon](https://github.com/primer/octicons/blob/90af1f14984832de34e94b2d530043fbcf85eb7f/icons/file-24.svg) | [MIT](LICENSE.octicons) | Gray fills for light and dark backgrounds. A document marker for PILFER, not a paper-specific logo. |
 
 Development-tool and research-precedent icons retrieved on 2026-09-24. The Oxc asset license is separate from the software license and permits community and non-commercial use without implying affiliation.
 
 Earlier icons retrieved on 2026-09-23. Only static image assets and license texts are included. No icon package is installed. When replacing an icon, retain its source and license here and check it on both light and dark backgrounds.
+
+Netcraft icons retrieved on 2026-09-26. SHA-256: `netcraft.svg` `70e6041852f6272c9c8f86f8194447dcbf47858f7a48d6879b62b16c25f23cdd`, `netcraft-dark.svg` `2ac02c555bf49cc7202a2c6baabcf34ca85af725b11302f62f606dd108fbdaae`.
 
 MetaMask asset SHA-256: `163dd1be1558ee648c266f4a533b6e10d40b737f838bbe40739d9637017cd35f`. Repository license links describe the upstream distributions; product trademarks remain with their owners.
