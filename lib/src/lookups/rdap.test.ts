@@ -52,6 +52,7 @@ test('returns attributed registration evidence without personal data or referral
     registrars: [{ name: 'Example Registrar', ianaId: '123', abuseEmails: ['abuse@registrar.example'] }],
   });
   assert.deepEqual(requests.map(({ url }) => url), ['https://data.iana.org/rdap/dns.json', sourceUrl]);
+
   for (const { options } of requests) {
     assert.deepEqual(options?.headers, { accept: 'application/rdap+json, application/json' });
     assert.equal(options?.credentials, 'omit');
@@ -61,6 +62,7 @@ test('returns attributed registration evidence without personal data or referral
 
 test('validates domain tool inputs and rejects URLs, paths, addresses, IPs, and malformed names', () => {
   assert.equal(v.parse(domainSchema, 'EXAMPLE.COM'), 'example.com');
+
   for (const input of ['https://example.com', '../auth.json', 'me@example.com', '127.0.0.1', 'localhost', '-bad.com', 'x'.repeat(64) + '.com']) {
     assert.equal(v.safeParse(domainSchema, input).success, false, input);
   }
@@ -73,6 +75,7 @@ test('selects the longest IANA suffix and retains the supplied query domain', as
       [['co.uk'], ['https://registry.example/rdap/']],
     ] });
     assert.equal(url, 'https://registry.example/rdap/domain/example.co.uk');
+
     return Response.json({ ...record, ldhName: 'example.co.uk' });
   });
   const result = await lookupRdap(v.parse(domainSchema, 'example.co.uk'));
@@ -85,12 +88,15 @@ test('distinguishes absent records, throttling, redirects, bad data, and incompl
   t.mock.method(globalThis, 'fetch', async (url: string) => {
     if (url.endsWith('dns.json')) return Response.json(directory);
     assert.equal(url, sourceUrl);
+
     return reply;
   });
+
   for (const status of [404, 429, 302]) {
     reply = new Response(null, { status, headers: { location: 'http://127.0.0.1/private' } });
     const result = await lookupRdap(domain);
     const { retrievedAt, discovery, ...evidence } = result;
+
     if (status === 404) {
       assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'not_found' });
     } else if (status === 302) {
@@ -99,6 +105,7 @@ test('distinguishes absent records, throttling, redirects, bad data, and incompl
       assert.deepEqual(evidence, { queriedDomain: 'example.com', sourceUrl, kind: 'http_error', status });
     }
   }
+
   reply = Response.json({ ...record, ldhName: 'different.com' });
   assert.equal((await lookupRdap(domain)).kind, 'unavailable');
   reply = Response.json({ objectClassName: 'domain', ldhName: 'example.com' });
@@ -126,6 +133,7 @@ test('sanitizes network errors and bounds streamed responses', async (t) => {
 test('does not invent a service when IANA has none or offers an unsafe endpoint', async (t) => {
   let services: unknown[] = [];
   t.mock.method(globalThis, 'fetch', async () => Response.json({ services }));
+
   for (const endpoints of [[], ['http://registry.example/'], ['https://user:password@registry.example/'], ['https://127.0.0.1/']]) {
     services = [[['com'], endpoints]];
     const result = await lookupRdap(domain);

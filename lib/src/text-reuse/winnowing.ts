@@ -55,6 +55,7 @@ const maxExcerptLength = 400;
 type Token = { value: string; start: number; end: number };
 type Match = { firstStart: number; secondStart: number; length: number };
 type LimitReason = 'candidate_limit' | 'match_limit';
+
 type Comparison = {
   algorithm: typeof algorithm;
   tokenCounts: { first: number; second: number };
@@ -72,6 +73,7 @@ export function findSharedPassages(input: v.InferOutput<typeof passageComparison
   const first = tokenize(input.firstBody);
   const second = tokenize(input.secondBody);
   const secondByHash = new Map<number, number[]>();
+
   for (const fingerprint of fingerprints(second)) {
     const positions = secondByHash.get(fingerprint.hash) ?? [];
     positions.push(fingerprint.start);
@@ -96,16 +98,19 @@ export function findSharedPassages(input: v.InferOutput<typeof passageComparison
 
       // Token equality confirms the match because different grams can have the same hash.
       let equal = true;
+
       for (let offset = 0; offset < algorithm.gramTokens; offset++) {
         if (first[firstStart + offset].value !== second[secondStart + offset].value) {
           equal = false;
           break;
         }
       }
+
       if (!equal) continue;
 
       const match = extendMatch(first, second, firstStart, secondStart);
       if (match.length < algorithm.minimumPassageTokens) continue;
+
       if (matches.length === maxMatches) {
         limitReason = 'match_limit';
         break candidates;
@@ -137,38 +142,48 @@ function tokenize(body: string): Token[] {
 
 function fingerprints(tokens: Token[]) {
   const hashes: number[] = [];
+
   for (let start = 0; start + algorithm.gramTokens <= tokens.length; start++) {
     const gram = tokens.slice(start, start + algorithm.gramTokens).map((token) => token.value).join(' ');
     // FNV-1a over UTF-16 units gives a stable ordering for fingerprint selection.
     let hash = 2166136261;
+
     for (let index = 0; index < gram.length; index++) {
       hash = Math.imul(hash ^ gram.charCodeAt(index), 16777619) >>> 0;
     }
+
     hashes.push(hash);
   }
 
   const selected: { hash: number; start: number }[] = [];
   let previous = -1;
+
   for (let start = 0; start + algorithm.windowGrams <= hashes.length; start++) {
     let minimum = start;
+
     for (let index = start + 1; index < start + algorithm.windowGrams; index++) {
       if (hashes[index] <= hashes[minimum]) minimum = index;
     }
+
     if (minimum !== previous) selected.push({ hash: hashes[minimum], start: minimum });
     previous = minimum;
   }
+
   return selected;
 }
 
 function extendMatch(first: Token[], second: Token[], firstStart: number, secondStart: number): Match {
   let length = algorithm.gramTokens;
+
   while (firstStart > 0 && secondStart > 0 && first[firstStart - 1].value === second[secondStart - 1].value) {
     firstStart--;
     secondStart--;
     length++;
   }
+
   while (firstStart + length < first.length && secondStart + length < second.length &&
     first[firstStart + length].value === second[secondStart + length].value) length++;
+
   return { firstStart, secondStart, length };
 }
 

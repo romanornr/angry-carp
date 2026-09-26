@@ -12,14 +12,17 @@ registerHooks({
     if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean' && (url === authUrl || url === dbUrl)) {
       throw new Error('A no-concerns run must not load credentials or conversation storage.');
     }
+
     if (url === authUrl) {
       return { format: 'module', shortCircuit: true,
         source: `export { openAuth } from ${JSON.stringify(import.meta.url)};` };
     }
+
     if (url === dbUrl) {
       return { format: 'module', shortCircuit: true,
         source: "import { sqlite } from '@flue/runtime/node'; export default sqlite();" };
     }
+
     return nextLoad(url, context);
   },
 });
@@ -28,6 +31,7 @@ export async function openAuth() {
   const fakeCredential = 'x.' + Buffer.from(JSON.stringify({
     'https://api.openai.com/auth': { chatgpt_account_id: 'offline-probe' },
   })).toString('base64') + '.x';
+
   return { provider: {
     ...openaiCodexProvider(),
     auth: { apiKey: { name: 'Offline test', async resolve() {
@@ -43,6 +47,7 @@ let modelCalls = 0;
 globalThis.fetch = async (input) => {
   const url = new URL(String(input));
   const host = url.hostname;
+
   if (process.env.ANGRY_CARP_TEST_FAILURE === 'clean') {
     if (host === 'cloudflare-dns.com') {
       const types: Record<string, number> = { MX: 15, TXT: 16 };
@@ -72,6 +77,7 @@ class FakeWebSocket extends EventTarget {
 
   send(data: string) {
     modelCalls++;
+
     if (process.env.ANGRY_CARP_TEST_FAILURE === 'projection') {
       assert.match(data, /action\.example\.com/);
       assert.match(data, /image\.example\.org/);
@@ -87,6 +93,7 @@ class FakeWebSocket extends EventTarget {
         { type: 'response.output_item.done', output_index: 0, item },
       ];
       const output: unknown[] = [item];
+
       if (process.env.ANGRY_CARP_TEST_FAILURE !== 'unstructured') {
         let id = 'reviewed_text';
         if (process.env.ANGRY_CARP_TEST_FAILURE === 'unknown-reference') id = 'invented';
@@ -100,6 +107,7 @@ class FakeWebSocket extends EventTarget {
         output.push(call);
       }
       events.push({ type: 'response.completed', response: { id: 'offline-response', status: 'completed', output } });
+
       for (const event of events) {
         this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(event) }));
       }
@@ -114,6 +122,7 @@ class FakeWebSocket extends EventTarget {
 }
 
 Object.defineProperty(globalThis, 'WebSocket', { value: FakeWebSocket });
+
 if (process.env.ANGRY_CARP_TEST_FAILURE === 'output') {
   const write = process.stdout.write.bind(process.stdout);
   Object.defineProperty(process.stdout, 'write', { value(chunk: string) {
@@ -121,6 +130,7 @@ if (process.env.ANGRY_CARP_TEST_FAILURE === 'output') {
     return write(chunk);
   } });
 }
+
 if (process.env.ANGRY_CARP_TEST_FAILURE === 'cleanup') {
   registerSessionResourceCleanup(() => { throw new Error('Private cleanup detail.'); });
 }

@@ -85,10 +85,12 @@ export async function lookupDns(query: DnsQuery, callerSignal?: AbortSignal): Pr
   const record = v.safeParse(responseSchema, response.body);
   if (!record.success) return { ...source, kind: 'unavailable', reason: 'invalid_response' };
   const question = record.output.Question[0];
+
   if (question.name.toLowerCase().replace(/\.$/, '') !== query.name
     || question.type !== recordTypes[query.type]) {
     return { ...source, kind: 'unavailable', reason: 'invalid_response' };
   }
+
   // Bound model context without silently dropping valid records or shortening TXT data.
   if (record.output.Answer.length > 20 || record.output.Answer.some(({ data }) => data.length > 4096)) {
     return { ...source, kind: 'unavailable', reason: 'response_too_large' };

@@ -30,6 +30,7 @@ export function PhishingTriage() {
     input: assessmentSchema,
     run({ data }) {
       writeAssessment(data);
+
       return { output: 'Assessment recorded.', terminate: true };
     },
   });

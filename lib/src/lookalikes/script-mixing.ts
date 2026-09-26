@@ -17,14 +17,17 @@ import * as v from 'valibot';
 const properties = v.parse(v.map(v.string(), v.unknown()), aliases);
 const names = new Set(v.parse(v.map(v.string(), v.string()), properties.get('Script')).values());
 const scripts = new Map<string, RegExp>();
+
 for (const name of names) {
   if (['Common', 'Inherited', 'Unknown'].includes(name)) continue;
+
   try { scripts.set(name, new RegExp(`^\\p{Script_Extensions=${name}}$`, 'u')); }
   catch (error) {
     // Node versions can predate a script name. Unrecognized characters yield unavailable below.
     if (!(error instanceof SyntaxError)) throw error;
   }
 }
+
 const writingSystems = new Map([
   ['Jpan', ['Han', 'Hiragana', 'Katakana']],
   ['Kore', ['Han', 'Hangul']],
@@ -34,19 +37,25 @@ const writingSystems = new Map([
 export function classifyScriptMixing(label: string): 'single_script' | 'allowed_mixture' | 'mixed_script' | 'unavailable' {
   let resolved = new Set([...scripts.keys(), ...writingSystems.keys()]);
   let withoutLatin = new Set(resolved);
+
   for (const character of label) {
     if (/[\p{Script_Extensions=Common}\p{Script_Extensions=Inherited}]/u.test(character)) continue;
     const augmented = new Set<string>();
+
     for (const [name, pattern] of scripts) {
       if (pattern.test(character)) augmented.add(name);
     }
+
     if (augmented.size === 0) return 'unavailable';
+
     for (const [system, members] of writingSystems) {
       if (members.some((script) => augmented.has(script))) augmented.add(system);
     }
+
     resolved = resolved.intersection(augmented);
     if (!augmented.has('Latin')) withoutLatin = withoutLatin.intersection(augmented);
   }
+
   if (resolved.size > 0) return 'single_script';
   if ([...writingSystems.keys()].some((system) => withoutLatin.has(system))) return 'allowed_mixture';
   return 'mixed_script';

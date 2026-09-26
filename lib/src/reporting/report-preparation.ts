@@ -11,6 +11,7 @@ const sourceId = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]{1,40}$/));
 const sourceIds = v.pipe(v.array(sourceId), v.maxLength(16));
 const httpsUrl = v.pipe(v.string(), v.maxLength(4096), v.url(), v.check((value) => {
   const url = URL.parse(value);
+
   return url !== null && url.protocol === 'https:' && !url.username && !url.password && !url.hash && !url.port;
 }));
 const destinationSchema = v.variant('kind', [
@@ -72,10 +73,12 @@ export const reportDraftSchema = v.strictObject({
 export type ReportPreparation = v.InferOutput<typeof reportPreparationSchema>;
 type CheckName = keyof v.InferOutput<typeof reportResearchSchema>['checks'];
 type CheckKind = v.InferOutput<typeof researchCheck>['kind'];
+
 export type ReportHoldReason = 'invalid_preparation' | 'invalid_analysis' | 'invalid_research' | 'invalid_draft'
   | 'analysis_changed' | 'preparation_changed' | 'draft_changed' | 'destination_changed' | 'candidate_destination'
   | 'research_time_outside_preparation' | 'duplicate_source_id' | 'source_host_not_permitted' | 'source_time_outside_research'
   | `${CheckName}:${Exclude<CheckKind, 'supported'> | 'missing_source'}`;
+
 export type ReportReview = { kind: 'held'; reasons: ReportHoldReason[] } | {
   kind: 'ready_for_review'; preparationSha256: string; analysisSha256: string; researchSha256: string; draftSha256: string;
   checkedAt: string; provenance: 'host_supplied'; host: string;
@@ -86,6 +89,7 @@ export async function reportDigest(bytes: Uint8Array): Promise<string> {
   // Inspired by in-toto's subject digests, this binds a record to specific bytes without attesting to its claims.
   // https://github.com/in-toto/attestation/blob/fd2609c16bcb0ac53443e2b4612977f997e8f9a5/spec/v1/statement.md
   const hash = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
+
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
@@ -95,12 +99,15 @@ export async function startReportPreparation(request: unknown, analysis: Uint8Ar
   const analyzed = v.safeParse(analysisSchema, readJson(analysis, MAX_ANALYSIS_BYTES));
   if (!parsed.success || !analyzed.success) throw new Error('Invalid report request or analysis.');
   const actions = actionHosts(analyzed.output);
+
   if (isCandidate(destinationHost(parsed.output.destination), parsed.output, actions)) {
     throw new Error('A candidate host cannot be a report destination.');
   }
+
   for (const host of parsed.output.permittedSourceHosts) {
     if (isCandidate(host, parsed.output, actions)) throw new Error('A candidate host cannot be a research source.');
   }
+
   return { kind: 'report_preparation', id: crypto.randomUUID(), startedAt: new Date().toISOString(),
     analysisSha256: await reportDigest(analysis), request: parsed.output };
 }
@@ -138,19 +145,24 @@ export async function checkReportPreparation(input: {
   if (start < Date.parse(record.startedAt) || finish < start || finish > Date.now()) reasons.push('research_time_outside_preparation');
   const sources = new Map(supplied.sources.map((source) => [source.id, source]));
   if (sources.size !== supplied.sources.length) reasons.push('duplicate_source_id');
+
   for (const source of supplied.sources) {
     const host = new URL(source.url).hostname;
+
     if (!record.request.permittedSourceHosts.some((allowed) => allowed === host) || isCandidate(host, record.request, actions)) {
       reasons.push('source_host_not_permitted');
     }
+
     const retrieved = Date.parse(source.retrievedAt);
     if (retrieved < start || retrieved > finish) reasons.push('source_time_outside_research');
   }
+
   for (const subject of ['allegation', 'providerRelationship', 'reportingChannel'] as const) {
     const check = supplied.checks[subject];
     if (check.kind !== 'supported') reasons.push(`${subject}:${check.kind}`);
     if (check.sourceIds.some((id) => !sources.has(id))) reasons.push(`${subject}:missing_source`);
   }
+
   if (reasons.length > 0) return { kind: 'held', reasons: [...new Set(reasons)] };
   return { kind: 'ready_for_review', preparationSha256, analysisSha256, researchSha256, draftSha256,
     checkedAt: new Date().toISOString(), provenance: supplied.provenance, host: supplied.host };
@@ -175,6 +187,7 @@ function destinationHost(destination: v.InferOutput<typeof destinationSchema>): 
 
 function readJson(bytes: Uint8Array, limit: number): unknown {
   if (bytes.byteLength > limit) return undefined;
+
   try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
   catch { return undefined; }
 }

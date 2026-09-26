@@ -21,6 +21,7 @@ type Finding = { kind: 'observation' | 'concern'; code: string; text: string; ev
 /** Derives findings and reporting candidates, adding coverage notes when evidence or output is limited. */
 export function deriveFindings(evidence: AnalysisEvidence) {
   const findings: Finding[] = [];
+
   // Inspect every recorded occurrence independently of reference selection and comparison budgets.
   // Chromium applies script checks per label, not across the full hostname:
   // https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/url_formatter/url_formatter.cc#L325-L350
@@ -29,9 +30,11 @@ export function deriveFindings(evidence: AnalysisEvidence) {
     if (!input.success) continue;
     const domain = inspectDomain(input.output);
     if (domain.kind !== 'parsed') continue;
+
     if (domain.labels.some(({ scriptMixing }) => scriptMixing === 'unavailable')) {
       evidence.coverage.push({ sourceId: host.id, reason: 'script_mixing_unavailable' });
     }
+
     const mixed = domain.labels.filter(({ scriptMixing }) => scriptMixing === 'mixed_script');
     if (mixed.length === 0) continue;
     let kind: Finding['kind'] = 'observation';
@@ -39,11 +42,14 @@ export function deriveFindings(evidence: AnalysisEvidence) {
     findings.push({ kind, code: 'mixed_script_label', evidenceIds: [host.id],
       text: `${domain.ascii} contains labels with incompatible script combinations: ${mixed.map(({ text }) => text).join(', ')}. This does not establish impersonation or malicious ownership.` });
   }
+
   const pairs = new Map<string, Finding>();
   const supportedHosts = new Map<string, string[]>();
   const actions = evidence.observations.hosts.filter((host) => host.role === 'action' && host.context === 'unmarked');
+
   for (const image of evidence.observations.hosts.filter((host) => host.role === 'image' && host.context === 'unmarked')) {
     const imageDomain = classifyHost(image.host);
+
     for (const action of actions) {
       if (image.sourceId !== action.sourceId) continue;
       if (image.enclosingActionId !== null && image.enclosingActionId !== action.id) continue;
@@ -52,6 +58,7 @@ export function deriveFindings(evidence: AnalysisEvidence) {
       supportedHosts.set(action.id, [image.id, action.id]);
       const key = `${imageDomain.registration}/${actionDomain.registration}`;
       if (pairs.has(key)) continue;
+
       if (pairs.size === 32) {
         if (!evidence.coverage.some(({ reason }) => reason === 'image_action_finding_limit')) {
           evidence.coverage.push({ sourceId: 'message', reason: 'image_action_finding_limit' });
@@ -63,10 +70,13 @@ export function deriveFindings(evidence: AnalysisEvidence) {
         evidenceIds: [image.id, action.id] });
     }
   }
+
   findings.push(...[...pairs.values()].slice(0, 32));
+
   for (const comparison of evidence.comparisons) {
     const result = comparison.result;
     if (result.kind !== 'compared' || result.relationship !== 'different_domain') continue;
+
     if (result.resemblance.length > 0) {
       const subject = comparison.sourceIds[0];
       let kind: Finding['kind'] = 'observation';
@@ -90,33 +100,41 @@ export function deriveFindings(evidence: AnalysisEvidence) {
       findings.push({ kind, code: 'domain_resemblance', text, evidenceIds: [comparison.id] });
     }
   }
+
   for (const note of evidence.sourceNotes) {
     if (note.relation !== 'context') findings.push({ kind: 'concern', code: 'supplied_source_requires_assessment',
       text: `Supplied source ${note.id}: ${note.relation}; applicability to the message date: ${note.messageDateApplicability}. Source authority and claim are not independently verified.`,
       evidenceIds: [note.id] });
     if (note.relation !== 'supports_concern' || note.messageDateApplicability === 'not_applicable') continue;
+
     for (const host of evidence.observations.hosts) {
       if (host.context === 'unmarked' && note.subjectHosts.some((subject) => subject === host.host)) supportedHosts.set(host.id, [note.id]);
     }
   }
+
   for (const message of evidence.message.messages) {
     for (const header of message.authentication) {
       if (header.result.kind !== 'reported_results') continue;
       const sourceId = `${message.rootPartId}/header${header.headerIndex}`;
+
       for (const [claimIndex, claim] of header.result.results.entries()) {
         if (claim.interpretation !== 'supported' || !['spf', 'dkim', 'dmarc'].includes(claim.method)) continue;
         let reported = claim.result;
         if (!['none', 'pass', 'fail', 'policy', 'neutral', 'softfail', 'temperror', 'permerror'].includes(reported)) reported = 'unrecognized_result';
+
         if (['temperror', 'permerror', 'unrecognized_result'].includes(reported)) {
           evidence.coverage.push({ sourceId, reason: 'inconclusive_authentication_claim' });
         }
+
         const identities: string[] = [];
+
         for (const property of claim.properties) {
           const name = `${property.type}.${property.name}`;
           if (!['header.d', 'header.i', 'header.from', 'smtp.mailfrom', 'smtp.helo'].includes(name)) continue;
           const domain = authenticationIdentity(property.rawValue);
           if (domain) identities.push(`${name} domain=${domain}`);
         }
+
         let details = '';
         if (identities.length) details = ` (${[...new Set(identities)].slice(0, 4).join(', ')})`;
         let kind: Finding['kind'] = 'observation';
@@ -126,15 +144,18 @@ export function deriveFindings(evidence: AnalysisEvidence) {
       }
     }
   }
+
   // Reporting uses the full findings list before findings are capped at 128.
   const reportingCandidates = deriveReportingCandidates(evidence, {
     supportedHosts,
     // Script mixing alone requests assessment, without attributing abuse to a reporting recipient.
     hasConcern: findings.some(({ kind, code, evidenceIds }) => kind === 'concern' && code !== 'mixed_script_label' && evidenceIds.length > 0),
   });
+
   if (findings.length > 128) {
     evidence.coverage.push({ sourceId: 'message', reason: `finding_limit:${findings.length - 128}` });
     findings.length = 128;
   }
+
   return { findings, reportingCandidates };
 }

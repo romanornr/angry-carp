@@ -28,6 +28,7 @@ async function fixture() {
       claim: 'Synthetic research claim, not a live lookup.', sourceAuthority: 'claimed_official' }],
     checks: { allegation: { ...check }, providerRelationship: { ...check }, reportingChannel: { ...check } },
   };
+
   return { preparation, research, input: { preparation: preparationBytes, analysis, draft, research: bytes(research) } };
 }
 
@@ -47,6 +48,7 @@ test('creates a separate reviewed request and accepts qualified research only fo
 
 test('holds changed preparation, analysis and outgoing bytes, including recipient edits', async () => {
   const { input } = await fixture();
+
   for (const [field, reason] of [
     ['preparation', 'preparation_changed'], ['analysis', 'analysis_changed'], ['draft', 'draft_changed'],
   ] as const) {
@@ -55,6 +57,7 @@ test('holds changed preparation, analysis and outgoing bytes, including recipien
     assert.ok(result.kind === 'held');
     assert.deepEqual(result.reasons, [reason]);
   }
+
   const result = await checkReportPreparation({ ...input, draft: bytes({
     destination: { kind: 'email', address: 'other@resend.com' }, subject: 'Edited', body: 'Edited',
   }) });
@@ -69,6 +72,7 @@ test('failed, unresolved and contradicted checks stay held; missing checks never
     assert.ok(result.kind === 'held');
     assert.deepEqual(result.reasons, [`providerRelationship:${kind}`]);
   }
+
   const { research, input } = await fixture();
   const result = await checkReportPreparation({ ...input, research: bytes({ ...research, checks: {} }) });
   assert.deepEqual(result, { kind: 'held', reasons: ['invalid_research'] });
@@ -80,6 +84,7 @@ test('checks source references, dates and exact allowed hosts without treating c
     { url: 'https://sub.resend.com/source', reason: 'source_host_not_permitted' },
     { url: 'https://resend.com/source', retrievedAt: '2025-12-31T00:00:00Z', reason: 'source_time_outside_research' },
   ];
+
   for (const variant of variants) {
     const { research, input } = await fixture();
     research.sources[0].url = variant.url;
@@ -87,6 +92,7 @@ test('checks source references, dates and exact allowed hosts without treating c
     const result = await checkReportPreparation({ ...input, research: bytes(research) });
     assert.ok(result.kind === 'held' && result.reasons.some((reason) => reason === variant.reason));
   }
+
   const { research, input } = await fixture();
   research.checks.allegation.sourceIds = ['missing'];
   research.sources.push({ ...research.sources[0] });
@@ -100,6 +106,7 @@ test('refuses candidate sources and destinations and unsupported private payload
   const { input, research } = await fixture();
   await assert.rejects(startReportPreparation({ ...request, permittedSourceHosts: ['sub.lure.example'] }, input.analysis),
     { message: 'A candidate host cannot be a research source.' });
+
   for (const destination of [{ kind: 'email', address: 'abuse@lure.example' }, { kind: 'form', url: 'https://sub.lure.example/form' }]) {
     const draft = bytes({ destination, subject: 'Title', body: 'Body' });
     research.draftSha256 = await reportDigest(draft);
@@ -107,6 +114,7 @@ test('refuses candidate sources and destinations and unsupported private payload
     assert.ok(result.kind === 'held');
     assert.deepEqual(result.reasons, ['destination_changed', 'candidate_destination']);
   }
+
   const invalid = await checkReportPreparation({ ...input, draft: bytes({
     destination: { kind: 'email', address: 'support@resend.com' }, subject: 'Title', body: 'Body', attachments: ['private.eml'],
   }) });
@@ -116,6 +124,7 @@ test('refuses candidate sources and destinations and unsupported private payload
 test('invalid UTF-8, oversized records and input failures cannot start or pass research', async () => {
   const { input } = await fixture();
   await assert.rejects(startReportPreparation(request, bytes({ kind: 'input_failure' })), { message: 'Invalid report request or analysis.' });
+
   for (const research of [new Uint8Array([255]), new Uint8Array(MAX_REPORT_BYTES + 1)]) {
     assert.deepEqual(await checkReportPreparation({ ...input, research }), { kind: 'held', reasons: ['invalid_research'] });
   }
@@ -135,6 +144,7 @@ test('private action hosts block research without being copied into the preparat
     permittedSourceHosts: ['private-token.lure.example'] }, analysis), { message: 'A candidate host cannot be a research source.' });
   await assert.rejects(startReportPreparation({ ...request, candidateHosts: [],
     resource: { kind: 'domain', name: 'resend.com' } }, analysis), { message: 'A candidate host cannot be a report destination.' });
+
   for (const host of ['quoted.example', 'embedded.example', 'text.example']) {
     await assert.rejects(startReportPreparation({ ...request, candidateHosts: [], permittedSourceHosts: [host] }, analysis),
       { message: 'A candidate host cannot be a research source.' });

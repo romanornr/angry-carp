@@ -44,6 +44,7 @@ test('normalizes case, canonical accents and whitespace while preserving input p
 test('keeps confusables, invisible characters and punctuation distinct', () => {
   const text = 'paypal one two three four five six seven';
   assert.equal(compare(text, text).matches[0].tokenCount, 8);
+
   for (const changed of ['p\u0430ypal', 'pay\u200bpal', 'paypal,']) {
     assert.deepEqual(compare(text, `${changed} one two three four five six seven`).matches, []);
   }
@@ -59,6 +60,7 @@ test('reports shared footers without a spam or campaign verdict', () => {
 
 test('reports no passages for unrelated, empty, and below-threshold input', () => {
   assert.equal(compare('one two three four five six seven eight', 'one two three four five six seven eight').matches.length, 1);
+
   for (const [first, second] of [
     ['', ''], ['  \n', 'one two three four five six seven eight'],
     ['one two three four five six seven', 'one two three four five six seven'],
@@ -110,6 +112,7 @@ test('validates both body boundaries without accepting paths as a file-reading o
     assert.equal(v.safeParse(passageComparisonSchema, { firstBody: '', secondBody: '', [field]: 'x'.repeat(16_001) }).success, false);
     assert.equal(v.safeParse(passageComparisonSchema, { firstBody: '', secondBody: '', [field]: 42 }).success, false);
   }
+
   assert.equal(compare('x'.repeat(16_000), '').kind, 'complete');
   const path = compare('../auth.json', '../auth.json');
   assert.deepEqual(path.tokenCounts, { first: 1, second: 1 });

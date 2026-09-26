@@ -101,10 +101,12 @@ test('cancelling inside embedded parsing stays observable and settles owned stre
   const streams = new Set<InstanceType<typeof Splitter>>();
   t.mock.method(Splitter.prototype, 'emit', function (this: InstanceType<typeof Splitter>, event: string, ...args: unknown[]) {
     const chunk = args[0];
+
     if (event === 'data' && typeof chunk === 'object' && chunk !== null && 'type' in chunk && chunk.type === 'node') {
       streams.add(this);
       if (++roots === 2) controller.abort();
     }
+
     return Reflect.apply(originalEmit, this, [event, ...args]);
   });
   const result = await parseMessage(encode('Content-Type: message/rfc822\n\nFrom: nested@example.org\n\nbody'), controller.signal);

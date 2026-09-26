@@ -29,6 +29,7 @@ function metadata(json: string) {
 
 async function directory(data: unknown = rows) {
   const json = JSON.stringify(data);
+
   return buildBrandDirectory(json, metadata(json));
 }
 
@@ -40,6 +41,7 @@ test('exact names take precedence; name words intersect without inferring acrony
   assert.deepEqual(lookup('Google').matches.map((m) => m.name), ['Google Cloud', 'Google Drive']);
   assert.equal(lookup('cloud google').matchedBy, 'name_words');
   assert.deepEqual(lookup('cloud google').matches.map((m) => m.domain), ['cloud.google.com']);
+
   for (const value of ['AWS', 'Google unknown', '!!!']) {
     assert.equal(lookup(value).totalMatches, 0);
     assert.deepEqual(lookup(value).matches, []);
@@ -54,9 +56,11 @@ test('exact hosts preserve shared services and do not expand parents or path URL
     ['Pass', ['additional-domain']], ['Vault', ['additional-domain']],
   ]);
   assert.deepEqual(lookup('www.root.example').matches.map((m) => m.matchedHostFields), [['url']]);
+
   for (const value of ['google.com', 'login.vault.example', 'vault.example.attacker.test', 'www.gov.example', 'portal.example']) {
     assert.deepEqual(lookup(value).matches, []);
   }
+
   const agency = lookup('login.agency.example').matches[0];
   assert.equal(agency.url, 'https://www.gov.example/agency/');
   assert.deepEqual(agency.regions, ['-us']);
@@ -94,7 +98,9 @@ test('rejects invalid tool inputs and distinguishes unusable snapshots from no m
   for (const value of ['https://example.com', '../auth.json', '127.0.0.1', 'localhost', 'x@y.com', 'a'.repeat(64) + '.com']) {
     assert.equal(v.safeParse(brandQuerySchema, { kind: 'hostname', value }).success, false);
   }
+
   for (const value of ['', '   ']) assert.equal(v.safeParse(brandQuerySchema, { kind: 'name', value }).success, false);
+
   await assert.rejects(buildBrandDirectory('[]', { ...metadata('[]'), sha256: '0'.repeat(64) }), /checksum/);
   await assert.rejects(buildBrandDirectory('{', metadata('{')), /Invalid brand directory JSON/);
   await assert.rejects(buildBrandDirectory('é'.repeat(1_100_000), metadata('')), /size limit/);

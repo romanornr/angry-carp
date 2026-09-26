@@ -48,6 +48,7 @@ test('removes userinfo, query, and fragment in order without retaining their val
     kind: 'disclosable', url: 'http://phish.example:8080/login',
     cuts: [{ kind: 'userinfo_removed' }, { kind: 'query_removed' }, { kind: 'fragment_removed' }],
   });
+
   for (const [suffix, cuts] of [
     ['?email=jane.doe@example.com', [{ kind: 'query_removed' }]],
     ['#jane.doe@example.com', [{ kind: 'fragment_removed' }]],
@@ -59,6 +60,7 @@ test('removes userinfo, query, and fragment in order without retaining their val
       kind: 'disclosable', url: 'https://phish.example/login', cuts,
     });
   }
+
   assert.deepEqual(reduceUrlForDisclosure('https://:secret@phish.example/', []), {
     kind: 'disclosable', url: 'https://phish.example/', cuts: [{ kind: 'userinfo_removed' }],
   });
@@ -77,6 +79,7 @@ test('removes all subdomains when any label matches, preserving private tenants 
       kind: 'disclosable', url, cuts: [{ kind: 'subdomain_removed', cause }],
     });
   }
+
   assert.deepEqual(reduceUrlForDisclosure('https://jane-doe.pages.dev/', []), {
     kind: 'disclosable', url: 'https://jane-doe.pages.dev/', cuts: [],
   });
@@ -89,6 +92,7 @@ test('withholds identifiers that survive in registrable domains, private tenants
   ]) {
     assert.deepEqual(reduceUrlForDisclosure(input, recipients), { kind: 'withheld', reason: 'identifier_remains' });
   }
+
   assert.deepEqual(reduceUrlForDisclosure('https://phish.example/abc/def', [{ address: 'abc/def@example.com' }]), {
     kind: 'withheld', reason: 'identifier_remains',
   });
@@ -145,6 +149,7 @@ test('matches UTF-8 identities whose bytes appear at different percent-encoding 
       cuts: [{ kind: 'path_cut', cause: 'identifier', segmentIndex: 0 }],
     });
   }
+
   for (let firstDepth = 0; firstDepth < 4; firstDepth++) {
     for (let secondDepth = 0; secondDepth < 4; secondDepth++) {
       const segment = `%${'25'.repeat(firstDepth)}C3%${'25'.repeat(secondDepth)}A9lodie`;
@@ -171,6 +176,7 @@ test('ignores short identifiers and a first name alone, retaining below-threshol
       kind: 'disclosable', url: input, cuts: [],
     });
   }
+
   assert.deepEqual(reduceUrlForDisclosure('https://phish.example/abc', [{ address: 'abc@example.com' }]), {
     kind: 'disclosable', url: 'https://phish.example/', cuts: [{ kind: 'path_cut', cause: 'identifier', segmentIndex: 0 }],
   });
@@ -180,6 +186,7 @@ test('withholds malformed URLs and unsupported schemes without disclosing the in
   for (const input of ['', 'not a url', '/relative', 'https://', 'https://[broken]/', 'https://host:99999/']) {
     assert.deepEqual(reduceUrlForDisclosure(input, recipients), { kind: 'withheld', reason: 'invalid_url' });
   }
+
   for (const input of ['mailto:jane.doe@example.com', 'ftp://phish.example/', 'data:text/plain,jane.doe']) {
     assert.deepEqual(reduceUrlForDisclosure(input, recipients), { kind: 'withheld', reason: 'unsupported_scheme' });
   }
@@ -203,8 +210,10 @@ test('records combined cuts in algorithm order and reducing the output again lea
 test('generated recipient placements never retain an identifier in any returned string', () => {
   const identities = Object.freeze([Object.freeze({ address: 'jane.doe@example.com', displayName: 'Jane Doe' })]);
   const identifiers = ['jane.doe@example.com', 'jane.doe', 'janedoe', 'jane.doe', 'jane-doe', 'jane_doe', 'jane+doe', 'jane doe'];
+
   for (const identifier of identifiers) {
     let encoded = identifier.toUpperCase();
+
     for (let depth = 0; depth < 5; depth++) {
       for (const input of [
         `https://phish.example/login/${encoded}/next`, `https://phish.example/?email=${encoded}`,
@@ -214,11 +223,14 @@ test('generated recipient placements never retain an identifier in any returned 
         const result = reduceUrlForDisclosure(input, identities);
         assert.ok(result.kind === 'disclosable' || result.kind === 'withheld');
         const serialized = decodeURIComponent(JSON.stringify(result)).toLowerCase();
+
         for (const needle of identifiers) assert.equal(serialized.includes(needle), false);
+
         if (result.kind === 'disclosable') {
           assert.deepEqual(reduceUrlForDisclosure(result.url, identities), { kind: 'disclosable', url: result.url, cuts: [] });
         }
       }
+
       encoded = encodeURIComponent(encoded);
     }
   }

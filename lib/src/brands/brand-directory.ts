@@ -50,6 +50,7 @@ const rowsSchema = v.pipe(v.array(v.tuple([textSchema, v.object({
 
 type BrandQuery = v.InferOutput<typeof brandQuerySchema>;
 type HostField = 'domain' | 'additional-domain' | 'url';
+
 type Entry = {
   name: string;
   key: string;
@@ -71,23 +72,29 @@ export async function buildBrandDirectory(json: string, metadata: unknown) {
   if (hash !== source.sha256) throw new Error('Brand directory checksum mismatch.');
 
   let data: unknown;
+
   try {
     data = JSON.parse(json);
   } catch {
     throw new Error('Invalid brand directory JSON.');
   }
+
   const entries = v.parse(rowsSchema, data).map(([name, row]): Entry => {
     const hosts = new Map<string, HostField[]>();
     append(hosts, row.domain, 'domain');
+
     for (const host of row['additional-domains']) append(hosts, host, 'additional-domain');
+
     if (row.url) {
       const url = new URL(row.url);
+
       if ((url.protocol === 'https:' || url.protocol === 'http:') && url.pathname === '/'
         && !url.search && !url.hash && !url.username && !url.password && !url.port) {
         const host = v.safeParse(hostnameSchema, url.hostname);
         if (host.success) append(hosts, host.output, 'url');
       }
     }
+
     return {
       name, key: normalizeName(name), tokens: new Set(nameTokens(name)), domain: row.domain,
       additionalDomains: [...new Set(row['additional-domains'])], url: row.url ?? null,
@@ -100,20 +107,25 @@ export async function buildBrandDirectory(json: string, metadata: unknown) {
   const byName = new Map<string, Entry[]>();
   const byWord = new Map<string, Entry[]>();
   const byHost = new Map<string, Entry[]>();
+
   for (const entry of entries) {
     append(byName, entry.key, entry);
+
     for (const word of entry.tokens) append(byWord, word, entry);
+
     for (const host of entry.hosts.keys()) append(byHost, host, entry);
   }
 
   function lookup(query: BrandQuery) {
     let matchedBy: 'exact_name' | 'name_words' | 'exact_hostname';
     let found: Entry[];
+
     if (query.kind === 'hostname') {
       matchedBy = 'exact_hostname';
       found = byHost.get(query.value) ?? [];
     } else {
       const exact = byName.get(normalizeName(query.value));
+
       if (exact) {
         matchedBy = 'exact_name';
         found = exact;
@@ -124,6 +136,7 @@ export async function buildBrandDirectory(json: string, metadata: unknown) {
         found = (buckets[0] ?? []).filter((entry) => words.every((word) => entry.tokens.has(word)));
       }
     }
+
     return {
       query, source: { ...source }, matchedBy,
       totalMatches: found.length, truncated: found.length > 8,
@@ -140,6 +153,7 @@ export async function buildBrandDirectory(json: string, metadata: unknown) {
       }),
     };
   }
+
   return { lookup };
 }
 

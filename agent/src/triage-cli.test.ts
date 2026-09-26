@@ -28,10 +28,12 @@ for (const { failure, code, stderr } of [
     let body = 'Synthetic email body.';
     const extraArgs: string[] = ['--reviewed-text', input];
     if (failure === 'clean') extraArgs.length = 0;
+
     if (failure === 'projection') {
       body = '<a href="https://private-user@action.example.com/private-path?private-query">' +
         'private-text<img src="https://image.example.org/private-image" alt="private-alt"></a>';
     }
+
     let sender = 'private-user@sender.example';
     if (failure === 'clean') sender = 'private-user@example.com';
     await writeFile(original, `From: ${sender}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n` + body);
@@ -45,22 +47,26 @@ for (const { failure, code, stderr } of [
     });
     let expectedStderr = `Analyzing email…\nAssessing analyzed email…\n${stderr}`;
     if (failure === 'clean') expectedStderr = 'Analyzing email…\n';
+
     if (code !== 0) {
       await assert.rejects(command, (error: unknown) => {
         assert.ok(error instanceof Error && 'code' in error && 'killed' in error && 'stdout' in error && 'stderr' in error);
         assert.equal(error.code, code);
         assert.equal(error.killed, false);
         assert.equal(error.stderr, expectedStderr);
+
         if (['output', 'unstructured', 'unknown-reference'].includes(failure)) {
           assert.match(String(error.stdout), /^Deterministic email analysis/);
           assert.doesNotMatch(String(error.stdout), /\nAI assessment\n/);
         }
         else assert.match(String(error.stdout), /AI assessment\nConcern: high; confidence: moderate\./);
         assert.doesNotMatch(String(error.stdout), /Invented unrelated/);
+
         return true;
       });
     } else {
       const result = await command;
+
       if (failure === 'clean') {
         assert.match(result.stdout, /No concerns detected within completed applicable checks/);
         assert.doesNotMatch(result.stdout, /AI assessment\n/);
@@ -84,6 +90,7 @@ test('Flue triage accepts operator references without authorizing model disclosu
     assert.equal(error.code, 2);
     assert.match(String(error.stdout), /adjacent character swap.*Reference source: operator/);
     assert.equal(error.stderr, 'Analyzing email…\nAI assessment required. Supply --reviewed-text with text approved for model disclosure.\n');
+
     return true;
   });
 });

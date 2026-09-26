@@ -109,6 +109,7 @@ export const reportingChannels: readonly ChannelRecord[] = [
 ];
 
 type PublishedRoutes = Omit<ChannelRecord, 'serviceRoles'>;
+
 type ChannelLookup = { query: ReportingQuery } & (
   | { kind: 'listed'; references: PublishedRoutes[] }
   | { kind: 'provider_not_listed'; guidance: string }
@@ -119,6 +120,7 @@ type ChannelLookup = { query: ReportingQuery } & (
 export function findReportingChannels(query: ReportingQuery): ChannelLookup {
   const providerRecords = reportingChannels.filter((record) => record.provider === query.provider);
   const matches = providerRecords.filter((record) => record.serviceRoles.includes(query.serviceRole));
+
   if (matches.length > 0) {
     return {
       query: { ...query }, kind: 'listed',
@@ -127,6 +129,7 @@ export function findReportingChannels(query: ReportingQuery): ChannelLookup {
   }
 
   let guidance = 'No reviewed route for this query. Record the official-channel gap; do not construct a contact.';
+
   if (query.serviceRole === 'registrar') {
     guidance = 'Use the registrar abuse contact from case RDAP, retaining its registrar relationship and source. If absent, record the channel gap; do not construct an address.';
   }

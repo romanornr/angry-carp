@@ -12,6 +12,7 @@ test('assessment renders only selected records and rejects invented prose or ref
     + 'AI hypothesis: impersonation.\nSelected evidence:\n'
     + '- supports [finding0]: Recorded domain difference; ownership unknown.\\u{a}\\u{1b}[31m\n'
     + 'The AI selected the conclusion and evidence. Refer to the recorded findings and coverage for the complete analysis.\n');
+
   for (const invalid of [undefined, 'An unrelated sender.', { ...selection, explanation: 'An unrelated sender.' },
     { ...selection, evidence: [{ id: 'unrelated sender', role: 'supports' }] }]) {
     assert.throws(() => formatAssessment(invalid, evidence));
@@ -30,12 +31,14 @@ test('failed RDAP output distinguishes discovery from registry without exposing 
   t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
     const url = String(input);
     if (url.includes('dns-query')) return new Response(null, { status: 429 });
+
     if (!failDiscovery && url === bootstrapUrl) {
       return Response.json({ services: [[['com', 'org'], ['https://registry.example/']]] });
     }
     throw new Error('private-token-in-error', { cause: { code: 'ENOTFOUND' } });
   });
   const directory = await loadBrandDirectory();
+
   for (const discoveryFailure of [true, false]) {
     failDiscovery = discoveryFailure;
     const result = await analyzeEmail(new TextEncoder().encode(original), { directory });
@@ -45,6 +48,7 @@ test('failed RDAP output distinguishes discovery from registry without exposing 
     assert.doesNotMatch(output, /private-token-in-error/);
     assert.doesNotMatch(JSON.stringify(analysisForModel(result)), /private-token-in-error|data\.iana\.org|registry\.example/);
     assert.equal(result.kind, 'analyzed');
+
     if (result.kind === 'analyzed') {
       assert.equal(result.routing.kind, 'assessment_required');
       assert.ok(result.retries.some(({ previousResult }) => previousResult.kind === 'unavailable'
@@ -77,6 +81,7 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
   let failNetwork = false;
   t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
     const url = new URL(String(input));
+
     if (url.hostname === 'cloudflare-dns.com') {
       const name = url.searchParams.get('name');
       const types: Record<string, number> = { A: 1, AAAA: 28, MX: 15, TXT: 16, NS: 2 };
@@ -86,6 +91,7 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
       if (type === 2) Answer.push({ name, type: 2, TTL: 60, data: 'dan.ns.cloudflare.com.' });
       return Response.json({ Status: 0, TC: false, Question: [{ name, type }], Answer });
     }
+
     if (url.hostname === 'data.iana.org') {
       let suffixes = ['com', 'net', 'org'];
       if (url.pathname.endsWith('ipv4.json')) suffixes = ['8.8.8.0/24'];
@@ -111,8 +117,10 @@ test('projection prioritizes action/mail hosts and summarizes skipped checks whi
   assert.equal(projection.kind, 'analyzed');
   if (projection.kind !== 'analyzed') return;
   assert.equal(projection.hosts[0].role, 'action');
+
   // Enough action occurrences may also fill the disclosure cap. Deduplication must retain each mail role.
   for (const role of ['from', 'return-path', 'signature', 'authentication']) assert.ok(projection.hosts.some((host) => host.role === role), role);
+
   assert.ok(projection.checks.length <= 36);
   assert.ok(projection.registrations.length <= 6);
   assert.ok(projection.skippedChecks.some(({ count }) => count > 100));

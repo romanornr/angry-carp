@@ -44,21 +44,25 @@ const digitRun = new RegExp(`[0-9]{${DIGIT_RUN_MIN},}`);
  */
 export function reduceUrlForDisclosure(input: string, recipients: readonly RecipientIdentity[]): ReducedUrl {
   let url: URL;
+
   try {
     url = new URL(input);
   } catch {
     return { kind: 'withheld', reason: 'invalid_url' };
   }
+
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return { kind: 'withheld', reason: 'unsupported_scheme' };
   }
 
   const cuts: UrlCut[] = [];
+
   if (url.username || url.password) {
     url.username = '';
     url.password = '';
     cuts.push({ kind: 'userinfo_removed' });
   }
+
   // Evilginx's extractParams decrypts arbitrary query values into session parameters.
   // Drop the whole query because recognizing parameter names or plaintext cannot cover this.
   // https://github.com/kgretzky/evilginx2/blob/4c0988a1d9db4d172a185e979a38bfd0efdb5830/core/http_proxy.go#L1371-L1401
@@ -76,6 +80,7 @@ export function reduceUrlForDisclosure(input: string, recipients: readonly Recip
   // https://github.com/remusao/tldts/blob/637f6f397789e2c7b4deda669fccae278f3124c1/packages/tldts/index.ts#L11-L19
   // https://github.com/remusao/tldts/blob/637f6f397789e2c7b4deda669fccae278f3124c1/packages/tldts/src/suffix-trie.ts#L182-L208
   const { domain, subdomain } = parse(url.hostname, { allowPrivateDomains: true });
+
   if (domain && subdomain) {
     for (const label of subdomain.split('.')) {
       const cause = cutCause(label, identifiers);
@@ -88,6 +93,7 @@ export function reduceUrlForDisclosure(input: string, recipients: readonly Recip
   }
 
   const segments = url.pathname.slice(1).split('/');
+
   for (const [segmentIndex, segment] of segments.entries()) {
     const cause = cutCause(segment, identifiers);
     if (cause === null) continue;
@@ -102,6 +108,7 @@ export function reduceUrlForDisclosure(input: string, recipients: readonly Recip
   if (containsIdentifier(recursiveUnescape(url.href), identifiers)) {
     return { kind: 'withheld', reason: 'identifier_remains' };
   }
+
   return { kind: 'disclosable', url: url.href, cuts };
 }
 
@@ -111,18 +118,23 @@ export function reduceUrlForDisclosure(input: string, recipients: readonly Recip
 function recipientIdentifiers(recipients: readonly RecipientIdentity[]) {
   const literals = new Set<string>();
   const fullNames = new Set<string>();
+
   for (const recipient of recipients) {
     const address = recursiveUnescape(recipient.address).toLowerCase();
     const at = address.lastIndexOf('@');
     const username = address.slice(0, at);
+
     for (const identifier of [address, username]) {
       if (identifier.length >= MIN_IDENTIFIER_LENGTH) literals.add(identifier);
     }
+
     const words = recursiveUnescape(recipient.displayName ?? '').toLowerCase().trim().split(/\s+/u);
+
     if (words.length >= 2 && words.join('').length >= MIN_IDENTIFIER_LENGTH) {
       fullNames.add(words.map((word) => RegExp.escape(word)).join('[.\\-_+ ]?'));
     }
   }
+
   return { literals: [...literals], fullNames: [...fullNames].map((pattern) => new RegExp(pattern, 'u')) };
 }
 
@@ -131,6 +143,7 @@ function recipientIdentifiers(recipients: readonly RecipientIdentity[]) {
 // https://github.com/sublime-security/sublime-rules/blob/1f95e6d8e2f3153707b451812502741acbb4fe9b/detection-rules/link_url_with_recipient_targeting_and_special_characters.yml#L40-L48
 function containsIdentifier(decoded: string, identifiers: ReturnType<typeof recipientIdentifiers>): boolean {
   const lower = decoded.toLowerCase();
+
   return identifiers.literals.some((identifier) => lower.includes(identifier))
     || identifiers.fullNames.some((pattern) => pattern.test(lower));
 }

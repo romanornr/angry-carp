@@ -41,8 +41,10 @@ export async function requestJson({ url, signal, accept }: {
       signal,
     });
     const receivedAt = Date.now();
+
     if (!response.ok) {
       await response.body?.cancel();
+
       if (response.status >= 300 && response.status < 400) {
         return { kind: 'unavailable', reason: 'redirected' };
       }
@@ -53,15 +55,18 @@ export async function requestJson({ url, signal, accept }: {
     const decoder = new TextDecoder();
     let bytes = 0;
     let text = '';
+
     // Exiting iteration cancels the body, including when the byte limit is exceeded.
     for await (const chunk of response.body) {
       bytes += chunk.byteLength;
       if (bytes > maxResponseBytes) return { kind: 'unavailable', reason: 'response_too_large' };
       text += decoder.decode(chunk, { stream: true });
     }
+
     text += decoder.decode();
     let expiry = 0;
     if (response.status === 200) expiry = freshUntil(response.headers, startedAt, receivedAt);
+
     try {
       return { kind: 'received', body: JSON.parse(text), retrievedAt: new Date(receivedAt).toISOString(),
         freshUntil: expiry };
@@ -74,15 +79,19 @@ export async function requestJson({ url, signal, accept }: {
       if (signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError') reason = 'timeout';
       return { kind: 'unavailable', reason };
     }
+
     const causes: unknown[] = [error];
     if (error instanceof Error) causes.push(error.cause);
+
     for (const cause of causes) {
       if (!cause || typeof cause !== 'object' || !('code' in cause)) continue;
+
       if (cause.code === 'ENOTFOUND' || cause.code === 'EAI_AGAIN') {
         return { kind: 'unavailable', reason: 'name_resolution' };
       }
       if (cause.code === 'ECONNRESET') return { kind: 'unavailable', reason: 'connection_reset' };
     }
+
     // Never forward server bodies, fetch exceptions, or ambient runtime details to the model.
     return { kind: 'unavailable', reason: 'request_failed' };
   }
@@ -97,6 +106,7 @@ function freshUntil(headers: Headers, startedAt: number, receivedAt: number): nu
   if (headers.has('pragma')) return 0;
   if (headers.get('vary')?.split(',').some((name) => !['accept', 'accept-encoding'].includes(name.trim().toLowerCase()))) return 0;
   const directives = new Map<string, string | undefined>();
+
   for (const field of (headers.get('cache-control') ?? '').split(',')) {
     if (!field.trim()) continue;
     const match = /^\s*([a-z-]+)(?:\s*=\s*(\d+|"\d+"))?\s*$/i.exec(field);
@@ -106,10 +116,12 @@ function freshUntil(headers: Headers, startedAt: number, receivedAt: number): nu
     if (name !== 'max-age' && match[2] !== undefined) return 0;
     directives.set(name, match[2]?.replaceAll('"', ''));
   }
+
   const date = Date.parse(headers.get('date') ?? '');
   const age = headers.get('age') ?? '0';
   if (!Number.isFinite(date) || !/^\d+$/.test(age) || !Number.isSafeInteger(Number(age))) return 0;
   let lifetime: number;
+
   if (directives.has('max-age')) {
     const seconds = Number(directives.get('max-age'));
     if (!Number.isSafeInteger(seconds)) return 0;
@@ -119,5 +131,6 @@ function freshUntil(headers: Headers, startedAt: number, receivedAt: number): nu
   }
   if (!Number.isSafeInteger(lifetime) || lifetime <= 0) return 0;
   const currentAge = Math.max(0, receivedAt - date, Number(age) * 1000 + receivedAt - startedAt);
+
   return receivedAt + lifetime - currentAge;
 }

@@ -30,11 +30,13 @@ const htmlSchema = v.pipe(v.string(), v.maxLength(MAX_HTML_BYTES), v.check(
 ));
 
 type Span = { start: number; end: number };
+
 type Reference =
   | { kind: 'web'; value: string | null; url: string | null; hostname: string | null }
   | { kind: 'scheme_relative'; value: string | null; hostname: string | null }
   | { kind: 'empty' | 'relative' | 'cid' | 'data' | 'other' | 'invalid'; value: string }
   | { kind: 'omitted'; reason: 'reference_limit' };
+
 type OccurrenceSource = {
   id: number;
   quoteContext: 'marked_quote' | 'unmarked';
@@ -42,10 +44,13 @@ type OccurrenceSource = {
   attributeSpan: Span | null;
   elementSpan: Span | null;
 };
+
 type Anchor = OccurrenceSource & { kind: 'anchor'; text: string; textTruncated: boolean };
+
 type Image = OccurrenceSource & {
   kind: 'image'; alt: string; altTruncated: boolean; enclosingAnchorId: number | null;
 };
+
 type Occurrence = Anchor | Image;
 type Node = DefaultTreeAdapterMap['node'];
 type Element = DefaultTreeAdapterMap['element'];
@@ -76,22 +81,27 @@ export function extractEmailLinks(input: string) {
   while (stack.length > 0) {
     const frame = stack.pop();
     if (!frame) break;
+
     if (++visitedNodes > MAX_NODES) {
       limits.add('node_limit');
       break;
     }
+
     const { node } = frame;
     let anchor = frame.anchor;
     let quoted = frame.quoted;
+
     if ('value' in node && anchor) {
       const text = anchor.text + node.value;
       anchor.text = clip(text, MAX_TEXT_LENGTH);
+
       if (text.length > MAX_TEXT_LENGTH) {
         anchor.textTruncated = true;
         limits.add('text_limit');
       }
     }
     if ('data' in node) unsupported.comment++;
+
     if ('tagName' in node) {
       const attrs = new Map(node.attrs.map(({ name, value }) => [name, value]));
       // gmail_quote is a client marker, not proof of authorship. Keep its contents as observations.
@@ -102,6 +112,7 @@ export function extractEmailLinks(input: string) {
       if (attrs.has('style') || node.tagName === 'style') unsupported.style++;
       if (node.tagName === 'base') unsupported.base++;
       if (node.tagName === 'form') unsupported.form++;
+
       if (attrs.has('formaction') || attrs.has('background') || attrs.has('poster') ||
           (node.tagName === 'meta' && attrs.get('http-equiv')?.toLowerCase() === 'refresh')) {
         unsupported.otherUrlAttribute++;
@@ -111,6 +122,7 @@ export function extractEmailLinks(input: string) {
       if (node.tagName === 'template') { unsupported.template++; continue; }
       if (node.tagName === 'script') { unsupported.script++; continue; }
       if (node.tagName === 'style') continue;
+
       if (node.namespaceURI !== 'http://www.w3.org/1999/xhtml') {
         unsupported.foreign++;
         continue;
@@ -119,14 +131,17 @@ export function extractEmailLinks(input: string) {
       let attribute: 'href' | 'src' | null = null;
       if (node.tagName === 'a' && attrs.has('href')) attribute = 'href';
       if (node.tagName === 'img' && attrs.has('src')) attribute = 'src';
+
       if (attribute) {
         if (occurrences.length === MAX_OCCURRENCES) {
           limits.add('occurrence_limit');
           break;
         }
+
         const reference = parseReference(attrs.get(attribute) ?? '');
         if (reference.kind === 'omitted' || reference.value === null ||
             (reference.kind === 'web' && reference.url === null)) limits.add('reference_limit');
+
         let quoteContext: OccurrenceSource['quoteContext'] = 'unmarked';
         if (quoted) quoteContext = 'marked_quote';
         const source = {
@@ -136,6 +151,7 @@ export function extractEmailLinks(input: string) {
           attributeSpan: span(node.sourceCodeLocation?.attrs?.[attribute]),
           elementSpan: span(node.sourceCodeLocation),
         };
+
         if (attribute === 'href') {
           anchor = { ...source, kind: 'anchor', text: '', textTruncated: false };
           occurrences.push(anchor);
@@ -150,6 +166,7 @@ export function extractEmailLinks(input: string) {
         unsupported.otherUrlAttribute++;
       }
     }
+
     if ('childNodes' in node) {
       for (let index = node.childNodes.length - 1; index >= 0; index--) {
         stack.push({ node: node.childNodes[index], anchor, quoted });
@@ -186,11 +203,14 @@ function parseReference(value: string): Reference {
   // Classify the full attribute before shortening retained text so padding cannot hide a hostname.
   const retained = retain(value);
   const schemeRelative = value.trim().startsWith('//');
+
   if (!value.trim()) {
     if (retained === null) return { kind: 'omitted', reason: 'reference_limit' };
     return { kind: 'empty', value };
   }
+
   let url: URL;
+
   try {
     if (schemeRelative) {
       // Supply a temporary scheme to parse the hostname while retaining the scheme-relative classification.
@@ -203,7 +223,9 @@ function parseReference(value: string): Reference {
     if (schemeRelative || /^[a-z][a-z\d+.-]*:/i.test(value.trim())) return { kind: 'invalid', value };
     return { kind: 'relative', value };
   }
+
   if (schemeRelative) return { kind: 'scheme_relative', value: retained, hostname: retain(url.hostname) };
+
   if (url.protocol === 'http:' || url.protocol === 'https:') {
     return { kind: 'web', value: retained, url: retain(url.href), hostname: retain(url.hostname) };
   }
@@ -227,9 +249,11 @@ export function summarizeEmailLinks(result: EmailLinks) {
     embeddedResourceResolution: 'unavailable',
     occurrences: result.occurrences.map((occurrence) => {
       let hostname: string | null = null;
+
       if (occurrence.reference.kind === 'web' || occurrence.reference.kind === 'scheme_relative') {
         hostname = occurrence.reference.hostname;
       }
+
       let enclosingAnchorId: number | null = null;
       if (occurrence.kind === 'image') enclosingAnchorId = occurrence.enclosingAnchorId;
       return { id: occurrence.id, role: occurrence.kind, referenceKind: occurrence.reference.kind,

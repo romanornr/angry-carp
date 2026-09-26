@@ -56,6 +56,7 @@ test('host-assisted CLI prepares, holds failures, checks bindings and never fetc
     assert.ok(error instanceof Error && 'code' in error && 'stdout' in error);
     assert.equal(error.code, 3);
     assert.equal(error.stdout, 'Report held: reportingChannel:failed.\n');
+
     return true;
   });
   record.checks.reportingChannel.kind = 'supported';
@@ -73,6 +74,7 @@ test('host-assisted CLI prepares, holds failures, checks bindings and never fetc
   await assert.rejects(cli(...args), (error: unknown) => {
     assert.ok(error instanceof Error && 'stdout' in error);
     assert.equal(error.stdout, 'Report held: draft_changed.\n');
+
     return true;
   });
 });

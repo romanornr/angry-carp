@@ -12,8 +12,10 @@ test('embedded directory references trigger assessment with completed lookups an
     if (String(input) === 'https://data.iana.org/rdap/dns.json') {
       return Response.json({ services: [[['com', 'net'], ['https://registry.example/']]] });
     }
+
     return healthy(input);
   });
+
   for (const [host, expected] of [
     ['paypal.com.attacker.net', 'assessment_required'],
     ['paypal-com.attacker.net', 'assessment_required'],
@@ -24,6 +26,7 @@ test('embedded directory references trigger assessment with completed lookups an
     const result = await analyzeEmail(new TextEncoder().encode(message), { directory });
     if (result.kind !== 'analyzed') assert.fail('Expected analysis');
     assert.equal(result.routing.kind, expected, host);
+
     if (result.routing.kind !== 'assessment_required') {
       assert.deepEqual(result.findings, []);
       continue;
@@ -57,6 +60,7 @@ function fixtureFetch(calls: string[]) {
   return async (input: string | URL | Request) => {
     const url = new URL(String(input));
     calls.push(url.href);
+
     if (url.hostname === 'cloudflare-dns.com') {
       const name = url.searchParams.get('name');
       const type = url.searchParams.get('type');
@@ -64,12 +68,14 @@ function fixtureFetch(calls: string[]) {
       const answers: { name: string | null; type: number; TTL: number; data: string }[] = [];
       if (type === 'NS') answers.push({ name, type: 2, TTL: 60, data: 'dan.ns.cloudflare.com.' });
       if (type === 'A') answers.push({ name, type: 1, TTL: 60, data: '188.114.96.0' });
+
       if (name === 'send.songbirdsoftware.ltd') {
         if (type === 'MX') answers.push({ name, type: 15, TTL: 60, data: '10 feedback-smtp.us-east-1.amazonses.com.' });
         if (type === 'TXT') answers.push({ name, type: 16, TTL: 60, data: '"v=spf1 include:amazonses.com ~all"' });
       }
       return Response.json({ Status: 0, TC: false, Question: [{ name, type: types[type ?? ''] }], Answer: answers });
     }
+
     if (url.hostname === 'data.iana.org') {
       if (url.pathname.endsWith('dns.json')) return Response.json({ services: [[['com', 'ltd', 'download'], ['https://registry.example/']]] }, { headers: { 'cache-control': 'max-age=60', date: new Date().toUTCString() } });
       return Response.json({ services: [[['188.114.96.0/24'], ['https://registry.example/']]] });
@@ -78,6 +84,7 @@ function fixtureFetch(calls: string[]) {
     if (url.pathname.startsWith('/domain/')) return Response.json({ objectClassName: 'domain', ldhName: url.pathname.slice(8),
       entities: [{ roles: ['registrar'], vcardArray: ['vcard', [['fn', {}, 'text', 'Example registrar']]],
         entities: [{ roles: ['abuse'], vcardArray: ['vcard', [['email', {}, 'text', 'abuse@registrar.example']]] }] }] });
+
     return Response.json({ objectClassName: 'ip network', startAddress: '188.114.96.0', endAddress: '188.114.96.255', ipVersion: 'v4', name: 'CLOUDFLARENET' });
   };
 }
@@ -124,6 +131,7 @@ test('partial lookup failures preserve local findings and do not manufacture a R
 test('a deferred registration gets one retry within the shared budget; permanent failures stop', async (t) => {
   const message = new TextEncoder().encode('From: sender@example.com\r\nContent-Type: text/html\r\n\r\n'
     + '<a href="https://first.com/">one</a><a href="https://second.com/">two</a><a href="https://deferred.com/">three</a>');
+
   for (const failure of ['reset_once', 'reset_always', 'rate_limit', 'invalid_json', 'cancel']) {
     const calls: string[] = [];
     const healthy = fixtureFetch(calls);
@@ -133,6 +141,7 @@ test('a deferred registration gets one retry within the shared budget; permanent
       if (String(input) === 'https://registry.example/domain/deferred.com') {
         attempts++;
         if (failure === 'cancel') { calls.push(String(input)); controller.abort(); throw controller.signal.reason; }
+
         if (failure === 'reset_always' || (failure === 'reset_once' && attempts === 1)) {
           calls.push(String(input));
           throw new TypeError('fetch failed', { cause: Object.assign(new Error('private transport detail'), { code: 'ECONNRESET' }) });
@@ -140,6 +149,7 @@ test('a deferred registration gets one retry within the shared budget; permanent
         if (failure === 'rate_limit') { calls.push(String(input)); return new Response(null, { status: 429 }); }
         if (failure === 'invalid_json') { calls.push(String(input)); return new Response('invalid'); }
       }
+
       return healthy(input);
     });
     const result = await analyzeEmail(message, { directory, signal: controller.signal });
@@ -155,6 +165,7 @@ test('a deferred registration gets one retry within the shared budget; permanent
     assert.ok(calls.filter((url) => url.includes('/domain/')).length <= 6);
     assert.ok(calls.length <= result.limits.httpRequests);
     assert.doesNotMatch(JSON.stringify(result), /private transport detail/);
+
     if (failure === 'cancel') {
       assert.ok(result.ipRdap.every(({ result }) => result.kind === 'skipped' && result.reason === 'cancelled'));
       assert.equal(calls.some((url) => url.includes('/ip/') || url.includes('ipv4.json')), false);
@@ -170,6 +181,7 @@ test('cancellation reaches an in-flight request and prevents later dispatch', as
     calls++;
     controller.abort();
     init.signal?.throwIfAborted();
+
     return Response.json({});
   });
   const result = await analyzeEmail(bytes, { directory, signal: controller.signal });
@@ -252,6 +264,7 @@ test('malformed lookup JSON remains an explicit gap without retrying or disclosi
       attempts++;
       return new Response('private-response-marker', { status: 200 });
     }
+
     return healthy(input);
   });
   const result = await analyzeEmail(new TextEncoder().encode('From: sender@example.com\r\n\r\nMeeting at noon.'), { directory });
@@ -267,6 +280,7 @@ test('malformed lookup JSON remains an explicit gap without retrying or disclosi
 
 test('transient lookup retries reuse successes; persistent failures and 429 require assessment', async (t) => {
   const text = new TextEncoder().encode('From: sender@example.com\r\n\r\nMeeting at noon.');
+
   for (const status of [503, 429]) {
     const counts = new Map<string, number>();
     const healthy = fixtureFetch([]);
@@ -284,6 +298,7 @@ test('transient lookup retries reuse successes; persistent failures and 429 requ
     assert.equal([...counts].find(([url]) => url.includes('type=TXT'))?.[1], 1);
     mock.mock.restore();
   }
+
   const healthy = fixtureFetch([]);
   let mxAttempts = 0;
   t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
@@ -308,10 +323,12 @@ test('borrowed images retain contacts without promotion; supplied resource evide
   assert.deepEqual(registrations.map(({ resource }) => resource.kind === 'domain' && resource.name).sort(),
     ['bifrostwalletapps.download']);
   assert.equal(result.rdap.find(({ domain }) => domain === 'bifrostwallet.com')?.result.kind, 'found');
+
   for (const candidate of registrations) {
     assert.equal(candidate.resource.kind, 'domain');
     if (candidate.resource.kind === 'domain') assert.ok(candidate.resource.subjectIds.length);
   }
+
   const sourceNotes = [{ url: 'https://support.example.com/advisory', retrievedAt: '2026-09-22T00:00:00Z', displayedDate: null,
     claim: 'Synthetic advisory identifies abuse at this image host.', providedBy: 'operator', sourceAuthority: 'claimed_official',
     relation: 'supports_concern', subjectHosts: ['bifrostwallet.com', 'send.songbirdsoftware.ltd'], messageDateApplicability: 'unknown' }];
@@ -341,6 +358,7 @@ test('a plaintext-only lookalike yields a resource-specific registrar candidate'
 test('forwarded and quoted targets remain separate but cannot route around assessment', async (t) => {
   const calls: string[] = [];
   t.mock.method(globalThis, 'fetch', fixtureFetch(calls));
+
   for (const content of [
     'Content-Type: text/plain\r\n\r\n> Visit https://paypa1-alerts.com/login',
     'Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: message/rfc822\r\n\r\n' +
@@ -353,11 +371,13 @@ test('forwarded and quoted targets remain separate but cannot route around asses
     assert.ok(result.observations.hosts.some(({ context }) => context !== 'unmarked'));
     assert.equal(result.findings.filter(({ kind }) => kind === 'concern').length, 0);
   }
+
   assert.equal(calls.some((url) => url.includes('paypa1-alerts.com')), false);
 });
 
 test('data action links are material while inline image data is an expected omission', async (t) => {
   t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+
   for (const [body, expected] of [
     ['<a href="data:text/html;base64,SGVsbG8=">Open</a>', 'assessment_required'],
     ['<img src="data:image/png;base64,SGVsbG8=">', 'no_concerns_detected'],
@@ -374,6 +394,7 @@ test('a failed retry preserves partial DNS evidence and its qualified investigat
     let attempts = 0;
     const mock = t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
       const url = String(input);
+
       if (url.includes('name=send.songbirdsoftware.ltd') && url.includes('type=TXT')) {
         if (++attempts === 2) {
           if (failure === 'http_error') return new Response(null, { status: 503 });
@@ -382,6 +403,7 @@ test('a failed retry preserves partial DNS evidence and its qualified investigat
         return Response.json({ Status: 0, TC: true, Question: [{ name: 'send.songbirdsoftware.ltd', type: 16 }],
           Answer: [{ name: 'send.songbirdsoftware.ltd', type: 16, TTL: 60, data: '"v=spf1 include:amazonses.com -all"' }] });
       }
+
       return healthy(input);
     });
     const result = await analyzeEmail(bytes, { directory });
@@ -403,6 +425,7 @@ test('a failed retry preserves partial DNS evidence and its qualified investigat
 
 test('typo matches require operator references to create concerns and reporting leads', async (t) => {
   t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+
   for (const [reference, observed, brand, kind] of [
     ['coinbase.com', 'coinbsae.com', 'Coinbase', 'character_swap'],
     ['microsoft.com', 'imcrosoft.com', 'Microsoft', 'character_swap'],
@@ -425,6 +448,7 @@ test('typo matches require operator references to create concerns and reporting 
       assert.ok(finding);
       assert.match(finding.text, /This does not establish ownership or deception/);
       assert.ok(assessmentEvidence(result).some(({ text }) => text === finding.text));
+
       if (source === 'operator') {
         assert.equal(finding.kind, 'concern');
         assert.deepEqual(result.routing, { kind: 'assessment_required', reason: 'concerns_detected', gaps: [] });
@@ -481,6 +505,7 @@ test('mixed-script findings request assessment without references or reporting a
 
 test('script inspection preserves label boundaries and legitimate writing systems', async (t) => {
   t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+
   for (const [host, expected] of [
     ['pаypäl.example.com', 'assessment_required'],
     ['café.пример.com', 'no_concerns_detected'],
@@ -500,6 +525,7 @@ test('script inspection preserves label boundaries and legitimate writing system
 test('mixed-script image, quote, and embedded-message findings remain informational', async (t) => {
   const calls: string[] = [];
   t.mock.method(globalThis, 'fetch', fixtureFetch(calls));
+
   for (const content of [
     'Content-Type: text/html; charset=utf-8\r\n\r\n<img src="https://pаypäl.com/logo.png">',
     'Content-Type: text/html; charset=utf-8\r\n\r\n<blockquote><a href="https://pаypäl.com/">Warning</a></blockquote>',
@@ -531,6 +557,7 @@ test('script inspection survives exhausted comparisons and findings retain host 
 
 test('mixed-script concerns are independent of folded-match reference policy', async (t) => {
   t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+
   for (const source of ['operator', 'directory_candidate', 'message_image']) {
     let name = 'Sender';
     let html = '';

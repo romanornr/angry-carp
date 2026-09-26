@@ -26,6 +26,7 @@ async function main() {
   // https://github.com/withastro/flue/blob/2663e507b52fc8b3b11b251314c5476d650116a1/apps/docs/src/content/docs/guide/evals.md
   await using output = await open(values.output, 'wx', 0o600);
   await using flue = await start({ agents: [PhishingTriage], db: sqlite() });
+
   for (const example of cases) {
     process.stderr.write(`Evaluating ${example.id}…\n`);
     const instance = init(PhishingTriage, { id: randomUUID() });

@@ -9,6 +9,7 @@ export async function runReport(args: string[]) {
     analysis: { type: 'string' }, output: { type: 'string' },
   } });
   const [command, first, researchPath, draftPath] = positionals;
+
   if (!values.analysis || !first || !['start', 'check'].includes(command) ||
       (command === 'start' && (positionals.length !== 2 || !values.output)) ||
       (command === 'check' && (positionals.length !== 4 || !researchPath || !draftPath))) {
@@ -17,7 +18,9 @@ export async function runReport(args: string[]) {
     process.exitCode = 2;
     return;
   }
+
   const analysis = await readInput(values.analysis, MAX_ANALYSIS_BYTES);
+
   if (command === 'start') {
     const request: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readInput(first, MAX_REPORT_BYTES)));
     const preparation = await startReportPreparation(request, analysis);
@@ -29,12 +32,14 @@ export async function runReport(args: string[]) {
       'Give the preparation to your AI host and run angry-carp instructions reporting. Research has not run.\n');
     return;
   }
+
   const result = await checkReportPreparation({ analysis,
     preparation: await readInput(first, MAX_REPORT_BYTES),
     research: await readInput(researchPath, MAX_REPORT_BYTES),
     draft: await readInput(draftPath, MAX_REPORT_BYTES),
   });
   if (values.output) await writeFile(values.output, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+
   if (result.kind === 'held') {
     process.stdout.write(`Report held: ${result.reasons.join(', ')}.\n`);
     process.exitCode = 3;

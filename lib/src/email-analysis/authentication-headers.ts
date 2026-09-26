@@ -20,6 +20,7 @@ type ParseFailure = {
   kind: 'unparsed';
   reason: 'header_limit' | 'invalid_syntax' | 'nesting_limit' | 'entry_limit' | 'unsupported_version';
 };
+
 type ReportedResult = {
   method: string;
   version: string | null;
@@ -28,13 +29,16 @@ type ReportedResult = {
   reason: string | null;
   properties: { type: string; name: string; rawValue: string }[];
 };
+
 type AuthenticationResults = ParseFailure | {
   kind: 'reported_results';
   authservId: string;
   version: '1';
   results: ReportedResult[];
 };
+
 type DkimFailure = { kind: 'unparsed'; reason: 'header_limit' | 'invalid_syntax' | 'entry_limit' };
+
 type DkimTags = DkimFailure | {
   kind: 'signature_tags';
   tags: { name: string; value: string }[];
@@ -45,28 +49,35 @@ type DkimTags = DkimFailure | {
 export function parseAuthenticationResults(value: string): AuthenticationResults {
   if (exceedsHeaderLimit(value)) return { kind: 'unparsed', reason: 'header_limit' };
   const reader = new HeaderReader(value);
+
   try {
     reader.space();
     const authservId = reader.value(false);
     const separated = reader.space();
+
     if (!reader.at(';')) {
       if (!separated) reader.fail();
       const version = reader.take(/^[0-9]+/);
       if (version !== '1') return { kind: 'unparsed', reason: 'unsupported_version' };
       reader.space();
     }
+
     const results: ReportedResult[] = [];
+
     while (!reader.done()) {
       if (results.length >= MAX_ENTRIES) reader.fail('entry_limit');
       reader.expect(';');
       reader.space();
       const method = reader.take(/^[A-Za-z0-9][A-Za-z0-9-]*/).toLowerCase();
       reader.space();
+
       if (method === 'none') {
         if (results.length || !reader.done()) reader.fail();
         return { kind: 'reported_results', authservId, version: '1', results: [] };
       }
+
       let version: string | null = null;
+
       if (reader.at('/')) {
         reader.expect('/');
         reader.space();
@@ -78,12 +89,14 @@ export function parseAuthenticationResults(value: string): AuthenticationResults
       const result = reader.take(/^[A-Za-z0-9][A-Za-z0-9-]*/).toLowerCase();
       let reason: string | null = null;
       const properties: ReportedResult['properties'] = [];
+
       while (!reader.done() && !reader.at(';')) {
         if (!reader.space()) reader.fail();
         if (reader.done() || reader.at(';')) break;
         if (properties.length >= MAX_ENTRIES) reader.fail('entry_limit');
         const name = reader.take(/^[A-Za-z0-9][A-Za-z0-9-]*/).toLowerCase();
         reader.space();
+
         if (name === 'reason' && reader.at('=')) {
           if (reason !== null || properties.length) reader.fail();
           reader.expect('=');
@@ -99,10 +112,12 @@ export function parseAuthenticationResults(value: string): AuthenticationResults
           properties.push({ type: name, name: property, rawValue: reader.value(true) });
         }
       }
+
       let interpretation: ReportedResult['interpretation'] = 'supported';
       if (version !== null && version !== '1') interpretation = 'unsupported_version';
       results.push({ method, version, interpretation, result, reason, properties });
     }
+
     if (!results.length) reader.fail();
     return { kind: 'reported_results', authservId, version: '1', results };
   } catch (error) {
@@ -125,6 +140,7 @@ export function parseDkimSignature(value: string): DkimTags {
   const tags: { name: string; value: string }[] = [];
   const seen = new Set<string>();
   const duplicateTags = new Set<string>();
+
   for (const segment of segments) {
     const match = /^[ \t]*([A-Za-z][A-Za-z0-9_]*)[ \t]*=[ \t]*([^;]*?)[ \t]*$/.exec(segment);
     if (!match) return { kind: 'unparsed', reason: 'invalid_syntax' };
@@ -133,6 +149,7 @@ export function parseDkimSignature(value: string): DkimTags {
     seen.add(name);
     tags.push({ name, value: tagValue });
   }
+
   return { kind: 'signature_tags', tags, duplicateTags: [...duplicateTags] };
 }
 
@@ -166,15 +183,18 @@ class HeaderReader {
     const match = pattern.exec(this.input.slice(this.offset));
     if (!match) this.fail();
     this.offset += match[0].length;
+
     return match[0];
   }
   space(): boolean {
     const start = this.offset;
+
     while (!this.done()) {
       if (this.at(' ') || this.at('\t')) { this.offset++; continue; }
       if (!this.at('(')) break;
       this.offset++;
       let depth = 1;
+
       while (depth) {
         if (this.done()) this.fail();
         const char = this.input[this.offset++];
@@ -185,14 +205,17 @@ class HeaderReader {
         if (depth > MAX_COMMENT_DEPTH) this.fail('nesting_limit');
       }
     }
+
     return this.offset > start;
   }
   value(address: boolean): string {
     const start = this.offset;
     let decoded: string;
+
     if (this.at('"')) {
       this.offset++;
       decoded = '';
+
       while (!this.at('"')) {
         if (this.done()) this.fail();
         const char = this.input[this.offset++];
@@ -202,6 +225,7 @@ class HeaderReader {
           decoded += char;
         }
       }
+
       this.offset++;
     } else if (address) {
       decoded = this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/[\]?=]+/u);
@@ -213,12 +237,14 @@ class HeaderReader {
     // RFC 8601 pvalue includes RFC 5322 local-part extended by RFC 6531 (SMTPUTF8).
     const end = this.offset;
     this.space();
+
     if (this.at('@')) {
       this.expect('@');
       this.space();
       this.take(/^[^\x00-\x20\x7f()<> ,;:\\"/[\]?=@]+/u);
     }
     else this.offset = end;
+
     return this.input.slice(start, this.offset);
   }
   private escaped(): string {

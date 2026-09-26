@@ -13,7 +13,7 @@
 	"scripts": {
 		"build": "npm run build --workspace @angry-carp/checks && npm run build --workspace @angry-carp/cli",
 		"prepare": "npm run build",
-		"test": "npm run build && npm run test --workspaces && node --test scripts/conventions.test.mjs",
+		"test": "npm run build && npm run test --workspaces && node --test scripts/*.test.mjs",
 		"check:types": "npm run build && npm run check:types --workspaces",
 		"lint": "npm run build && oxlint lib/src cli/src agent/src cli/build-resources.mjs scripts --deny-warnings --report-unused-disable-directives && npm run lint:structure",
 		"brands:check": "npm run build && npm run brands:check --workspace @angry-carp/checks",
@@ -25,6 +25,7 @@
 		"lint:structure": "konsistent validate && konsistent check --error-on-warnings"
 	},
 	"devDependencies": {
+		"@stylistic/eslint-plugin": "5.10.0",
 		"@types/node": "^22.10.10",
 		"konsistent": "1.0.0-beta.9",
 		"oxlint": "1.82.0",

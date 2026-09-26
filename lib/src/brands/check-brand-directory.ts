@@ -4,12 +4,14 @@ import { pathToFileURL } from 'node:url';
 import { loadBrandDirectory } from './load-brand-directory.ts';
 
 const args = process.argv.slice(2);
+
 if (args.length > 1) {
   console.error('Usage: npm run brands:check -- [snapshot-directory]');
   process.exitCode = 1;
 } else {
   let base: URL | undefined;
   if (args[0]) base = pathToFileURL(`${resolve(args[0])}/`);
+
   try {
     await loadBrandDirectory(base);
     console.log('Brand directory checksum and schema are valid. No model call was made.');

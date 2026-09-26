@@ -18,6 +18,7 @@ test('concurrent and subsequent lookups reuse fresh discovery; registry records 
     calls.push(url);
     if (url === bootstrapUrl) return Response.json(directory, { headers });
     assert.ok(url.startsWith('https://registry.example/domain/'));
+
     return Response.json({ ...record, ldhName: url.split('/').at(-1) });
   });
   const signal = new AbortController().signal;
@@ -27,7 +28,9 @@ test('concurrent and subsequent lookups reuse fresh discovery; registry records 
   assert.deepEqual(results.map(({ kind }) => kind), ['found', 'found', 'found']);
   assert.equal(calls.filter((url) => url === bootstrapUrl).length, 1);
   assert.equal(calls.length, 4);
+
   for (const result of results) assert.deepEqual(result.discovery, { sourceUrl: bootstrapUrl, retrievedAt: new Date(epoch).toISOString() });
+
   await lookupRdap(domain, { signal, bootstrap: createRdapBootstrap(signal) });
   assert.equal(calls.filter((url) => url === bootstrapUrl).length, 2, 'another run owns another cache');
 });
@@ -40,6 +43,7 @@ test('HTTP freshness bounds reuse, including age, no-store and concurrent uncach
   t.mock.method(globalThis, 'fetch', async (url: string) => {
     if (url !== bootstrapUrl) return Response.json(record);
     bootstrapRequests++;
+
     return Response.json(directory, { headers: responseHeaders });
   });
   const samples: { fields: Record<string, string>; advance: number; expected: number }[] = [
@@ -53,6 +57,7 @@ test('HTTP freshness bounds reuse, including age, no-store and concurrent uncach
     { fields: { ...headers, vary: 'Accept-Language' }, advance: 0, expected: 2 },
     { fields: { ...headers, age: 'invalid' }, advance: 0, expected: 2 },
   ];
+
   for (const sample of samples) {
     now = epoch;
     responseHeaders = sample.fields;
@@ -64,6 +69,7 @@ test('HTTP freshness bounds reuse, including age, no-store and concurrent uncach
     assert.equal((await lookupRdap(domain, options)).kind, 'found');
     assert.equal(bootstrapRequests, sample.expected, JSON.stringify(sample));
   }
+
   bootstrapRequests = 0;
   responseHeaders = { ...headers, 'cache-control': 'no-store' };
   const signal = new AbortController().signal;
@@ -79,8 +85,10 @@ test('failed or invalid discovery never poisons subsequent calls', async (t) => 
   t.mock.method(globalThis, 'fetch', async (url: string) => {
     if (url !== bootstrapUrl) return Response.json(record);
     requests++;
+
     return reply();
   });
+
   for (const [failure, reason] of [
     [() => { throw new Error('private host', { cause: { code: 'ENOTFOUND' } }); }, 'name_resolution'],
     [() => { throw Object.assign(new Error('private host'), { code: 'EAI_AGAIN' }); }, 'name_resolution'],
@@ -106,6 +114,7 @@ test('failed or invalid discovery never poisons subsequent calls', async (t) => 
 
 test('a cancelled waiter does not cancel siblings; owner cancellation settles the transport', async (t) => {
   t.mock.method(Date, 'now', () => epoch);
+
   for (const cancelOwner of [false, true]) {
     const owner = new AbortController();
     const caller = new AbortController();
@@ -120,6 +129,7 @@ test('a cancelled waiter does not cancel siblings; owner cancellation settles th
       const abort = () => { transportCancelled = true; release.reject(signal?.reason); };
       signal?.addEventListener('abort', abort, { once: true });
       started.resolve();
+
       try { return await release.promise; }
       finally { signal?.removeEventListener('abort', abort); }
     });
@@ -164,11 +174,14 @@ test('discovery failure after the last waiter aborts is evicted before the next 
   }
 });
 
-
 test('no-service results retain the actual discovery retrieval time on reuse', async (t) => {
   t.mock.method(Date, 'now', () => epoch);
   let requests = 0;
-  t.mock.method(globalThis, 'fetch', async () => { requests++; return Response.json({ services: [] }, { headers }); });
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests++;
+
+    return Response.json({ services: [] }, { headers });
+  });
   const signal = new AbortController().signal;
   const options = { signal, bootstrap: createRdapBootstrap(signal) };
   await lookupRdap(domain, options);
@@ -193,9 +206,11 @@ test('IPv4 and IPv6 discovery stay separate while each family is reused', async 
   });
   const signal = new AbortController().signal;
   const options = { signal, bootstrap: createRdapBootstrap(signal) };
+
   for (const address of ['192.0.2.1', '2001:db8::1', '192.0.2.2', '2001:db8::2']) {
     assert.equal((await lookupIpRdap(v.parse(ipAddressSchema, address), options)).kind, 'found');
   }
+
   assert.equal(calls.filter((url) => url.startsWith('https://data.iana.org/')).length, 2);
   assert.equal(calls.length, 6);
 });

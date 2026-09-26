@@ -7,9 +7,10 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
-const model = 'gpt-5.6-sol';
+const model = 'gpt-6-sol';
 const credentialStore = 'cli_auth_credentials_store="auto"';
 const environment: NodeJS.ProcessEnv = {};
+
 for (const key of ['HOME', 'PATH', 'CODEX_HOME', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS', 'TMPDIR']) {
 	if (process.env[key] !== undefined) environment[key] = process.env[key];
 }
@@ -42,11 +43,13 @@ abuse report now. Return only the required JSON object.`;
 
 async function checkCodex() {
 	const { stdout, stderr } = await execute('codex', ['-c', credentialStore, 'login', 'status'], { env: environment, timeout: 10_000 });
+
 	if (`${stdout}\n${stderr}`.trim() !== 'Logged in using ChatGPT') {
 		throw new Error('A Codex ChatGPT login is required. Run codex login and choose ChatGPT.');
 	}
 
 	const directory = await mkdtemp(join(tmpdir(), 'angry-carp-codex-'));
+
 	try {
 		const schemaPath = join(directory, 'response-schema.json');
 		const responsePath = join(directory, 'response.json');
@@ -60,12 +63,14 @@ async function checkCodex() {
 			'-c', 'web_search="disabled"', '-c', 'history.persistence="none"',
 			'-c', 'project_doc_max_bytes=0', '-c', 'features.skip_host_skill_discovery=true',
 		];
+
 		for (const feature of [
 			'shell_tool', 'apps', 'plugins', 'hooks', 'multi_agent', 'multi_agent_v2',
 			'browser_use', 'browser_use_external', 'in_app_browser', 'computer_use',
 			'image_generation', 'view_image', 'memories', 'skill_search',
 			'skill_mcp_dependency_install', 'code_mode', 'code_mode_host',
 		]) args.push('--disable', feature);
+
 		args.push(prompt);
 
 		process.stderr.write(`Using the existing Codex ChatGPT login with ${model}. Synthetic input only.\n`);

@@ -57,12 +57,14 @@ test('JSON entry discloses selected evidence and offline assessment reuses the s
     assert.ok(error instanceof Error && 'stdout' in error && 'code' in error);
     assert.equal(error.code, 1);
     assert.equal(error.stdout, '');
+
     return true;
   });
   await assert.rejects(run(process.execPath, ['--import', denyNetwork, ...args.slice(2)]), (error: unknown) => {
     assert.ok(error instanceof Error && 'stdout' in error && 'code' in error);
     assert.equal(error.code, 2);
     assert.equal(error.stdout, '');
+
     return true;
   });
   assert.equal(await readFile(packetPath, 'utf8'), result.stdout);
@@ -80,6 +82,7 @@ test('no-concerns and input failures stay distinct, with guidance available outs
     assert.ok(error instanceof Error && 'stdout' in error && 'code' in error);
     assert.equal(error.code, 4);
     assert.equal(JSON.parse(String(error.stdout)).analysis.routing.kind, 'no_concerns_detected');
+
     return true;
   });
   const packetPath = join(folder, 'packet.json');
@@ -109,14 +112,17 @@ test('no-concerns and input failures stay distinct, with guidance available outs
     assert.equal(error.code, 1);
     assert.deepEqual(JSON.parse(String(error.stdout)), { version: 2,
       analysis: { kind: 'input_failure', reason: 'input_limit' }, assessmentEvidence: [] });
+
     return true;
   });
+
   for (const args of [['--help'], ['analyze', '--help'], ['instructions'], ['instructions', 'assessment'],
     ['instructions', 'reporting'], ['instructions', 'skill']]) {
     const result = await invoke(...args);
     assert.ok(result.stdout.length > 100);
     assert.equal(result.stderr, '');
   }
+
   const guide = await invoke('instructions', 'assessment');
   assert.equal(guide.stdout, await readFile(new URL(import.meta.resolve('@angry-carp/checks/assessment-instructions')), 'utf8'));
   assert.doesNotMatch((await invoke('instructions', 'reporting')).stdout, /\]\((?:\.\.\/|docs\/|[a-z-]+\.md)/);
@@ -124,6 +130,7 @@ test('no-concerns and input failures stay distinct, with guidance available outs
   await assert.rejects(invoke('analyze', input, '--format', 'yaml'), (error: unknown) => {
     assert.ok(error instanceof Error && 'code' in error);
     assert.equal(error.code, 2);
+
     return true;
   });
 });

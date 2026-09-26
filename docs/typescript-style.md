@@ -5,13 +5,13 @@
 Run `npm run lint`, `npm run check:types`, and `npm test` from the repository
 root. Linting builds the package exports first, checks library, CLI,
 and Flue source with Oxlint, then runs Konsistent. Both checks include tests
-where their rules apply and neither rewrites files. `npm run lint:structure`
+where their rules apply and neither rewrites files during `npm run lint`. `npm run lint:structure`
 runs Konsistent alone without building or making network requests.
 
 [Oxlint](https://oxc.rs/docs/guide/usage/linter/type-aware) and its
 `oxlint-tsgolint` engine are project-local dev dependencies. The root
-`.oxlintrc.json` enables correctness rules, promise handling, and rejection
-of explicit `any`. Import restrictions reject Flue and Pi imports and
+`.oxlintrc.json` enables correctness rules, promise handling, rejection
+of explicit `any`, and the targeted blank-line rules below. Import restrictions reject Flue and Pi imports and
 re-exports in `lib/` and `cli/`, including literal dynamic imports.
 They are review aids, not a filesystem sandbox or a complete
 dependency-graph check.
@@ -22,8 +22,8 @@ object-rest destructuring can omit fields. Authentication parsing and
 terminal escaping intentionally match control characters. Tests may
 stringify captured values and sort comparison fixtures without a comparator.
 The `test` exemption also matches `t.test`, so await or return subtests
-explicitly. Other promise calls inside tests remain checked. No line-count limit,
-formatting preset, or automatic fix command is imposed.
+explicitly. Other promise calls inside tests remain checked. No line-length limit or formatting preset is enabled. The explicit
+`oxlint --fix` option can apply spacing fixes; the normal lint command only checks.
 
 ### Tool selection, checked 2026-09-24
 
@@ -136,6 +136,26 @@ function decodeParts(parts: Uint8Array[]) {
 	return decoded;
 }
 ```
+
+## Enforced blank-line boundaries
+
+Oxlint loads pinned `@stylistic/eslint-plugin` 5.10.0 through its JavaScript-plugin API. Only `padding-line-between-statements` and `no-multiple-empty-lines` are enabled. The [upstream padding implementation](https://github.com/eslint-stylistic/eslint-stylistic/blob/efbb1bc0e5aaedc4695c44a03f46f4fcbbe58712/packages/eslint-plugin/rules/padding-line-between-statements/padding-line-between-statements.ts) matches adjacent statements and preserves comment attachment when fixing. No local parser or formatting rule is maintained.
+
+The configuration requires a blank line:
+
+- Before and after function declarations, including exported functions.
+- Around multiline type aliases and interface declarations. Related one-line aliases can stay together.
+- Before and after loops, `try` statements, and `switch` statements.
+- Before a multiline `if` with a braced body, and between a multiline `if` and a following variable declaration.
+- Before returns directly in a function body, except a return immediately following a compact one-line `if` guard.
+
+At most one empty line is allowed between code sections. The rules leave related variable declarations, compact guards, and cohesive expressions alone. They do not require a blank after every block. Arbitrary sequences of calls or assignments can still contain distinct operations that require human judgment; these rules enforce structural boundaries, not inferred meaning.
+
+These rules never wrap an expression because of its length. Long calls, object literals, arrays, signatures, type aliases, and return expressions remain allowed. A line can still need separation because it contains two distinct statements across a configured boundary, regardless of its length. The separate instruction about multiple statements inside a conditional remains a review rule, not a line-length limit.
+
+`npm test` runs `scripts/style.test.mjs` against the real Oxlint executable and repository configuration. Fixtures prove that missing separators fail, spacing fixes are idempotent, leading comments remain attached, and long expressions and template-literal content remain byte-for-byte unchanged. The normal `npm run lint` command enforces the same configuration across library, CLI, agent, and checked scripts.
+
+The plugin is a development dependency. npm also resolves its ESLint peer dependency, but Oxlint remains the lint runner. No runtime workspace depends on this tooling. Changing parser or plugin versions requires rerunning the spacing fixtures because Oxlint's JavaScript-plugin API is still marked alpha.
 
 ## Types and errors
 

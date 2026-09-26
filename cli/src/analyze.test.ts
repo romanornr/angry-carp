@@ -34,6 +34,7 @@ test('CLI displays findings without content, writes only on request, and refuses
     assert.ok(error instanceof Error && 'code' in error && 'stdout' in error);
     assert.equal(error.code, 2);
     assert.equal(error.stdout, '');
+
     return true;
   });
   assert.equal(await readFile(output, 'utf8'), saved);

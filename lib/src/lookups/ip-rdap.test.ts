@@ -15,6 +15,7 @@ test('normalizes bare addresses and rejects URLs, ports, CIDRs, zone IDs and mal
     ['::ffff:192.0.2.1', '::ffff:c000:201'], ['::', '::'], ['192.0.2.1', '192.0.2.1']]) {
     assert.equal(v.parse(ipAddressSchema, input), expected);
   }
+
   for (const input of ['example.com', 'https://192.0.2.1', '192.0.2.1:443', '192.0.2.1/24',
     '[2001:db8::1]', 'fe80::1%eth0', '1', '010.0.0.1', '192.0.2.999', '2001:::1', '../auth.json']) {
     assert.equal(v.safeParse(ipAddressSchema, input).success, false, input);
@@ -49,6 +50,7 @@ test('selects the longest binary prefix and returns only a containing network wi
         [[sample.prefix], ['https://registry.example/']],
       ] });
       assert.equal(url, `https://registry.example/ip/${sample.expected}`);
+
       return Response.json({ ...record, ipVersion: sample.family, startAddress: sample.start, endAddress: sample.end,
         entities: [{ privateDetail: 'omitted' }], links: [{ href: 'https://candidate.example/' }] });
     });
@@ -69,18 +71,23 @@ test('keeps missing services, invalid records and transport failures distinct', 
     if (failRequest) throw new Error('Private runtime detail');
     if (url === bootstrapUrl) return Response.json(bootstrap);
     assert.equal(url, sourceUrl);
+
     return response;
   });
+
   for (const services of [[], [[['192.0.2.0/24'], ['http://registry.example/',
     'https://127.0.0.1/', 'https://user:secret@registry.example/', 'https://registry.example/?x=1']]]]) {
     bootstrap = { services };
     assert.partialDeepStrictEqual(await lookupIpRdap(address), { kind: 'no_service', sourceUrl: bootstrapUrl });
   }
+
   for (const prefix of ['192.0.2.0/33', '192.0.2.0/-1', '192.0.2.0/8junk', 'invalid/24', '2001:db8::/32']) {
     bootstrap = { services: [[[prefix], ['https://registry.example/']]] };
     assert.partialDeepStrictEqual(await lookupIpRdap(address), { kind: 'unavailable', reason: 'invalid_response' });
   }
+
   bootstrap = directory;
+
   for (const invalid of [
     { ...record, startAddress: '198.51.100.0', endAddress: '198.51.100.255' },
     { ...record, startAddress: '192.0.2.255', endAddress: '192.0.2.0' },
@@ -90,11 +97,13 @@ test('keeps missing services, invalid records and transport failures distinct', 
     response = Response.json(invalid);
     assert.partialDeepStrictEqual(await lookupIpRdap(address), { kind: 'unavailable', reason: 'invalid_response' });
   }
+
   for (const [status, expected] of [[404, { kind: 'not_found' }], [302, { kind: 'unavailable', reason: 'redirected' }],
     [429, { kind: 'http_error', status: 429 }]] satisfies [number, object][]) {
     response = new Response(null, { status, headers: { location: 'https://candidate.example/' } });
     assert.partialDeepStrictEqual(await lookupIpRdap(address), expected);
   }
+
   failRequest = true;
   assert.partialDeepStrictEqual(await lookupIpRdap(address), { kind: 'unavailable', reason: 'request_failed' });
 });

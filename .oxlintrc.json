@@ -1,10 +1,23 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript"],
+  "jsPlugins": ["@stylistic/eslint-plugin"],
   "categories": { "correctness": "error" },
   "options": { "typeAware": true },
   "ignorePatterns": ["**/dist/**", "**/node_modules/**"],
   "rules": {
+    "@stylistic/padding-line-between-statements": ["error",
+      { "blankLine": "always", "prev": "*", "next": ["function", { "selector": "ExportNamedDeclaration[declaration.type='FunctionDeclaration'], ExportDefaultDeclaration[declaration.type='FunctionDeclaration']" }] },
+      { "blankLine": "always", "prev": ["function", { "selector": "ExportNamedDeclaration[declaration.type='FunctionDeclaration'], ExportDefaultDeclaration[declaration.type='FunctionDeclaration']" }], "next": "*" },
+      { "blankLine": "always", "prev": "*", "next": ["multiline-type", "interface", { "selector": "ExportNamedDeclaration[declaration.type='TSTypeAliasDeclaration'], ExportNamedDeclaration[declaration.type='TSInterfaceDeclaration']", "lineMode": "multiline" }] },
+      { "blankLine": "always", "prev": ["multiline-type", "interface", { "selector": "ExportNamedDeclaration[declaration.type='TSTypeAliasDeclaration'], ExportNamedDeclaration[declaration.type='TSInterfaceDeclaration']", "lineMode": "multiline" }], "next": "*" },
+      { "blankLine": "always", "prev": "*", "next": ["for", "while", "do", "try", "switch", { "selector": "IfStatement[consequent.type='BlockStatement']", "lineMode": "multiline" }] },
+      { "blankLine": "always", "prev": ["for", "while", "do", "try", "switch"], "next": "*" },
+      { "blankLine": "always", "prev": { "selector": "IfStatement", "lineMode": "multiline" }, "next": ["const", "let", "using"] },
+      { "blankLine": "always", "prev": "*", "next": { "selector": "BlockStatement[parent.type=/Function/] > ReturnStatement" } },
+      { "blankLine": "any", "prev": { "selector": "IfStatement", "lineMode": "singleline" }, "next": "return" }
+    ],
+    "@stylistic/no-multiple-empty-lines": ["error", { "max": 1, "maxBOF": 0, "maxEOF": 0 }],
     "no-unused-vars": ["error", { "ignoreRestSiblings": true, "ignoreUsingDeclarations": true }],
     "typescript/no-explicit-any": "error",
     "typescript/no-misused-promises": "error",

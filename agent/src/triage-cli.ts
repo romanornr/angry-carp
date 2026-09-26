@@ -25,11 +25,13 @@ async function main(): Promise<void> {
     'reference-domain': { type: 'string', multiple: true }, 'reviewed-text': { type: 'string' }, 'source-notes': { type: 'string' }, json: { type: 'string' },
   } });
   const [filePath] = positionals;
+
   if (!filePath || positionals.length !== 1) {
     process.stderr.write('Usage: npm run triage -- <original.eml> [--reviewed-text <reviewed-email.txt>] [--source-notes <reviewed-notes.json>] [--json <private-output.json>] [--reference-domain <domain>]...\n');
     process.exitCode = 2;
     return;
   }
+
   const directory = await loadBrandDirectory();
   let sourceNotes: unknown = [];
   if (values['source-notes']) sourceNotes = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readInput(values['source-notes'], 128 * 1024)));
@@ -39,16 +41,19 @@ async function main(): Promise<void> {
   if (values.json) await writeFile(values.json, JSON.stringify(analysis, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   if (analysis.kind === 'analyzed' && analysis.routing.kind === 'no_concerns_detected') return;
   if (analysis.kind === 'input_failure') process.exitCode = 1;
+
   // Invalid reviewed evidence and explicit cancellation cannot authorize a fallback disclosure.
   if (analysis.kind === 'input_failure' && ['invalid_source_notes', 'cancelled'].includes(analysis.reason)) {
     process.exitCode = 1;
     return;
   }
+
   if (!values['reviewed-text']) {
     process.stderr.write('AI assessment required. Supply --reviewed-text with text approved for model disclosure.\n');
     process.exitCode = 2;
     return;
   }
+
   const reviewedText = new TextDecoder('utf-8', { fatal: true }).decode(await readInput(values['reviewed-text'], 512 * 1024));
   const evidence = assessmentEvidence(analysis);
   const message = JSON.stringify({
@@ -76,6 +81,7 @@ async function main(): Promise<void> {
 
   const selections = reply.data.assessment;
   let assessment: string;
+
   try {
     if (!selections || selections.length !== 1) throw new Error('No single structured assessment returned.');
     assessment = formatAssessment(selections[0], evidence);
@@ -84,6 +90,7 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
+
   process.stdout.write(`\nAI assessment\n${assessment}`);
 }
 

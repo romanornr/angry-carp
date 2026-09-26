@@ -17,6 +17,7 @@ test('selects the requested Cloudflare role across both catalogue records', () =
   assert.deepEqual(registrar.references[0].sources, [
     { label: 'Registrar reporting', url: 'https://www.cloudflare.com/trust-hub/reporting-abuse/' },
   ]);
+
   for (const serviceRole of ['dns', 'reverse-proxy', 'hosting']) {
     const result = findReportingChannels(v.parse(reportingQuerySchema, { provider: 'cloudflare', serviceRole }));
     assert.equal(result.kind, 'listed');
@@ -33,10 +34,12 @@ test('keeps unknown providers, unsupported roles, and RDAP fallback distinct', (
     listedServiceRoles: ['reverse-proxy', 'dns', 'hosting', 'registrar'],
     guidance: 'No reviewed route for this query. Record the official-channel gap; do not construct a contact.',
   });
+
   for (const provider of ['amazon', 'amazon-ses.attacker.test', 'cloudflare-inc']) {
     const result = findReportingChannels(v.parse(reportingQuerySchema, { provider, serviceRole: 'hosting' }));
     assert.equal(result.kind, 'provider_not_listed');
   }
+
   assert.deepEqual(findReportingChannels(v.parse(reportingQuerySchema, { provider: 'other', serviceRole: 'registrar' })), {
     query: { provider: 'other', serviceRole: 'registrar' }, kind: 'provider_not_listed',
     guidance: 'Use the registrar abuse contact from case RDAP, retaining its registrar relationship and source. If absent, record the channel gap; do not construct an address.',
@@ -51,6 +54,7 @@ test('preserves conditional and alternative channels without evaluating case evi
     { kind: 'email', address: 'abuse@trustname.com', condition: 'Use when this address is returned as the registrar abuse contact by case RDAP.' },
     { kind: 'instructions', url: 'https://trustname.com/article/202000025104', condition: 'The helpdesk form is an alternative and may be requested in a reply. Follow its category support-code instructions. This link is the instructions page, not the form endpoint.' },
   ]);
+
   for (const serviceRole of ['registrar', 'hosting']) {
     const hostinger = findReportingChannels(v.parse(reportingQuerySchema, { provider: 'hostinger', serviceRole }));
     assert.equal(hostinger.kind, 'listed');
@@ -80,6 +84,7 @@ test('bounds tool batches and normalizes provider names without fuzzy matching',
   assert.deepEqual(v.parse(reportingBatchSchema, { queries: [query] }), {
     queries: [{ provider: 'amazon-ses', serviceRole: 'email-delivery' }],
   });
+
   for (const queries of [[], Array(11).fill(query), [{ ...query, provider: ' ' }],
     [{ ...query, provider: 'x'.repeat(81) }], [{ ...query, serviceRole: 'proxy' }]]) {
     assert.equal(v.safeParse(reportingBatchSchema, { queries }).success, false);
@@ -88,20 +93,24 @@ test('bounds tool batches and normalizes provider names without fuzzy matching',
 
 test('every maintained route has valid contacts, conditions, sources, dates and unique role coverage', () => {
   const pairs = new Set<string>();
+
   for (const record of reportingChannels) {
     assert.match(record.provider, /^[a-z]+(?:-[a-z]+)*$/);
     assert.ok(record.channels.length && record.sources.length && record.serviceRoles.length && record.evidence.length);
     assert.match(record.checkedAt, /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(new Date(record.checkedAt).toISOString().slice(0, 10), record.checkedAt);
+
     for (const role of record.serviceRoles) {
       const pair = `${record.provider}:${role}`;
       assert.equal(pairs.has(pair), false, `Duplicate route coverage: ${pair}`);
       pairs.add(pair);
     }
+
     for (const source of record.sources) {
       assert.ok(source.label.trim());
       assert.equal(new URL(source.url).protocol, 'https:');
     }
+
     for (const channel of record.channels) {
       assert.ok(channel.condition.trim());
       if (channel.kind === 'email') assert.ok(v.is(v.pipe(v.string(), v.email()), channel.address));
@@ -112,11 +121,15 @@ test('every maintained route has valid contacts, conditions, sources, dates and 
 
 test('generated portable reference preserves every condition and matches the committed file', async () => {
   const rendered = renderReportingChannels();
+
   for (const record of reportingChannels) {
     assert.ok(rendered.includes(record.checkedAt));
+
     for (const channel of record.channels) assert.ok(rendered.includes(channel.condition));
+
     for (const source of record.sources) assert.ok(rendered.includes(source.url));
   }
+
   assert.equal(await readFile(new URL('../../../reporting-channels.md', import.meta.url), 'utf8'), rendered,
     'Run npm run reporting:generate after editing the channel catalogue.');
 });

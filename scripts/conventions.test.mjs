@@ -20,15 +20,18 @@ test('structural lint accepts present files and rejects each missing guide or re
     ['lib/src/email-analysis/analysis-output.test.ts', 'boundary-regression-files'],
     ['lib/src/reporting/report-preparation.test.ts', 'boundary-regression-files'],
   ];
+
   for (const [file] of cases) {
     await mkdir(dirname(join(directory, file)), { recursive: true });
     await writeFile(join(directory, file), '');
   }
+
   function check() {
     return spawnSync(process.execPath, [executable, 'check', '--config-path', config, '--format', 'json'], {
       cwd: directory, encoding: 'utf8', timeout: 10_000,
     });
   }
+
   const valid = check();
   assert.equal(valid.status, 0, valid.stderr || valid.stdout);
   assert.deepEqual(JSON.parse(valid.stdout), []);

@@ -42,8 +42,10 @@ const DEADLINE_MS = 45_000;
 
 type Skipped = { kind: 'skipped'; reason: 'budget' | 'cancelled' | 'missing_comparison_message' };
 type DnsQuery = v.InferOutput<typeof dnsQuerySchema>;
+
 type LookupResult = Awaited<ReturnType<typeof lookupDns>> | Awaited<ReturnType<typeof lookupRdap>>
   | Awaited<ReturnType<typeof lookupIpRdap>> | Skipped;
+
 export type AnalysisEvidence = {
   message: ParsedMessage;
   observations: ReturnType<typeof observeMessage>;
@@ -68,10 +70,12 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   if (options.signal) signal = AbortSignal.any([signal, options.signal]);
   const parsed = await parseMessage(bytes, signal);
   let sha256: string | null = null;
+
   if (bytes.byteLength <= MAX_MESSAGE_BYTES) {
     const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
     sha256 = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
+
   const source = { byteLength: bytes.byteLength, sha256, acquisition: 'caller_supplied_bytes' };
   const notes = v.safeParse(sourceNotesSchema, options.sourceNotes ?? []);
   if (!notes.success) return { kind: 'input_failure', reason: 'invalid_source_notes', source } as const;
@@ -95,12 +99,14 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     if (existing) { existing.sourceIds.push(sourceId); return; }
     dns.set(key, { id: `dns${dns.size}`, query: query.output, sourceIds: [sourceId], result: { kind: 'skipped', reason: 'budget' } });
   }
+
   function addIp(address: v.InferOutput<typeof ipAddressSchema>, sourceId: string) {
     if (!eligibleIp(address)) { evidence.coverage.push({ sourceId, reason: 'non_public_ip_not_queried' }); return; }
     const existing = ips.get(address);
     if (existing) { existing.sourceIds.push(sourceId); return; }
     ips.set(address, { id: `ip${ips.size}`, address, sourceIds: [sourceId], result: { kind: 'skipped', reason: 'budget' } });
   }
+
   function addDirectory(kind: 'name' | 'hostname', value: string, sourceId: string) {
     const query = v.safeParse(brandQuerySchema, { kind, value });
     if (!query.success) { evidence.coverage.push({ sourceId, reason: 'invalid_directory_query' }); return; }
@@ -113,8 +119,10 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   // Choose targets before requests start so completion order cannot change the selection.
   const hosts = prioritizeHosts(observations.hosts);
   const importantIds = new Set(hosts.filter((host) => host.context === 'unmarked' && host.role !== 'image').map(({ id }) => id));
+
   for (const observed of hosts) {
     const target = classifyHost(observed.host);
+
     if (observed.context !== 'unmarked') {
       evidence.coverage.push({ sourceId: observed.id, reason: `${observed.context}_not_queried` });
       continue;
@@ -126,6 +134,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
     else registrations.set(target.registration, { id: `rdap${registrations.size}`, domain: target.registration,
       sourceIds: [observed.id], result: { kind: 'skipped', reason: 'budget' } });
     addDirectory('hostname', target.host, observed.id);
+
     if (observed.role === 'action' || observed.role === 'text-reference' || observed.role === 'image') {
       addDns(target.host, 'A', observed.id);
       addDns(target.host, 'AAAA', observed.id);
@@ -135,10 +144,12 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
       addDns(target.host, 'TXT', observed.id);
     }
   }
+
   // A name from the message selects directory candidates without verifying the sender.
   for (const name of observations.names) {
     if (name.context === 'unmarked') addDirectory('name', name.value, name.sourceId);
   }
+
   for (const [index, query] of [...directoryQueries.values()].entries()) {
     if (index >= DIRECTORY_LIMIT) {
       evidence.coverage.push({ sourceId: query.sourceIds[0], reason: 'directory_query_budget' });
@@ -148,18 +159,23 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
   }
 
   const references: { domain: string; source: AnalysisEvidence['comparisons'][number]['referenceSource']; sourceId: string }[] = [];
+
   for (const [index, domain] of (options.referenceDomains ?? []).entries()) {
     if (index >= 16) { evidence.coverage.push({ sourceId: 'operator', reason: 'reference_limit' }); break; }
     references.push({ domain, source: 'operator', sourceId: `operator${index}` });
   }
+
   for (const entry of evidence.directory) {
     for (const match of entry.result.matches) references.push({ domain: match.domain, source: 'directory_candidate', sourceId: entry.id });
   }
+
   for (const image of hosts.filter((host) => host.role === 'image' && host.context === 'unmarked')) {
     references.push({ domain: image.host, source: 'message_image', sourceId: image.id });
   }
+
   const compared = new Set<string>();
   let comparisonBudgetReached = false;
+
   comparisons: for (const observed of hosts.filter((host) => host.role !== 'image' && host.context === 'unmarked')) {
     for (const reference of references) {
       const key = `${observed.host}/${reference.domain}/${reference.source}`;
@@ -172,37 +188,46 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
         referenceSource: reference.source, result: compareDomains(input.output) });
     }
   }
+
   if (comparisonBudgetReached) evidence.coverage.push({ sourceId: 'message', reason: 'comparison_budget' });
   if (!references.length) evidence.coverage.push({ sourceId: 'message', reason: 'no_comparison_reference' });
   evidence.dns = [...dns.values()];
   evidence.rdap = [...registrations.values()];
   const importantDns = evidence.dns.filter((check) => check.sourceIds.some((id) => importantIds.has(id)));
+
   for (const check of importantDns) importantIds.add(check.id);
+
   // Reserve capacity for MAIL FROM and return-path checks so body links cannot crowd them out.
   const mailIds = new Set(hosts.filter((host) => host.context === 'unmarked'
     && (host.role === 'mail-from' || host.role === 'return-path')).map(({ id }) => id));
   const selectedDns = new Set(evidence.dns.filter((check) => check.sourceIds.some((id) => mailIds.has(id))).slice(0, 4));
+
   for (const check of evidence.dns) {
     if (selectedDns.size === DNS_LIMIT) break;
     selectedDns.add(check);
   }
+
   evidence.retries.push(...await runWithRecovery(importantDns, [...selectedDns], signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupDns(check.query, signal);
   }));
   const fromIds = new Set(hosts.filter((host) => host.role === 'from' && host.context === 'unmarked').map(({ id }) => id));
   const selectedRdap = new Set(evidence.rdap.filter((check) => check.sourceIds.some((id) => fromIds.has(id))).slice(0, 1));
+
   for (const check of evidence.rdap) {
     if (selectedRdap.size === DOMAIN_LIMIT) break;
     selectedRdap.add(check);
   }
+
   evidence.retries.push(...await runWithRecovery(evidence.rdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), [...selectedRdap], signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupRdap(check.domain, rdapOptions);
   }));
+
   for (const check of evidence.dns) {
     if (check.result.kind !== 'answered') continue;
     const owners = new Set<string>([check.query.name]);
+
     for (let pass = 0; pass < check.result.answers.length; pass++) {
       for (const answer of check.result.answers) {
         if (answer.type === 'CNAME' && owners.has(answer.name.toLowerCase().replace(/\.$/, ''))) {
@@ -210,6 +235,7 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
         }
       }
     }
+
     for (const answer of check.result.answers) {
       if (!owners.has(answer.name.toLowerCase().replace(/\.$/, ''))) continue;
       if (answer.type !== 'A' && answer.type !== 'AAAA') continue;
@@ -217,12 +243,14 @@ export async function analyzeEmail(bytes: Uint8Array, options: {
       if (address.success) addIp(address.output, check.id);
     }
   }
+
   evidence.ipRdap = [...ips.values()];
   evidence.retries.push(...await runWithRecovery(evidence.ipRdap.filter((check) => check.sourceIds.some((id) => importantIds.has(id))), evidence.ipRdap.slice(0, IP_LIMIT), signal, async (check) => {
     if (signal.aborted) { check.result = { kind: 'skipped', reason: 'cancelled' }; return; }
     check.result = await lookupIpRdap(check.address, rdapOptions);
   }));
   const derived = deriveFindings(evidence);
+
   return { kind: 'analyzed', version: 2, source, ...evidence, ...derived, routing: routeAnalysis(evidence, derived.findings),
     textReuse: { kind: 'skipped', reason: 'missing_comparison_message' } satisfies Skipped,
     limits: { dns: DNS_LIMIT, domainRdap: DOMAIN_LIMIT, ipRdap: IP_LIMIT,
@@ -240,13 +268,16 @@ async function runWithRecovery<T extends { id: string; result: LookupResult }>(
   const pending = plan.filter(({ result }) => needsRecovery(result));
   const retries: AnalysisEvidence['retries'] = [];
   let remaining = initial.length;
+
   while (remaining > 0 && pending.length > 0 && !signal.aborted) {
     const batch = pending.splice(0, remaining);
     remaining -= batch.length;
     const previous = batch.map(({ id, result }) => ({ checkId: id, previousResult: result }));
     await runBounded(batch, run);
+
     for (const [index, check] of batch.entries()) {
       const attempt = { ...previous[index], retryResult: check.result };
+
       // Preserve partial DNS observations if the retry fails or supplies less evidence. Keep both attempts.
       if (attempt.previousResult.kind === 'answered' && (check.result.kind !== 'answered'
         || check.result.rcode !== 'NOERROR' || check.result.answers.length < attempt.previousResult.answers.length)) {
@@ -258,6 +289,7 @@ async function runWithRecovery<T extends { id: string; result: LookupResult }>(
       if (attempt.previousResult.kind === 'skipped' && needsRecovery(check.result)) pending.push(check);
     }
   }
+
   return retries;
 }
 
@@ -283,13 +315,16 @@ async function runBounded<T>(items: T[], run: (item: T) => Promise<void>) {
 // Exclude these special-purpose addresses from outbound lookups without claiming all others are reachable.
 // IANA special-purpose registries: https://www.iana.org/assignments/iana-ipv4-special-registry/
 const excluded = new BlockList();
+
 for (const [network, prefix] of [
   ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16],
   ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.168.0.0', 16],
   ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 3],
 ] satisfies [string, number][]) excluded.addSubnet(network, prefix, 'ipv4');
+
 excluded.addSubnet('2001:db8::', 32, 'ipv6');
 excluded.addSubnet('2002::', 16, 'ipv6');
+
 function eligibleIp(address: string) {
   if (address.includes(':')) return /^[23][0-9a-f]{3}:/.test(address) && !excluded.check(address, 'ipv6');
   return !excluded.check(address, 'ipv4');

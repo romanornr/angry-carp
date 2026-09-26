@@ -86,10 +86,12 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
     splitter.on('data', (chunk) => {
       if (chunk.type === 'node') {
         headerBytes += Buffer.byteLength((chunk.headers && chunk.headers.getList().map(({ line }) => line).join('\r\n')) || '');
+
         if (++partCount > MAX_PARTS || headerBytes > MAX_HEADERS_BYTES) {
           splitter.destroy(new Error('MIME resource limit.'));
           return;
         }
+
         const item = { node: chunk, id: `${messageId}/p${collected.length}`, chunks: new Array<Buffer>() };
         collected.push(item);
         byNode.set(chunk, item);
@@ -131,12 +133,14 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
 
       if (node.multipart) continue;
       if (signal.aborted) { part.content = { kind: 'unavailable', reason: 'cancelled' }; continue; }
+
       if (node.encoding && !['7bit', '8bit', 'binary', 'base64', 'quoted-printable'].includes(node.encoding)) {
         part.content = { kind: 'unavailable', reason: 'unsupported_transfer_encoding' };
         continue;
       }
 
       const embedded = part.contentType === 'message/rfc822';
+
       if (embedded && depth >= 2) {
         part.content = { kind: 'unavailable', reason: 'embedded_depth_limit' };
         continue;
@@ -151,6 +155,7 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
           write(chunk: Buffer, _encoding, done) {
             size += chunk.length;
             decodedBytes += chunk.length;
+
             if (decodedBytes > MAX_MESSAGE_BYTES || (text && size > MAX_TEXT_BYTES)) {
               done(new Error('Decoded content limit.'));
               return;
@@ -211,9 +216,11 @@ export async function parseMessage(bytes: Uint8Array, signal: AbortSignal): Prom
 function readAddresses(headers: Header[]): AddressFields {
   return headers.flatMap((header, headerIndex): AddressFields => {
     if (!['from', 'sender', 'reply-to', 'return-path'].includes(header.name)) return [];
+
     if (Buffer.byteLength(header.value) > 16 * 1024) {
       return [{ headerIndex, field: header.name, result: { kind: 'unparsed', reason: 'header_limit' } }];
     }
+
     if (header.name === 'return-path' && header.value.trim() === '<>') {
       return [{ headerIndex, field: header.name, result: { kind: 'null_reverse_path' } }];
     }

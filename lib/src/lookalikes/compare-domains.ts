@@ -51,6 +51,7 @@ type DomainInspection = ReturnType<typeof inspectInput> & (
 
 type ParsedDomain = Extract<DomainInspection, { kind: 'parsed' }>;
 type Relationship = 'same_domain' | 'subdomain_of_reference' | 'different_domain';
+
 type Resemblance =
   | { kind: 'confusable_label' }
   | { kind: 'folded_label' }
@@ -74,6 +75,7 @@ type DomainComparison = { confusablesUnicodeVersion: string } & (
 export function compareDomains(input: v.InferOutput<typeof domainComparisonSchema>): DomainComparison {
   const reference = inspectDomain(input.referenceDomain);
   const observed = inspectDomain(input.observedDomain);
+
   if (reference.kind === 'invalid' || observed.kind === 'invalid') {
     return { reference, observed, confusablesUnicodeVersion: UNICODE_VERSION, kind: 'unavailable' };
   }
@@ -93,6 +95,7 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   const confusable = findExtraText({ reference: referenceSkeleton, observed: observedSkeleton });
   if (literal) resemblance.push({ kind: 'label_contained', form: 'literal', ...literal });
   if (confusable) resemblance.push({ kind: 'label_contained', form: 'skeleton', ...confusable });
+
   // A reference can be a host, so these methods exclude siblings under the same registrable domain.
   if (reference.registrableDomain !== observed.registrableDomain) {
     const foldedReference = maybeRemoveDiacritics(reference.label);
@@ -100,6 +103,7 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
     const foldedReferenceSkeleton = skeleton(foldedReference);
     const foldedObservedSkeleton = skeleton(foldedObserved);
     if (referenceSkeleton !== observedSkeleton && foldedReferenceSkeleton === foldedObservedSkeleton) resemblance.push({ kind: 'folded_label' });
+
     if (Array.from(foldedReference).length >= 5) {
       if (hasOneCharacterSwap({ reference: foldedReference, observed: foldedObserved })) {
         resemblance.push({ kind: 'character_swap', form: 'folded' });
@@ -107,6 +111,7 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
         resemblance.push({ kind: 'character_swap', form: 'skeleton' });
       }
     }
+
     const embedded = embeddedDomain({ reference: reference.registrableDomain, observed: observed.unicode });
     if (embedded) resemblance.push({ kind: 'registrable_domain_embedded', ...embedded });
   }
@@ -114,7 +119,9 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   return { ...comparison, kind: 'compared', relationship, resemblance };
 }
 
-// Chromium's Latin/Greek/Cyrillic folding, retaining our NFD-first eligibility and all nonspacing marks.
+// Adapted from Chromium. Copyright 2020 The Chromium Authors.
+// BSD-style license: ../../licenses/chromium-BSD-3-Clause.txt.
+// Retains our NFD-first eligibility and all nonspacing marks in Latin/Greek/Cyrillic folding.
 // Its narrower mark range assumes character checks we do not implement:
 // https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/url_formatter/spoof_checks/skeleton_generator.cc#L52-L73
 function maybeRemoveDiacritics(label: string) {
@@ -143,6 +150,7 @@ function embeddedDomain({ reference, observed }: { reference: string; observed: 
   const tokens = observed.split(/[.-]/u);
   const skeletons = tokens.map(skeleton);
   let utf16Index = 0;
+
   for (let start = 0; start + target.length <= tokens.length; start++) {
     if (target.every((token, offset) => token === skeletons[start + offset])) {
       const length = tokens.slice(start, start + target.length).join('.').length;
@@ -151,6 +159,7 @@ function embeddedDomain({ reference, observed }: { reference: string; observed: 
     }
     utf16Index += tokens[start].length + 1;
   }
+
   return null;
 }
 
@@ -159,17 +168,21 @@ export function inspectDomain(input: v.InferOutput<typeof domainNameSchema>): Do
   // Capture invisible characters before IDNA conversion can remove them.
   const original = inspectInput(input);
   const ascii = domainToASCII(input).replace(/\.$/, '');
+
   if (ascii.length > 253 || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]+$/.test(ascii)) {
     return { ...original, kind: 'invalid', reason: 'invalid_domain' };
   }
+
   const parts = parse(ascii, { allowPrivateDomains: true, extractHostname: false });
   if (parts.isIp) return { ...original, kind: 'invalid', reason: 'invalid_domain' };
+
   if (!parts.domain || !parts.domainWithoutSuffix || (!parts.isIcann && !parts.isPrivate)) {
     return { ...original, kind: 'invalid', reason: 'unknown_suffix' };
   }
 
   const unicode = domainToUnicode(ascii);
   const given = input.toLowerCase().replace(/\.$/, '');
+
   return {
     ...original,
     kind: 'parsed',
@@ -200,7 +213,9 @@ function inspectInput(input: string) {
   const escapedInput = input.replace(/[\p{Default_Ignorable_Code_Point}\p{Cf}\p{Cc}]/gu, (character: string, index: number) => {
     const escaped = character.split('').map((unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, '0')}`).join('');
     formatCharacters.push({ utf16Index: index, escaped });
+
     return escaped;
   });
+
   return { escapedInput, formatCharacters };
 }

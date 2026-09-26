@@ -55,35 +55,43 @@ export async function runAnalyze(args: string[]) {
     options: { format: { type: 'string', default: 'text' }, output: { type: 'string' }, json: { type: 'string' }, 'source-notes': { type: 'string' },
       'reference-domain': { type: 'string', multiple: true } } });
   const [filePath] = positionals;
+
   if (!filePath || positionals.length !== 1 || !['text', 'json'].includes(values.format)) {
     process.stderr.write(analyzeHelp);
     process.exitCode = 2;
     return;
   }
+
   for (const path of [values.output, values.json]) {
     if (!path) continue;
+
     try { await lstat(path); } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') continue;
       throw error;
     }
+
     process.stderr.write('Output already exists. Choose a new path or reuse the saved result. No lookups ran.\n');
     process.exitCode = 2;
     return;
   }
+
   const directory = await loadBrandDirectory();
   let sourceNotes: unknown = [];
   if (values['source-notes']) sourceNotes = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readInput(values['source-notes'], 128 * 1024)));
   process.stderr.write('Analyzing email…\n');
   const result = await analyzeEmail(await readInput(filePath, MAX_MESSAGE_BYTES), { directory, sourceNotes, referenceDomains: values['reference-domain'] });
   if (values.format === 'text') process.stdout.write(formatAnalysis(result));
+
   if (values.format === 'json' || values.output) {
     const packet = JSON.stringify(assessmentPacket(result)) + '\n';
     if (values.format === 'json') process.stdout.write(packet);
+
     if (values.output) {
       try { await writeFile(values.output, packet, { flag: 'wx', mode: 0o600 }); }
       catch { return savingFailed(); }
     }
   }
+
   if (values.json) {
     try { await writeFile(values.json, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); }
     catch { return savingFailed(); }

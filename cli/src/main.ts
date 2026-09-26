@@ -30,10 +30,12 @@ An exit of 0 is not a safety verdict or report approval. No command sends report
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
+
   if (command === undefined || command === '--help') {
     process.stdout.write(help);
     return;
   }
+
   switch (command) {
     case 'analyze':
       if (args.includes('--help')) process.stdout.write(analyzeHelp);
@@ -53,6 +55,7 @@ async function main() {
     case 'instructions': {
       const [topic = 'workflow'] = args;
       if (args.length > 1) break;
+
       // Like agent-browser's skills get, read instructions from the installed package, not the caller's cwd.
       // https://github.com/vercel-labs/agent-browser/blob/d01253d9db28d75080e36da3c1c31ef89454731e/cli/src/skills.rs
       if (topic === 'assessment') {
@@ -63,6 +66,7 @@ async function main() {
       return;
     }
   }
+
   process.stderr.write(help);
   process.exitCode = 2;
 }
@@ -76,6 +80,7 @@ main().catch((error: unknown) => {
     process.exitCode = 2;
     return;
   }
+
   const failures: Record<string, string> = {
     analyze: 'Analysis failed. Check the input, reference data and optional output path. Existing output files are not replaced.',
     'extract-links': 'Link extraction failed. Check the UTF-8 HTML input, size limit and unused output path.',

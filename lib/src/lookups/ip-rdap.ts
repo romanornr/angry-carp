@@ -86,10 +86,12 @@ export async function lookupIpRdap(queriedAddress: IpAddress, options: RdapOptio
   // RFC 9224 uses the longest binary prefix, including prefixes between byte boundaries.
   let longest = -1;
   let serviceUrls: string[] = [];
+
   for (const [prefixes, urls] of bootstrap.body.services) {
     for (const [address, length] of prefixes) {
       const network = addressBits(address);
       const shift = BigInt(target.bits - length);
+
       if (length >= longest && (target.value >> shift) === (network.value >> shift)) {
         if (length > longest) serviceUrls = [];
         longest = length;
@@ -97,6 +99,7 @@ export async function lookupIpRdap(queriedAddress: IpAddress, options: RdapOptio
       }
     }
   }
+
   const baseUrl = serviceUrls.find(isHttpsService);
   if (!baseUrl) return { ...discovery, ...selectedDiscovery, discovery: selectedDiscovery, kind: 'no_service' };
 
@@ -110,12 +113,14 @@ export async function lookupIpRdap(queriedAddress: IpAddress, options: RdapOptio
   if (!record.success) return { ...source, kind: 'unavailable', reason: 'invalid_response' };
   const start = addressBits(record.output.startAddress);
   const end = addressBits(record.output.endAddress);
+
   if (record.output.ipVersion !== target.ipVersion || start.ipVersion !== target.ipVersion
     || end.ipVersion !== target.ipVersion || start.value > target.value || end.value < target.value) {
     return { ...source, kind: 'unavailable', reason: 'invalid_response' };
   }
 
   const { objectClassName, ...network } = record.output;
+
   return { ...source, kind: 'found', network };
 }
 
@@ -126,18 +131,21 @@ function addressBits(address: IpAddress):
     return { ipVersion: 'v4', bits: 32,
       value: address.split('.').reduce((value, byte) => (value << 8n) | BigInt(byte), 0n) };
   }
+
   // URL canonicalization has already converted embedded IPv4 to hex.
   // Expand the remaining zero compression before converting the address to bits.
   const [left, right = ''] = address.split('::');
   const head = left.split(':').filter(Boolean);
   const tail = right.split(':').filter(Boolean);
   const words: string[] = [...head, ...Array<string>(8 - head.length - tail.length).fill('0'), ...tail];
+
   return { ipVersion: 'v6', bits: 128,
     value: words.reduce((value, word) => (value << 16n) | BigInt(`0x${word}`), 0n) };
 }
 
 function isHttpsService(input: string): boolean {
   const url = URL.parse(input);
+
   return url !== null && url.protocol === 'https:' && !url.username && !url.password
     && !url.port && !url.search && !url.hash && v.is(domainSchema, url.hostname);
 }

@@ -35,17 +35,21 @@ type ReportingCandidate = {
 export function deriveReportingCandidates(evidence: AnalysisEvidence,
   { supportedHosts, hasConcern }: { supportedHosts: ReadonlyMap<string, readonly string[]>; hasConcern: boolean }) {
   const reportingCandidates: ReportingCandidate[] = [];
+
   function subjects(sourceIds: string[]) {
     return evidence.observations.hosts.filter((host) => host.context === 'unmarked'
       && sourceIds.includes(host.id) && supportedHosts.has(host.id));
   }
+
   for (const lookup of evidence.rdap) {
     if (lookup.result.kind !== 'found') continue;
     const [first, ...rest] = subjects(lookup.sourceIds);
+
     if (!first) {
       evidence.coverage.push({ sourceId: lookup.id, reason: 'registrar_contact_without_resource_concern' });
       continue;
     }
+
     for (const registrar of lookup.result.registrars) {
       reportingCandidates.push({ provider: registrar.name ?? 'Unnamed registrar', serviceRole: 'registrar', basis: 'registration',
         resource: { kind: 'domain', name: lookup.domain, subjectIds: [first.id, ...rest.map(({ id }) => id)] },
@@ -55,8 +59,10 @@ export function deriveReportingCandidates(evidence: AnalysisEvidence,
           sourceUrl: lookup.result.sourceUrl, retrievedAt: lookup.result.retrievedAt } });
     }
   }
+
   const cloudflareDns = evidence.dns.filter((lookup) => lookup.query.type === 'NS' && lookup.result.kind === 'answered'
     && lookup.result.answers.some((answer) => answer.type === 'NS' && answer.name.toLowerCase().replace(/\.$/, '') === lookup.query.name && /(?:^|\.)ns\.cloudflare\.com\.?$/i.test(answer.data)));
+
   for (const lookup of cloudflareDns) {
     const [first, ...rest] = subjects(lookup.sourceIds);
     if (!first) continue;
@@ -83,10 +89,13 @@ export function deriveReportingCandidates(evidence: AnalysisEvidence,
   const rootMessage = evidence.message.messages.find((message) => message.id === 'message');
   const selectorClaims: string[] = [];
   const mailFromHosts = new Set<string>();
+
   for (const header of rootMessage?.authentication ?? []) {
     if (header.result.kind !== 'reported_results') continue;
+
     for (const claim of header.result.results) {
       if (claim.interpretation !== 'supported') continue;
+
       if (claim.method === 'dkim' && claim.properties.some((property) =>
         property.type === 'header' && property.name === 's' && ['resend', '"resend"'].includes(property.rawValue))) {
         selectorClaims.push(`${rootMessage?.rootPartId}/header${header.headerIndex}`);
@@ -98,7 +107,9 @@ export function deriveReportingCandidates(evidence: AnalysisEvidence,
       }
     }
   }
+
   const resendDns: string[] = [];
+
   for (const host of mailFromHosts) {
     const mx = evidence.dns.find((lookup) => lookup.query.name === host && lookup.query.type === 'MX'
       && lookup.result.kind === 'answered' && lookup.result.answers.some((answer) => answer.type === 'MX' && answer.name.toLowerCase().replace(/\.$/, '') === host
@@ -108,10 +119,12 @@ export function deriveReportingCandidates(evidence: AnalysisEvidence,
         && /^"?v=spf1(?:[\s"])/i.test(answer.data) && /(?:^|[\s"])include:amazonses\.com(?:[\s"]|$)/i.test(answer.data)));
     if (mx && txt) resendDns.push(mx.id, txt.id);
   }
+
   if (selectorClaims.length && resendDns.length && hasConcern) reportingCandidates.push({ provider: 'resend', serviceRole: 'sending-platform', basis: 'reported_lead',
     resource: { kind: 'message', id: 'message' },
     evidenceIds: [...selectorClaims, ...resendDns],
     limitation: 'Reported resend selector plus current SES MX/SPF configuration supports an investigation request, not proof of Resend handling or key custody.',
     channel: findReportingChannels(v.parse(reportingQuerySchema, { provider: 'resend', serviceRole: 'sending-platform' })) });
+
   return reportingCandidates;
 }

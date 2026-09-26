@@ -27,13 +27,16 @@
  */
 export function recursiveUnescape(value: string): string {
   let bytes = new TextEncoder().encode(value);
+
   for (;;) {
     const decoded = new Uint8Array(bytes.length);
     let length = 0;
+
     for (let index = 0; index < bytes.length; index++) {
       if (bytes[index] === 0x25 && index + 2 < bytes.length) {
         const high = hexValue(bytes[index + 1]);
         const low = hexValue(bytes[index + 2]);
+
         if (high !== null && low !== null) {
           decoded[length++] = high * 16 + low;
           index += 2;
@@ -42,6 +45,7 @@ export function recursiveUnescape(value: string): string {
       }
       decoded[length++] = bytes[index];
     }
+
     if (length === bytes.length) return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
     bytes = decoded.subarray(0, length);
   }

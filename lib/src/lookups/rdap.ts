@@ -86,7 +86,6 @@ export async function lookupRdap(queriedDomain: Domain, options: RdapOptions = {
   if (bootstrap.kind !== 'received') return { ...discovery, ...bootstrap };
   const selectedDiscovery = { sourceUrl: bootstrapUrl, retrievedAt: bootstrap.retrievedAt };
 
-
   // RFC 9224 selects the longest matching label suffix, not the website's URL.
   const service = bootstrap.body.services
     .flatMap(([suffixes, urls]) => suffixes.map((suffix) => ({ suffix, urls })))
@@ -103,6 +102,7 @@ export async function lookupRdap(queriedDomain: Domain, options: RdapOptions = {
   if (response.kind !== 'received') return { ...source, ...response };
 
   const record = v.safeParse(recordSchema, response.body);
+
   if (!record.success || record.output.ldhName.toLowerCase() !== queriedDomain) {
     return { ...source, kind: 'unavailable', reason: 'invalid_response' };
   }
@@ -139,16 +139,19 @@ export async function lookupRdap(queriedDomain: Domain, options: RdapOptions = {
 
 function isHttpsService(input: string): boolean {
   const url = URL.parse(input);
+
   return url !== null && url.protocol === 'https:' && !url.username && !url.password
     && !url.port && !url.search && !url.hash && v.is(domainSchema, url.hostname);
 }
 
 function cardValues(contact: v.InferOutput<typeof contactSchema>, name: string): string[] {
   const values: string[] = [];
+
   for (const [property, , type, value] of contact.vcardArray?.[1] ?? []) {
     if (property === name && type === 'text' && typeof value === 'string') {
       values.push(value);
     }
   }
+
   return values;
 }

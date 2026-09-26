@@ -14,6 +14,7 @@ test('inspects Unicode and punycode labels independently of comparison reference
     ]);
     assert.match(result.scriptUnicodeVersion ?? '', /^\d+\.\d+/);
   }
+
   assert.equal(inspectDomain(v.parse(domainNameSchema, 'bad..com')).kind, 'invalid');
   assert.equal(v.safeParse(domainNameSchema, 'https://example.com').success, false);
 });
@@ -175,9 +176,11 @@ test('rejects non-domain tool inputs and distinguishes failed domain interpretat
   assert.deepEqual(invalidReference.reference, {
     escapedInput: 'xn--invalid-.com', formatCharacters: [], kind: 'invalid', reason: 'invalid_domain',
   });
+
   for (const observedDomain of ['https://example.com', 'me@example.com', '../auth.json', 'example.com:443', 'example.com?x', 'example.com#x', 'a%2eb.com', '', 'a'.repeat(1025)]) {
     assert.equal(v.safeParse(domainComparisonSchema, { referenceDomain: 'example.com', observedDomain }).success, false);
   }
+
   for (const [observedDomain, reason] of [
     ['127.0.0.1', 'invalid_domain'], ['localhost', 'invalid_domain'],
     ['-bad.com', 'invalid_domain'], ['xn--invalid-.com', 'invalid_domain'],
@@ -224,6 +227,7 @@ test('distinguishes character swaps and Latin/Greek/Cyrillic diacritics from bro
     const input = v.parse(domainComparisonSchema, { referenceDomain, observedDomain });
     const result = compareDomains(input);
     if (result.kind !== 'compared') assert.fail('Expected compared domains');
+
     if (expected === null) {
       assert.equal('resemblance' in result, false);
     } else {

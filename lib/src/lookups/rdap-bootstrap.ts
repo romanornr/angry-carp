@@ -34,6 +34,7 @@ export function createRdapBootstrap(ownerSignal: AbortSignal) {
       if (response.kind === 'received' && !v.is(schema, response.body)) {
         return { kind: 'unavailable', reason: 'invalid_response' } satisfies RequestFailure;
       }
+
       return response;
     });
     entries.set(url, pending);
@@ -41,6 +42,7 @@ export function createRdapBootstrap(ownerSignal: AbortSignal) {
     void pending.then((response) => {
       if (response.kind !== 'received' && entries.get(url) === pending) entries.delete(url);
     });
+
     return pending;
   }
 
@@ -51,6 +53,7 @@ export function createRdapBootstrap(ownerSignal: AbortSignal) {
     const reused = pending !== undefined;
     pending ??= start(url, schema);
     let response = await waitFor(pending, signal);
+
     // Sharing a pending download does not override the response's restrictions on reuse.
     if (reused && response.kind === 'received' && response.freshUntil <= Date.now() && !signal.aborted) {
       pending = start(url, schema);
@@ -71,6 +74,7 @@ function cancelled(signal: AbortSignal): RequestFailure {
   if (signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError') {
     return { kind: 'unavailable', reason: 'timeout' };
   }
+
   return { kind: 'unavailable', reason: 'cancelled' };
 }
 

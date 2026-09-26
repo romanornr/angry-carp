@@ -33,10 +33,12 @@ test('distinguishes none, unsupported versions and parse limitations', () => {
   const result = parseAuthenticationResults('mx.example; dkim/2=pass; spf=fail');
   if (result.kind !== 'reported_results') assert.fail('Expected claims');
   assert.deepEqual(result.results.map(({ interpretation }) => interpretation), ['unsupported_version', 'supported']);
+
   for (const value of ['mx.example; dkim=pass (unterminated', 'mx.example; dkim=pass reason="unfinished',
     'mx.example; none; spf=pass', 'mx.example; dkim=pass\nInjected: bad']) {
     assert.deepEqual(parseAuthenticationResults(value), { kind: 'unparsed', reason: 'invalid_syntax' });
   }
+
   assert.deepEqual(parseAuthenticationResults('x'.repeat(MAX_AUTH_HEADER_BYTES + 1)), { kind: 'unparsed', reason: 'header_limit' });
   assert.deepEqual(parseAuthenticationResults('mx.example' + '('.repeat(33)), { kind: 'unparsed', reason: 'nesting_limit' });
 });
