@@ -12,8 +12,8 @@
 		"pretriage": "npm run build --workspace @angry-carp/checks"
 	},
 	"dependencies": {
-		"@earendil-works/pi-ai": "0.83.0",
-		"@earendil-works/pi-coding-agent": "0.83.0",
+		"@earendil-works/pi-ai": "^0.83.0",
+		"@earendil-works/pi-coding-agent": "^0.83.0",
 		"@flue/runtime": "^2.1.0",
 		"valibot": "1.5.0",
 		"@angry-carp/checks": "0.1.0"
