@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mock } from 'node:test';
 import { analyzeEmail } from '../../lib/src/email-analysis/analyze-email.ts';
-import { loadBrandDirectory } from '../../lib/src/brands/load-directory.ts';
+import { loadBrandDirectory } from '../../lib/src/brands/load-brand-directory.ts';
 
 const directory = await loadBrandDirectory();
 const cases = [

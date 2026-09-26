@@ -1,6 +1,7 @@
+/** Validates the brand snapshot checksum and schema for the brands:check command. */
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadBrandDirectory } from './load-directory.ts';
+import { loadBrandDirectory } from './load-brand-directory.ts';
 
 const args = process.argv.slice(2);
 if (args.length > 1) {

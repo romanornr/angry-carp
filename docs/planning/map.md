@@ -31,7 +31,7 @@ These notes retain earlier workflow choices. The current implementation above an
 - The initial planning effort was specification-only. The operator subsequently approved local assessment and tool increments.
 - The first usable version runs manually. Unattended daily operation and an intelligence dashboard are later work.
 - The operator selected local execution initially. Cloudflare may be considered later. Flue is selected for the local analyst runner; Workers compatibility remains unverified.
-- Every prepared report requires the operator's approval in the first version, including High-confidence reports. Automatic sending is a later goal; classification and sending authority are separate.
+- Every prepared report requires the operator's approval in the first version, including High-confidence reports. Automatic sending is a later goal; classification and sending authority are separate. [ADR 0019](../adr/0019-submit-urls-to-netcraft-automatically.md) exempts threat-feed submissions, which are not abuse reports.
 - Prefer established tools and services where they meet the requirements. Internal dependencies remain open.
 - Rust was the earlier preference for reusable case operations. The operator subsequently approved TypeScript for the implemented Flue tools. Local filesystem, process, and storage dependencies must stay separate from reusable logic; Workers deployment remains deferred.
 - The operator clarified the implementation direction: one reusable agent-independent CLI, callable by Codex, Claude, omp, or another LLM. Portability does not require shared live cloud state. Model APIs are an acceptable option, not a required embedded runtime.
@@ -74,6 +74,10 @@ These notes retain earlier workflow choices. The current implementation above an
 - [Define report evidence and approval](issues/06-define-report-evidence-and-approval.md): retain private originals, disclose only necessary evidence to verified desks, and require explicit reviewed approval for complete originals.
 - [Evaluate Unicode and phishing detection research](issues/09-evaluate-phishing-detection-research.md): research informed the implemented domain and passage comparisons. Flue is selected; a comparative detection benchmark remains open.
 
+## Child maps
+
+- [Submit phishing URLs to Netcraft automatically](netcraft/map.md): automatic threat-feed submission and service-classification tracking. Depends on ticket 24's case operations and [issue 29](issues/29-unwrap-redirect-links.md), which unwraps redirect links.
+
 ## Not yet specified
 
 - [Issue 23: Read PILFER and evaluate reusable email features](issues/23-read-pilfer-and-evaluate-email-features.md) keeps the operator's paper reading and follow-up ideas local. Dot count and the PILFER classifier are not implemented.
@@ -86,13 +90,14 @@ The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisitio
 - How to turn the [research evaluation proposal](../../docs/research/phishing-detection-design.md#evaluation-protocol-to-specify-next) into an agreed benchmark, including historical evidence access, labeling, sample sizes, and acceptance criteria.
 - Whether to add a threat-list snapshot alongside the implemented 2FA Directory lookup. Preserve source, date, exact match scope, and relation type; catalogue association must not suppress threat evidence. These additional sources still require agreement.
 - Validation of the proposed operator experience for reviewing ambiguous cases, correcting mistakes, and resuming interrupted work.
+- Whether public urlscan scans could supply extra page evidence and screenshots without Angry Carp visiting the site. [ADR 0002](../adr/0002-limit-scanner-disclosure.md) currently permits only private scans, so public visibility would need a new disclosure decision. A challenge page such as a Cloudflare CAPTCHA can hide the phishing content from any scanner.
 - The smallest specification and validation artifacts needed once the architecture is chosen.
 
 ## Out of scope
 
 - Deploying the system or implementing beyond the operator's agreed increment.
 - Unattended operation and an intelligence dashboard in the first usable version. Preserve useful case facts without designing these later systems now.
-- Automatic report sending in the first usable version. The initial workflow prepares reports for the operator's approval.
+- Automatic report sending in the first usable version. The initial workflow prepares reports for the operator's approval. Threat-feed submissions are the exception under ADR 0019.
 - Training a model or publishing a dataset in this effort. Preserve original evidence so future work can assess those options separately.
 - Identifying a real-world attacker from shared domains, infrastructure, or email similarities alone.
 - Offensive action against suspected infrastructure. Provider reporting is the intervention.

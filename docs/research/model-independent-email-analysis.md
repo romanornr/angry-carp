@@ -201,7 +201,7 @@ The next review must settle header reuse, concrete resource limits and that body
 
 ## Authentication draft and reuse review
 
-The subsequent implementation attempt added `lib/src/email-analysis/authentication.ts`. It is a draft with no package export or runtime caller. Do not treat its existence as a completed analyzer or a conformant authentication parser. The operator challenged its size and requested independent review before further integration.
+The subsequent implementation attempt added `lib/src/email-analysis/authentication.ts` (now `lib/src/email-analysis/authentication-headers.ts`). It is a draft with no package export or runtime caller. Do not treat its existence as a completed analyzer or a conformant authentication parser. The operator challenged its size and requested independent review before further integration.
 
 The draft was written against RFC 8601 and RFC 6376, not copied from Thunderbird. Code comments link to the governing grammar. The following implementations were inspected as alternatives and design references:
 

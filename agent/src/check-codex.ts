@@ -1,3 +1,4 @@
+/** Checks that the Codex CLI reuses the ChatGPT login and returns the expected synthetic assessment. */
 import { deepStrictEqual } from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

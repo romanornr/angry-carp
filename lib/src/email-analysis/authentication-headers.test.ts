@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseAuthenticationResults, parseDkimSignature, MAX_AUTH_HEADER_BYTES } from './authentication.ts';
+import { parseAuthenticationResults, parseDkimSignature, MAX_AUTH_HEADER_BYTES } from './authentication-headers.ts';
 
 test('preserves reported methods, duplicate properties and quoted delimiters', () => {
   const result = parseAuthenticationResults('mx.example (outer (inner;)); dkim=pass reason="good; signature" ' +

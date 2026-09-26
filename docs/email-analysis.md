@@ -65,6 +65,8 @@ Load the directory once in the trusted caller and reuse it. Input is a `Uint8Arr
 
 The result retains MIME part IDs, separate embedded-message IDs, repeated headers, reported authentication, attachment metadata, host occurrences, HTML extraction, lookup outcomes, directory candidates, comparisons, findings, reporting candidates and coverage. Findings point to observation/check IDs. `referenceDomains` are operator-supplied references, not automatically verified domains. Directory candidates and image hosts carry different provenance. No weighted score, malware scanner, external threat feed or official-site fetch is installed. Text reuse records a missing comparison message rather than inventing a corpus search.
 
+The `observations` field records occurrences extracted from the message. A finding with `kind: "observation"` is an informational finding derived from recorded evidence.
+
 Full analyzed results and newly emitted assessment packets use version 2. [Domain comparisons](domain-lookalikes.md) now carry named resemblance observations for different domains, including a complete reference domain embedded in a longer hostname. Embedding observations produce attributed concerns through the existing routing policy. The old comparison fields are no longer emitted. The saved-assessment renderer still accepts version 1 packets because it consumes the recorded evidence rather than recomputing comparisons. Adjacent swaps and Latin-folded label matches are concerns for operator references and observations for directory or image references. General single edits and absent-reference discovery remain deferred.
 
 ## Selection and limits

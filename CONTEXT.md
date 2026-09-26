@@ -55,7 +55,7 @@ A judgement about suspected phishing, its confidence, and the evidence supportin
 The collected message observations, check outcomes, derived findings and coverage limitations used to support an assessment. A complete analysis record can contain unresolved questions and does not itself establish a phishing verdict.
 
 **Finding**:
-An observation or concern derived from recorded evidence, with references to that evidence. A concern finding warrants attention without independently establishing that the message is phishing.
+A concern or informational note derived from recorded evidence, with references to that evidence. An informational finding summarizes evidence rather than recording a new observation, while a concern warrants attention without independently establishing phishing.
 
 **Results display**:
 A presentation of recorded analysis findings, check outcomes and reporting routes with their supported service roles for the operator to inspect. It is distinct from an assessment interpreting their significance and an abuse report requesting provider action.
@@ -124,6 +124,12 @@ The specific URL, domain, object, account, or sending activity identified in a p
 
 **Abuse report**:
 A recipient-specific statement of supported abuse, its evidence, and the action requested from a provider or reporting service.
+
+**Threat-feed submission**:
+A suspected resource sent to a service that classifies it independently and may block it in its feeds. It makes no allegation under the operator's identity, so it is not an abuse report.
+
+**Service classification**:
+The verdict a threat-feed service assigns to a submitted resource. It can change later; each dated change is an observation, not a decision about the case or a takedown.
 
 **Report approval**:
 The operator's authorization to send a prepared abuse report. An assessment of High confidence is not report approval.

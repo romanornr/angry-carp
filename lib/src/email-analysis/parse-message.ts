@@ -17,7 +17,7 @@ import { Readable, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Splitter, type SplitterChunk } from '@zone-eu/mailsplit';
 import addresses from 'email-addresses';
-import { parseAuthenticationResults, parseDkimSignature } from './authentication.ts';
+import { parseAuthenticationResults, parseDkimSignature } from './authentication-headers.ts';
 
 export const MAX_MESSAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TEXT_BYTES = 512 * 1024;

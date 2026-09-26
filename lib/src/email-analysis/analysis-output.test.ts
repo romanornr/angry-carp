@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { analyzeEmail } from './analyze-email.ts';
-import { loadBrandDirectory } from '../brands/load-directory.ts';
+import { loadBrandDirectory } from '../brands/load-brand-directory.ts';
 import { analysisForModel, assessmentEvidence, formatAnalysis, formatAssessment } from './analysis-output.ts';
 
 test('assessment renders only selected records and rejects invented prose or references', () => {

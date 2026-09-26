@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadBrandDirectory } from '../brands/load-directory.ts';
+import { loadBrandDirectory } from '../brands/load-brand-directory.ts';
 import { analyzeEmail } from './analyze-email.ts';
 import { analysisForModel, assessmentEvidence } from './analysis-output.ts';
 
@@ -437,4 +437,27 @@ test('typo matches require operator references to create concerns and reporting 
       }
     }
   }
+});
+
+test('reporting leads use concerns beyond the recorded finding limit', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  const claims = Array.from({ length: 128 }, () => 'spf=pass').join('; ');
+  const message = new TextEncoder().encode([
+    'From: sender@example.com',
+    'Received: from a9.smtp-out.amazonses.com by mx.example',
+    `Authentication-Results: mx.example; ${claims}`,
+    'Authentication-Results: mx.example; spf=fail',
+    'Content-Type: text/plain',
+    '',
+    'Synthetic message.',
+  ].join('\r\n'));
+  const result = await analyzeEmail(message, { directory });
+  assert.equal(result.kind, 'analyzed');
+  if (result.kind !== 'analyzed') return;
+  assert.equal(result.findings.length, 128);
+  assert.deepEqual([...new Set(result.findings.map(({ kind }) => kind))], ['observation']);
+  assert.deepEqual(result.reportingCandidates.map(({ provider }) => provider), ['amazon-ses']);
+  assert.deepEqual(result.coverage.slice(-2).map(({ reason }) => reason), [
+    'registrar_contact_without_resource_concern', 'finding_limit:1',
+  ]);
 });

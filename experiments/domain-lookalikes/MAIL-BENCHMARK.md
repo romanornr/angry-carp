@@ -10,9 +10,11 @@ From the repository root with workspace dependencies, Node 24, and Python 3:
 python3 experiments/domain-lookalikes/prepare-mail-corpus.py
 mkdir -p experiments/domain-lookalikes/generated/baseline-9364211
 git archive 9364211 lib/src lib/reference-data | tar -x -C experiments/domain-lookalikes/generated/baseline-9364211
-node experiments/domain-lookalikes/benchmark-mail.mjs experiments/domain-lookalikes/generated/baseline-9364211/lib/src > experiments/domain-lookalikes/generated/mail-baseline.json
+node experiments/domain-lookalikes/benchmark-mail.mjs experiments/domain-lookalikes/generated/baseline-9364211/lib/src brands/load-directory.ts > experiments/domain-lookalikes/generated/mail-baseline.json
 node experiments/domain-lookalikes/benchmark-mail.mjs > experiments/domain-lookalikes/generated/mail-current.json
 ```
+
+The baseline command supplies its historical loader filename explicitly. Current runs use `brands/load-brand-directory.ts`.
 
 Preparation downloads three public archives and verifies pinned SHA-256 hashes before reading them. It uses Python's `tarfile` and `mailbox.mbox`; no custom mailbox parser or archive filesystem extraction is needed. Mbox conversion removes envelope separator lines and normalizes line endings. Message headers and bodies remain available to the MIME parser. All raw mail and per-message results stay in ignored `generated/`.
 

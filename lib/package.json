@@ -7,6 +7,10 @@
 		"node": ">=24"
 	},
 	"exports": {
+		"./url-privacy": {
+			"types": "./dist/url-privacy/reduce-url-for-disclosure.d.ts",
+			"default": "./dist/url-privacy/reduce-url-for-disclosure.js"
+		},
 		"./email-links": {
 			"types": "./dist/email-links/extract-links.d.ts",
 			"default": "./dist/email-links/extract-links.js"
@@ -16,8 +20,8 @@
 			"default": "./dist/brands/brand-directory.js"
 		},
 		"./brands/local": {
-			"types": "./dist/brands/load-directory.d.ts",
-			"default": "./dist/brands/load-directory.js"
+			"types": "./dist/brands/load-brand-directory.d.ts",
+			"default": "./dist/brands/load-brand-directory.js"
 		},
 		"./lookalikes": {
 			"types": "./dist/lookalikes/compare-domains.d.ts",
@@ -63,6 +67,7 @@
 	},
 	"files": [
 		"dist",
+		"licenses",
 		"reference-data",
 		"instructions"
 	],
@@ -71,7 +76,7 @@
 		"prepack": "npm run build",
 		"test": "node --test",
 		"check:types": "tsc --noEmit",
-		"brands:check": "node dist/brands/check-directory.js"
+		"brands:check": "node dist/brands/check-brand-directory.js"
 	},
 	"dependencies": {
 		"@moderation-api/unicode-spoofing": "0.4.0",

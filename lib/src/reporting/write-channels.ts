@@ -1,3 +1,4 @@
+/** Regenerates reporting-channels.md from the catalogue in lib/src/reporting/channels.ts. */
 import { writeFile } from 'node:fs/promises';
 import { renderReportingChannels } from './render-channels.ts';
 

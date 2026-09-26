@@ -1,3 +1,4 @@
+/** Runs interactive ChatGPT login or local logout through the shared Pi credential store. */
 import type { AuthInteraction } from '@earendil-works/pi-ai';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';

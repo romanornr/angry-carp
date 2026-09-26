@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import * as v from 'valibot';
 import { brandQuerySchema, buildBrandDirectory } from './brand-directory.ts';
-import { loadBrandDirectory } from './load-directory.ts';
+import { loadBrandDirectory } from './load-brand-directory.ts';
 
 const source = {
   name: '2FA Directory', dataUrl: 'https://api.2fa.directory/v3/all.json',

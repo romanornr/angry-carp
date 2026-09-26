@@ -32,7 +32,7 @@
       }
     },
     {
-      "files": ["lib/src/email-analysis/authentication.ts", "lib/src/email-analysis/analysis-output.ts"],
+      "files": ["lib/src/email-analysis/authentication-headers.ts", "lib/src/email-analysis/analysis-output.ts"],
       "rules": { "no-control-regex": "off" }
     }
   ]

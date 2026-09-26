@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const sourceRoot = pathToFileURL(`${resolve(process.argv[2] ?? 'lib/src')}/`);
 const { analyzeEmail } = await import(new URL('email-analysis/analyze-email.ts', sourceRoot));
-const { loadBrandDirectory } = await import(new URL('brands/load-directory.ts', sourceRoot));
+const { loadBrandDirectory } = await import(new URL(process.argv[3] ?? 'brands/load-brand-directory.ts', sourceRoot));
 const directory = await loadBrandDirectory();
 const input = new URL('./generated/corpora/messages.jsonl', import.meta.url);
 const sources = readdirSync(sourceRoot, { recursive: true }).filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts')).sort();
