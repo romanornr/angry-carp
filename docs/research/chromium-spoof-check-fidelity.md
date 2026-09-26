@@ -1,9 +1,9 @@
 # Chromium spoof-check comparison
 
 Reviewed 2026-09-26 against Angry Carp `4d7b6e1` and Chromium
-`fcd1720dfbc767af07055b27f303207fab09c45d`. This investigation changes no detector
-behavior. The [current contract](../domain-lookalikes.md) deliberately implements
-Latin-only folding. That restriction misses mixed-script accented lookalikes such
+`fcd1720dfbc767af07055b27f303207fab09c45d`. This investigation initially changed no detector
+behavior. At that baseline, the comparator deliberately implemented
+Latin-only folding. The implementation follow-up below changes the [current contract](../domain-lookalikes.md). That restriction misses mixed-script accented lookalikes such
 as `pаypäl.com`, where the second character is Cyrillic U+0430.
 
 ## Source inspected locally
@@ -144,3 +144,13 @@ No better end-to-end TypeScript replacement was established by this investigatio
 ICU supplies the restriction machinery Chromium uses, but adding native ICU or a
 Wasm binding would be a separate dependency decision. The local contract audit is
 retained at `/tmp/angry-carp-chromium-folding/local-contract-audit.md`.
+
+## Implemented follow-up
+
+The operator approved both fixes after this investigation. The comparator now folds Latin, Greek, and Cyrillic, retaining NFD-first eligibility and all nonspacing marks. `inspectDomain` is shared by pairwise comparisons and independent host inspection.
+
+The script check independently implements ICU's [augmented and resolved script-set algorithm](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/uspoof_impl.cpp#L238-L372) with JavaScript property escapes and sets. It uses the script-combination portion of the highly restrictive policy, not the complete ICU or Chromium checker. Unicode 17 script names come from the small, data-only `unicode-property-value-aliases-ecmascript` package, avoiding a locally maintained partial script list. Unknown membership yields an explicit unavailable result. No native ICU dependency or locks are needed.
+
+A compiled ICU 78.3 oracle enabled only restriction checking and auxiliary level information, with all code points in its allowed-character set. It compared 4,608 synthetic labels covering script pairs, three-script combinations, Script_Extensions marks, CJK systems, and newer scripts. All classifications matched. The program and experiment output are at `/tmp/angry-carp-chromium-folding/script-oracle.cc` and `/tmp/angry-carp-chromium-folding/script-differential.json`. This is an algorithm check, not a browser build or a phishing-accuracy benchmark.
+
+The analyzer inspects recorded host occurrences independently of references. Mixed-script unmarked non-image occurrences request assessment. Images and quoted or embedded occurrences remain informational. Mixing alone creates no reporting lead. The tests also preserve reference-source policy for folded resemblance, script boundaries between labels, prior combining-mark matches, and findings after the pairwise comparison budget is exhausted.

@@ -108,7 +108,7 @@ The [manual workflow draft](../../docs/manual-workflow.md) now covers acquisitio
 
 ## Analyzer follow-up
 
-The 2026-09-24 [domain-impersonation review](../research/domain-impersonation.md) led to full reference-domain embedding, named observations, and operator-reference concerns for swaps and Latin-folded labels. Remaining decisions are [broader typo and accent policies](issues/26-evaluate-typo-and-accent-observations.md), [missing references](issues/27-evaluate-reference-coverage.md), and [same-registration siblings](issues/28-evaluate-sibling-reference-policy.md). Issue 26 records the implemented operator-reference increment. Its broader policies and issues 27–28 still require evaluation.
+The 2026-09-24 [domain-impersonation review](../research/domain-impersonation.md) led to full reference-domain embedding, named observations, and operator-reference concerns for swaps and Latin-folded labels. Remaining decisions are [broader typo and accent policies](issues/26-evaluate-typo-and-accent-observations.md), [missing references](issues/27-evaluate-reference-coverage.md), and [same-registration siblings](issues/28-evaluate-sibling-reference-policy.md). Issue 26 records the implemented operator-reference increment and the later Greek/Cyrillic folding and independent script-check follow-up. Its broader policies and issues 27–28 still require evaluation.
 
 The first real-email comparison confirmed collection and exposed the following gaps. The package migration was followed by the implemented fixes below, verified with synthetic messages and offline transports. No automatic reporting is authorized.
 

@@ -1,6 +1,6 @@
 /**
  * Compares a hostname with one supplied reference and describes how the names resemble each other.
- * The embedding, adjacent-swap, and Latin-folding checks were informed by Chromium.
+ * The embedding, adjacent-swap, and diacritic-folding checks were informed by Chromium.
  * Each helper links the relevant upstream code and explains its local differences.
  *
  * Steps:
@@ -15,12 +15,14 @@
  *
  * See docs/domain-lookalikes.md for the design, dependencies, and evaluation.
  */
+import { versions } from 'node:process';
 import { domainToASCII, domainToUnicode } from 'node:url';
 import { primaryScript, skeleton, UNICODE_VERSION } from '@moderation-api/unicode-spoofing';
 import { parse } from 'tldts';
 import * as v from 'valibot';
+import { classifyScriptMixing } from './script-mixing.ts';
 
-const inputDomainSchema = v.pipe(
+export const domainNameSchema = v.pipe(
   v.string(),
   v.minLength(1),
   v.maxLength(1024),
@@ -29,8 +31,8 @@ const inputDomainSchema = v.pipe(
 );
 
 export const domainComparisonSchema = v.object({
-  referenceDomain: inputDomainSchema,
-  observedDomain: inputDomainSchema,
+  referenceDomain: domainNameSchema,
+  observedDomain: domainNameSchema,
 });
 
 type DomainInspection = ReturnType<typeof inspectInput> & (
@@ -42,7 +44,8 @@ type DomainInspection = ReturnType<typeof inspectInput> & (
     changedByIdna: boolean;
     registrableDomain: string;
     label: string;
-    labels: { text: string; scripts: ReturnType<typeof primaryScript>[] }[];
+    scriptUnicodeVersion: string | null;
+    labels: { text: string; scripts: ReturnType<typeof primaryScript>[]; scriptMixing: ReturnType<typeof classifyScriptMixing> }[];
   }
 );
 
@@ -92,8 +95,8 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   if (confusable) resemblance.push({ kind: 'label_contained', form: 'skeleton', ...confusable });
   // A reference can be a host, so these methods exclude siblings under the same registrable domain.
   if (reference.registrableDomain !== observed.registrableDomain) {
-    const foldedReference = foldLatinLabel(reference.label);
-    const foldedObserved = foldLatinLabel(observed.label);
+    const foldedReference = maybeRemoveDiacritics(reference.label);
+    const foldedObserved = maybeRemoveDiacritics(observed.label);
     const foldedReferenceSkeleton = skeleton(foldedReference);
     const foldedObservedSkeleton = skeleton(foldedObserved);
     if (referenceSkeleton !== observedSkeleton && foldedReferenceSkeleton === foldedObservedSkeleton) resemblance.push({ kind: 'folded_label' });
@@ -111,11 +114,12 @@ export function compareDomains(input: v.InferOutput<typeof domainComparisonSchem
   return { ...comparison, kind: 'compared', relationship, resemblance };
 }
 
-// Latin-only folding inspired by Chromium, using Unicode nonspacing marks instead of its hostname eligibility set:
+// Chromium's Latin/Greek/Cyrillic folding, retaining our NFD-first eligibility and all nonspacing marks.
+// Its narrower mark range assumes character checks we do not implement:
 // https://github.com/chromium/chromium/blob/fcd1720dfbc767af07055b27f303207fab09c45d/components/url_formatter/spoof_checks/skeleton_generator.cc#L52-L73
-function foldLatinLabel(label: string) {
+function maybeRemoveDiacritics(label: string) {
   const decomposed = label.normalize('NFD');
-  if (!/^[\p{Script=Latin}\p{Mn}0-9-]+$/u.test(decomposed)) return label;
+  if (!/^[\p{Script=Latin}\p{Script=Greek}\p{Script=Cyrillic}\p{Mn}0-9-]+$/u.test(decomposed)) return label;
   return decomposed.replace(/\p{Mn}/gu, '').normalize('NFC').replace(/ł/gu, 'l').replace(/ø/gu, 'o').replace(/đ/gu, 'd');
 }
 
@@ -150,7 +154,8 @@ function embeddedDomain({ reference, observed }: { reference: string; observed: 
   return null;
 }
 
-function inspectDomain(input: string): DomainInspection {
+/** Inspects a validated bare domain independently of comparison references. */
+export function inspectDomain(input: v.InferOutput<typeof domainNameSchema>): DomainInspection {
   // Capture invisible characters before IDNA conversion can remove them.
   const original = inspectInput(input);
   const ascii = domainToASCII(input).replace(/\.$/, '');
@@ -174,10 +179,12 @@ function inspectDomain(input: string): DomainInspection {
     registrableDomain: parts.domain,
     // Convert the full domain because node:url can interpret a standalone numeric label as an IPv4 address.
     label: domainToUnicode(parts.domain).split('.')[0],
+    scriptUnicodeVersion: versions.unicode ?? null,
     // Primary scripts are an inventory, not the UTS #39 resolved script set or a risk flag.
     labels: unicode.split('.').map((text) => ({
       text,
       scripts: [...new Set(Array.from(text, primaryScript))].sort(),
+      scriptMixing: classifyScriptMixing(text),
     })),
   };
 }

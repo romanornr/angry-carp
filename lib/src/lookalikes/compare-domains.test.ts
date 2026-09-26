@@ -1,7 +1,22 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as v from 'valibot';
-import { compareDomains, domainComparisonSchema } from './compare-domains.ts';
+import { compareDomains, domainComparisonSchema, inspectDomain, domainNameSchema } from './compare-domains.ts';
+
+test('inspects Unicode and punycode labels independently of comparison references', () => {
+  for (const input of ['pаypäl.com', 'xn--pypl-noa571c.com']) {
+    const result = inspectDomain(v.parse(domainNameSchema, input));
+    if (result.kind !== 'parsed') assert.fail('Expected a parsed domain');
+    assert.equal(result.ascii, 'xn--pypl-noa571c.com');
+    assert.deepEqual(result.labels, [
+      { text: 'pаypäl', scripts: ['Cyrillic', 'Latin'], scriptMixing: 'mixed_script' },
+      { text: 'com', scripts: ['Latin'], scriptMixing: 'single_script' },
+    ]);
+    assert.match(result.scriptUnicodeVersion ?? '', /^\d+\.\d+/);
+  }
+  assert.equal(inspectDomain(v.parse(domainNameSchema, 'bad..com')).kind, 'invalid');
+  assert.equal(v.safeParse(domainNameSchema, 'https://example.com').success, false);
+});
 
 test('records embedded reference domains at dot and hyphen boundaries', () => {
   for (const [referenceDomain, observedDomain, text, utf16Index] of [
@@ -69,7 +84,7 @@ test('recognizes Unicode, whole-script and ASCII lookalikes using the real mappi
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
     if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
     assert.deepEqual(result.resemblance, [{ kind: 'confusable_label' }]);
-    assert.deepEqual(result.observed.labels[0], { text: label, scripts });
+    assert.partialDeepStrictEqual(result.observed.labels[0], { text: label, scripts });
     assert.equal(result.confusablesUnicodeVersion, '17.0.0');
   }
 });
@@ -148,7 +163,7 @@ test('retains legitimate multilingual names and unknown scripts without a mixed-
     const result = compareDomains(v.parse(domainComparisonSchema, { referenceDomain, observedDomain }));
     if (result.kind !== 'compared' || result.relationship !== 'different_domain') assert.fail('Expected different domains');
     assert.deepEqual(result.resemblance, []);
-    assert.deepEqual(result.observed.labels[0], { text: label, scripts });
+    assert.partialDeepStrictEqual(result.observed.labels[0], { text: label, scripts });
   }
 });
 
@@ -174,7 +189,7 @@ test('rejects non-domain tool inputs and distinguishes failed domain interpretat
   }
 });
 
-test('distinguishes character swaps and Latin diacritics from broader edits', () => {
+test('distinguishes character swaps and Latin/Greek/Cyrillic diacritics from broader edits', () => {
   for (const [referenceDomain, observedDomain, expected] of [
     ['coinbase.com', 'coinbsae.com', [{ kind: 'character_swap', form: 'folded' }]],
     ['al1pha.com', 'a1lpha.com', [{ kind: 'confusable_label' }, { kind: 'character_swap', form: 'folded' }]],
@@ -187,6 +202,13 @@ test('distinguishes character swaps and Latin diacritics from broader edits', ()
     ['paypal.com', 'xn--pypal-gra.com', [{ kind: 'folded_label' }]],
     ['caféine.fr', 'cafeine.fr', [{ kind: 'folded_label' }]],
     ['paypal.com', 'paypäl.net', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'pаypäl.com', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'pаypa\u0308l.com', [{ kind: 'folded_label' }]],
+    ['пример.com', 'примёр.com', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'payp\u0339al.com', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'payp\u033aal.com', [{ kind: 'folded_label' }]],
+    ['paypal.com', 'payp\u1ab0al.com', [{ kind: 'folded_label' }]],
+    ['example.com', 'éxapmle.com', [{ kind: 'character_swap', form: 'folded' }]],
     ['paypal.com', 'paypal.com', null],
     ['paypal.com', 'mail.paypal.com', null],
     ['münchen.de', 'münchen.de', null],
@@ -197,7 +219,7 @@ test('distinguishes character swaps and Latin diacritics from broader edits', ()
     ['meta.com', 'mtea.com', []],
     ['paypal12.com', 'paypal21.com', [{ kind: 'character_swap', form: 'folded' }]],
     ['münchen.de', 'munster.de', []],
-    ['παραδειγμα.com', 'παράδειγμα.com', []],
+    ['παραδειγμα.com', 'παράδειγμα.com', [{ kind: 'folded_label' }]],
   ] satisfies [string, string, unknown[] | null][]) {
     const input = v.parse(domainComparisonSchema, { referenceDomain, observedDomain });
     const result = compareDomains(input);

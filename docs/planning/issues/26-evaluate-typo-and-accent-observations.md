@@ -10,7 +10,7 @@ Related: 09-evaluate-phishing-detection-research.md
 
 Should single edits, adjacent transpositions, or additional diacritic folding create domain-resemblance concerns, and for which reference sources?
 
-`coinbsae.com` against `coinbase.com` and `päypal.com` against `paypal.com` now produce observations, and concerns when the operator supplies the reference. The [source review and corrected experiment](../../research/domain-impersonation.md) compare existing software and candidate rules. The [current contract](../../domain-lookalikes.md) adds only adjacent swaps and Latin-folded equality. General edits and broader source policies remain deferred.
+`coinbsae.com` against `coinbase.com` and `päypal.com` against `paypal.com` now produce observations, and concerns when the operator supplies the reference. The [source review and corrected experiment](../../research/domain-impersonation.md) compare existing software and candidate rules. The [current contract](../../domain-lookalikes.md) includes adjacent swaps and Latin/Greek/Cyrillic-folded equality. General edits and broader source policies remain deferred.
 
 ## Evaluate
 
@@ -26,4 +26,10 @@ A reproducible comparison supports a specific rule and its limits, or recommends
 
 ## Delivered increment
 
-The comparator records both new kinds without a new API or dependency. `findings.ts` owns the operator-only concern policy. Directory and image matches remain observations and do not qualify reporting recipients. The [public-mail benchmark](../../../experiments/domain-lookalikes/MAIL-BENCHMARK.md) ran 3,231 messages before and after, with no new matches in either reference configuration. Synthetic controls prove the intended mechanisms; these corpora provide no evidence of improved phishing accuracy.
+The initial increment recorded both new kinds without a new API or dependency. `findings.ts` owns the operator-only concern policy. Directory and image matches remain observations and do not qualify reporting recipients. The [public-mail benchmark](../../../experiments/domain-lookalikes/MAIL-BENCHMARK.md) ran 3,231 messages before and after, with no new matches in either reference configuration. Synthetic controls prove the intended mechanisms; these corpora provide no evidence of improved phishing accuracy.
+
+## Script coverage follow-up
+
+On 2026-09-26, the operator approved broader folding and reference-independent mixed-script findings after the [Chromium source comparison](../../research/chromium-spoof-check-fidelity.md). Folding now includes Greek and Cyrillic while retaining existing combining-mark coverage. Script compatibility follows ICU's augmented script sets and highly restrictive script combinations, with legitimate CJK combinations preserved. It is not a full identifier-profile or browser-spoof-check implementation.
+
+The independent finding requests assessment for unmarked non-image hosts without needing a known target. It does not qualify reporting recipients on its own. Existing folded-match reference policy remains unchanged. The earlier public-mail measurements above predate this follow-up and do not measure its additional assessment rate.

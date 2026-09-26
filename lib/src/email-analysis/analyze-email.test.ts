@@ -461,3 +461,93 @@ test('reporting leads use concerns beyond the recorded finding limit', async (t)
     'registrar_contact_without_resource_concern', 'finding_limit:1',
   ]);
 });
+
+test('mixed-script findings request assessment without references or reporting attribution', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  // Use the real directory with an unrelated sender, so no target brand is selected.
+  const result = await analyzeEmail(new TextEncoder().encode(
+    'From: sender@example.com\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<a href="https://pаypäl.com/login">Open</a>'), { directory });
+  if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+  assert.deepEqual(result.comparisons, []);
+  const host = result.observations.hosts.find(({ role }) => role === 'action');
+  assert.ok(host);
+  const finding = result.findings.find(({ code }) => code === 'mixed_script_label');
+  assert.partialDeepStrictEqual(finding, { kind: 'concern', evidenceIds: [host.id] });
+  assert.match(finding?.text ?? '', /pаypäl.*does not establish impersonation/);
+  assert.deepEqual(result.routing, { kind: 'assessment_required', reason: 'concerns_detected', gaps: [] });
+  assert.deepEqual(result.reportingCandidates, []);
+  assert.ok(assessmentEvidence(result).some(({ text }) => text === finding?.text));
+});
+
+test('script inspection preserves label boundaries and legitimate writing systems', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  for (const [host, expected] of [
+    ['pаypäl.example.com', 'assessment_required'],
+    ['café.пример.com', 'no_concerns_detected'],
+    ['ひらカナー.com', 'no_concerns_detected'],
+    ['a東京.com', 'no_concerns_detected'],
+    ['𓀀𓀁.com', 'no_concerns_detected'],
+  ]) {
+    const result = await analyzeEmail(new TextEncoder().encode(
+      `Content-Type: text/html; charset=utf-8\r\n\r\n<a href="https://${host}/">Open</a>`), { directory });
+    if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+    assert.equal(result.routing.kind, expected, host);
+    assert.deepEqual(result.findings.filter(({ code }) => code === 'mixed_script_label').map(({ kind }) => kind),
+      expected === 'assessment_required' ? ['concern'] : [], host);
+  }
+});
+
+test('mixed-script image, quote, and embedded-message findings remain informational', async (t) => {
+  const calls: string[] = [];
+  t.mock.method(globalThis, 'fetch', fixtureFetch(calls));
+  for (const content of [
+    'Content-Type: text/html; charset=utf-8\r\n\r\n<img src="https://pаypäl.com/logo.png">',
+    'Content-Type: text/html; charset=utf-8\r\n\r\n<blockquote><a href="https://pаypäl.com/">Warning</a></blockquote>',
+    'Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: message/rfc822\r\n\r\n' +
+      'From: sender@xn--pypl-noa571c.com\r\nContent-Type: text/plain\r\n\r\nExample\r\n--b--\r\n',
+  ]) {
+    const result = await analyzeEmail(new TextEncoder().encode(content), { directory });
+    if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+    assert.deepEqual(result.findings.filter(({ code }) => code === 'mixed_script_label').map(({ kind }) => kind), ['observation']);
+    assert.deepEqual(result.reportingCandidates, []);
+  }
+});
+
+test('script inspection survives exhausted comparisons and findings retain host provenance', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  const references = Array.from({ length: 16 }, (_, i) => `reference${i}.com`);
+  const html = ['one.com', 'two.com', 'pаypäl.com'].map((host) => `<a href="https://${host}/">Open</a>`).join('');
+  const result = await analyzeEmail(new TextEncoder().encode(`Content-Type: text/html; charset=utf-8\r\n\r\n${html}`),
+    { directory, referenceDomains: references });
+  if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+  assert.equal(result.comparisons.length, 32);
+  const host = result.observations.hosts.find(({ host }) => host.startsWith('xn--'));
+  assert.ok(host);
+  assert.equal(result.comparisons.some(({ sourceIds }) => sourceIds.includes(host.id)), false);
+  assert.partialDeepStrictEqual(result.findings.find(({ code }) => code === 'mixed_script_label'),
+    { kind: 'concern', evidenceIds: [host.id] });
+  assert.equal(result.routing.kind, 'assessment_required');
+});
+
+test('mixed-script concerns are independent of folded-match reference policy', async (t) => {
+  t.mock.method(globalThis, 'fetch', fixtureFetch([]));
+  for (const source of ['operator', 'directory_candidate', 'message_image']) {
+    let name = 'Sender';
+    let html = '';
+    if (source === 'directory_candidate') name = 'PayPal';
+    if (source === 'message_image') html = '<img src="https://paypal.com/logo.png">';
+    const input = new TextEncoder().encode(
+      `From: ${name} <sender@xn--pypl-noa571c.com>\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`);
+    const result = await analyzeEmail(input, { directory, referenceDomains: source === 'operator' ? ['paypal.com'] : [] });
+    if (result.kind !== 'analyzed') assert.fail('Expected analysis');
+    const comparison = result.comparisons.find(({ referenceSource }) => referenceSource === source);
+    assert.ok(comparison);
+    if (comparison.result.kind !== 'compared' || comparison.result.relationship !== 'different_domain') assert.fail('Expected different domains');
+    assert.deepEqual(comparison.result.resemblance, [{ kind: 'folded_label' }]);
+    assert.equal(result.findings.find(({ code }) => code === 'mixed_script_label')?.kind, 'concern');
+    assert.equal(result.findings.find(({ evidenceIds }) => evidenceIds.includes(comparison.id))?.kind,
+      source === 'operator' ? 'concern' : 'observation');
+    assert.deepEqual(result.routing, { kind: 'assessment_required', reason: 'concerns_detected', gaps: [] });
+    assert.deepEqual(result.reportingCandidates.map(({ provider }) => provider), source === 'operator' ? ['Example registrar'] : []);
+  }
+});

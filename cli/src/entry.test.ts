@@ -143,5 +143,5 @@ test('repeatable operator references expose typo concerns through the CLI', asyn
   assert.deepEqual(selected.analysis.findings.map(({ kind, code }: { kind: string; code: string }) => ({ kind, code })),
     [{ kind: 'concern', code: 'domain_resemblance' }, { kind: 'concern', code: 'domain_resemblance' }]);
   assert.match(selected.analysis.findings[0].text, /adjacent character swap.*Reference source: operator/);
-  assert.match(selected.analysis.findings[1].text, /Latin diacritic folding.*Reference source: operator/);
+  assert.match(selected.analysis.findings[1].text, /Latin\/Greek\/Cyrillic diacritic folding.*Reference source: operator/);
 });
